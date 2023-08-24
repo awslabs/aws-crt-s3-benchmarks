@@ -1,11 +1,8 @@
-## My Project
+## aws-crt-s3-benchmarks
 
-TODO: Fill this README out!
+This project is for benchmarking different S3 workloads using various languages and libraries.
 
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
+It contains simple apps that can be run locally, and automation to run them on different EC2 instance types.
 
 ## Security
 
@@ -14,4 +11,3 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This project is licensed under the Apache-2.0 License.
-

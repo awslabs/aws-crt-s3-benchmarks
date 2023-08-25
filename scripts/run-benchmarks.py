@@ -4,7 +4,6 @@ from pathlib import Path
 import subprocess
 
 parser = argparse.ArgumentParser(
-    prog='run-benchmarks',
     description='Run benchmarks with a specific runner')
 parser.add_argument(
     '--runner-cmd', required=True,

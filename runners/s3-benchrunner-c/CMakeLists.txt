@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
+cmake_policy(VERSION 3.22...3.24)
 project(s3-benchrunner-c CXX)
-
-cmake_policy(SET CMP0135 NEW) # avoid warnings from FetchContent when cmake_minimum_required < 3.24
 
 add_executable(${PROJECT_NAME} benchrunner.cpp)
 

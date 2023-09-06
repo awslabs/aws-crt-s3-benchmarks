@@ -108,7 +108,7 @@ struct BenchmarkConfig
 // struct for a task in the benchmark's JSON config
 struct TaskConfig
 {
-    string type;
+    string action;
     string key;
     uint64_t size = 0;
 };
@@ -195,13 +195,11 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
     if (json.contains("maxRepeatSecs"))
         config.maxRepeatSecs = json["maxRepeatSecs"];
 
-    if (json.contains("checksum"))
+    if (json.contains("checksum") && !json["checksum"].is_null())
     {
         string checksum = json["checksum"];
         if (checksum == "crc32")
             config.checksum = AWS_SCA_CRC32;
-        else if (checksum == "none")
-            config.checksum = AWS_SCA_NONE;
         else
             fail(string("Unknown checksum: ") + checksum);
     }
@@ -213,7 +211,7 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
     {
         auto &task = config.tasks.emplace_back();
 
-        task.type = taskJson["type"];
+        task.action = taskJson["action"];
         task.key = taskJson["key"];
 
         // size looks like "5GiB" or "10KiB" or "1" (bytes)
@@ -323,7 +321,7 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     {
         for (auto &&task : config.tasks)
         {
-            if (task.type == "upload")
+            if (task.action == "upload")
             {
                 if (task.size > randomDataForUpload.size())
                 {
@@ -392,7 +390,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
 
     aws_input_stream *inMemoryStreamForUpload = NULL;
 
-    if (config.type == "upload")
+    if (config.action == "upload")
     {
         options.type = AWS_S3_META_REQUEST_TYPE_PUT_OBJECT;
 
@@ -412,7 +410,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
             aws_input_stream_release(inMemoryStreamForUpload);
         }
     }
-    else if (config.type == "download")
+    else if (config.action == "download")
     {
         options.type = AWS_S3_META_REQUEST_TYPE_GET_OBJECT;
 
@@ -428,7 +426,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         }
     }
     else
-        fail(string("Unknown task type: ") + config.type);
+        fail(string("Unknown task type: ") + config.action);
 
     aws_s3_checksum_config checksumConfig;
     AWS_ZERO_STRUCT(checksumConfig);
@@ -454,8 +452,8 @@ void Task::onFinished(struct aws_s3_meta_request *meta_request,
     // TODO: report failed meta-requests instead of killing benchmark?
     if (meta_request_result->error_code != 0)
     {
-        printf("Task[%zu] failed. type:%s key:%s error_code:%s\n",
-               task->taskI, task->config.type.c_str(), task->config.key.c_str(),
+        printf("Task[%zu] failed. action:%s key:%s error_code:%s\n",
+               task->taskI, task->config.action.c_str(), task->config.key.c_str(),
                aws_error_name(meta_request_result->error_code));
         if (meta_request_result->response_status != 0)
             printf("Status-Code: %d\n", meta_request_result->response_status);

@@ -21,6 +21,9 @@ include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+# TODO: remove this line once https://github.com/awslabs/aws-c-cal/pull/158 is merged
+find_package(crypto REQUIRED)
+
 find_package(aws-c-s3 REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json)

@@ -74,17 +74,17 @@ double bytesToGiB(uint64_t bytes)
 
 double bytesToKilobit(uint64_t bytes)
 {
-    return ((double)bytes * 8) / 1000;
+    return ((double)bytes * 8) / 1'000;
 }
 
 double bytesToMegabit(uint64_t bytes)
 {
-    return ((double)bytes * 8) / 1000000;
+    return ((double)bytes * 8) / 1'000'000;
 }
 
 double bytesToGigabit(uint64_t bytes)
 {
-    return ((double)bytes * 8) / 1000000000;
+    return ((double)bytes * 8) / 1'000'000'000;
 }
 
 aws_byte_cursor toCursor(string_view src)
@@ -95,10 +95,10 @@ aws_byte_cursor toCursor(string_view src)
 // struct for a benchmark config, loaded from JSON
 struct BenchmarkConfig
 {
-    int maxRepeatCount = 100;
-    int maxRepeatSecs = 600;
-    aws_s3_checksum_algorithm checksum = AWS_SCA_CRC32;
-    bool filesOnDisk = true;
+    int maxRepeatCount;
+    int maxRepeatSecs;
+    aws_s3_checksum_algorithm checksum;
+    bool filesOnDisk;
     vector<TaskConfig> tasks;
 
     static BenchmarkConfig fromJson(const string &jsonFilepath);
@@ -110,7 +110,7 @@ struct TaskConfig
 {
     string action;
     string key;
-    uint64_t size = 0;
+    uint64_t size;
 };
 
 // A runnable task
@@ -189,23 +189,26 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
     if (version > 1)
         skip("config version not supported");
 
-    if (json.contains("maxRepeatCount"))
-        config.maxRepeatCount = json["maxRepeatCount"];
+    config.maxRepeatCount = json.value("maxRepeatCount", 100);
+    config.maxRepeatSecs = json.value("maxRepeatSecs", 600);
 
-    if (json.contains("maxRepeatSecs"))
-        config.maxRepeatSecs = json["maxRepeatSecs"];
-
+    config.checksum = AWS_SCA_NONE;
     if (json.contains("checksum") && !json["checksum"].is_null())
     {
-        string checksum = json["checksum"];
-        if (checksum == "crc32")
+        string checksumStr = json["checksum"];
+        if (checksumStr == "CRC32")
             config.checksum = AWS_SCA_CRC32;
+        else if (checksumStr == "CRC32C")
+            config.checksum = AWS_SCA_CRC32C;
+        else if (checksumStr == "SHA1")
+            config.checksum = AWS_SCA_SHA1;
+        else if (checksumStr == "SHA256")
+            config.checksum = AWS_SCA_SHA256;
         else
-            fail(string("Unknown checksum: ") + checksum);
+            fail(string("Unknown checksum: ") + checksumStr);
     }
 
-    if (json.contains("filesOnDisk"))
-        config.filesOnDisk = json["filesOnDisk"];
+    config.filesOnDisk = json.value("filesOnDisk", true);
 
     for (auto &&taskJson : json["tasks"])
     {
@@ -222,12 +225,12 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
             fail(string("invalid size: ") + string(sizeStr));
 
         task.size = stoull(sizeMatch[1]);
-        string sizeType = sizeMatch[2];
-        if (sizeType == "KiB")
+        string sizeUnit = sizeMatch[2];
+        if (sizeUnit == "KiB")
             task.size = bytesFromKiB(task.size);
-        else if (sizeType == "MiB")
+        else if (sizeUnit == "MiB")
             task.size = bytesFromMiB(task.size);
-        else if (sizeType == "GiB")
+        else if (sizeUnit == "GiB")
             task.size = bytesFromGiB(task.size);
     }
 

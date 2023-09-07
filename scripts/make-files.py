@@ -15,7 +15,7 @@ PARSER = argparse.ArgumentParser(
     description='Create files (on disk, and in S3 bucket) needed to run the benchmarks')
 PARSER.add_argument(
     '--bucket', required=True,
-    help='S3 bucket name')
+    help='S3 bucket (will be created if necessary)')
 PARSER.add_argument(
     '--region', required=True,
     help='AWS region (e.g. us-west-2)')
@@ -88,8 +88,25 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
     files_on_disk = benchmark['filesOnDisk']
 
     for task_info in benchmark['tasks']:
-        key = task_info['key']
+
         action = task_info['action']
+        if not action in ('upload', 'download'):
+            raise Exception(f'Unknown action: {action}')
+
+        key = task_info['key']
+
+        # we require uploads to use a key prefixed with "upload/"
+        # so we can set a bucket lifetime policy to expire these files automatically
+        # so we don't waste money storing files forever that we'll never download
+        if action == 'upload':
+            if not key.startswith('upload/'):
+                raise Exception(
+                    f'Bad key: "{key}". Uploads must use "upload/" prefix')
+        else:
+            if key.startswith('upload/'):
+                raise Exception(
+                    f'Bad key: "{key}". Only uploads should use "upload/" prefix')
+
         size = size_from_str(task_info['size'])
 
         checksum = task_info.get('checksum')
@@ -99,9 +116,6 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
         if key in all_tasks:
             # there's an existing task, check for clashes
             existing_task = all_tasks[key]
-
-            if not action in ('upload', 'download'):
-                raise Exception(f'Unknown action: {action}')
 
             # forbid same key for upload and download.
             # we don't want a failed download messing with our next upload.
@@ -177,8 +191,12 @@ def prep_bucket(s3, bucket: str, region: str):
                     'Filter': {'Prefix': ''},  # blank string means all
                     'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
                 },
-                # TODO: delete files uploaded by benchmarks after 1 day?
-                # we'd probably want to enforce some prefix like "upload/"
+                {
+                    'ID': 'Objects under "upload/" expire after 1 day',
+                    'Status': 'Enabled',
+                    'Filter': {'Prefix': 'upload/'},
+                    'Expiration': {'Days': 1},
+                },
             ]})
 
 

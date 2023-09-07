@@ -429,7 +429,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         }
     }
     else
-        fail(string("Unknown task type: ") + config.action);
+        fail(string("Unknown task action: ") + config.action);
 
     aws_s3_checksum_config checksumConfig;
     AWS_ZERO_STRUCT(checksumConfig);

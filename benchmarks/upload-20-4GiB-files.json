@@ -22,6 +22,5 @@
         {"action": "upload", "key": "upload/4GiB/18", "size": "4GiB"},
         {"action": "upload", "key": "upload/4GiB/19", "size": "4GiB"},
         {"action": "upload", "key": "upload/4GiB/20", "size": "4GiB"}
-
     ]
 }

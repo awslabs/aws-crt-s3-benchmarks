@@ -297,6 +297,10 @@ def prep_task(task: Task, files_dir: Path, s3, bucket: str):
         tmp_dir = files_dir.joinpath('tmp')
         prep_file_in_s3(task, s3, bucket, tmp_dir)
 
+        if task.on_disk:
+            # create local dir, for benchmark to save into
+            files_dir.joinpath(task.key).parent.mkdir(parents=True, exist_ok=True)
+
     else:
         raise Exception(f'Unknown action: {task.action}')
 

@@ -1,0 +1,8 @@
+{
+    "version": 1,
+    "description": "Download 1 4GiB file to disk",
+    "filesOnDisk": true,
+    "tasks": [
+        {"action": "download", "key": "4GiB/1", "size": "4GiB"}
+    ]
+}

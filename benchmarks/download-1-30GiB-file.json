@@ -2,6 +2,6 @@
     "version": 1,
     "filesOnDisk": true,
     "tasks": [
-        {"action": "download", "key": "30GiB/1", "size": "30GiB"}
+        {"action": "download", "key": "download/30GiB/1", "size": "30GiB"}
     ]
 }

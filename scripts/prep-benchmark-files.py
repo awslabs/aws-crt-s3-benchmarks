@@ -222,7 +222,7 @@ def prep_file_on_disk(filepath: Path, size: int, quiet=False):
 
     # create file
     # using shell commands for speed, and to avoid allocating enormous buffers in python
-    _print_status(f'creating file')
+    _print_status(f'creating file...')
     cmd = ['head', '-c', str(size), '/dev/urandom', '>', str(filepath)]
     cmd_str = subprocess.list2cmdline(cmd)
     if os.system(cmd_str) != 0:
@@ -312,7 +312,7 @@ if __name__ == '__main__':
                 exit(f'benchmark not found: {str(benchmark)}')
     else:
         benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-        benchmarks = benchmarks_dir.glob('*.json')
+        benchmarks = sorted(benchmarks_dir.glob('*.json'))
         if not benchmarks:
             exit(f'no benchmark files found !?!')
 
@@ -327,7 +327,7 @@ if __name__ == '__main__':
 
     # gather tasks from all benchmarks
     all_tasks: dict[str, Task] = {}
-    for benchmark in sorted(benchmarks):
+    for benchmark in benchmarks:
         try:
             gather_tasks(benchmark, all_tasks)
         except Exception as e:

@@ -24,11 +24,16 @@ parser.add_argument(
     'By default, everything in benchmarks/ is run.')
 args = parser.parse_args()
 
-benchmarks = [Path(x) for x in args.benchmark]
-if not benchmarks:
+if args.benchmark:
+    benchmarks = [Path(x) for x in args.benchmark]
+    for benchmark in benchmarks:
+        if not benchmark.exists():
+            exit(f'benchmark not found: {str(benchmark)}')
+else:
     benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-    benchmarks = benchmarks_dir.glob('*.json')
-    assert len(benchmarks) > 0
+    benchmarks = sorted(benchmarks_dir.glob('*.json'))
+    if not benchmarks:
+        exit(f'no benchmark files found !?!')
 
 for benchmark in benchmarks:
     if not benchmark.exists():

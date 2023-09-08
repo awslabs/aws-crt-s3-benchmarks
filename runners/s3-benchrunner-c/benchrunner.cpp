@@ -189,7 +189,7 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
     if (version > 1)
         skip("config version not supported");
 
-    config.maxRepeatCount = json.value("maxRepeatCount", 100);
+    config.maxRepeatCount = json.value("maxRepeatCount", 10);
     config.maxRepeatSecs = json.value("maxRepeatSecs", 600);
 
     config.checksum = AWS_SCA_NONE;

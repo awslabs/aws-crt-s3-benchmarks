@@ -1,6 +1,5 @@
 {
     "version": 1,
-    "description": "Upload 1 30GiB file from disk",
     "filesOnDisk": true,
     "tasks": [
         {"action": "upload", "key": "upload/30GiB/1", "size": "30GiB"}

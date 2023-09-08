@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "description": "Find the upper bound of network I/O. Don't do anything that might slow us down, like touch the disk",
+    "description": "Find the limits of network I/O. Don't do anything that might slow us down, like touch the disk",
     "checksum": null,
     "filesOnDisk": false,
     "tasks": [

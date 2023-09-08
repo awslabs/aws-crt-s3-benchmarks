@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "filesOnDisk": true,
+    "tasks": [
+        {"action": "upload", "key": "upload/4GiB/1", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/2", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/3", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/4", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/5", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/6", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/7", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/8", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/9", "size": "4GiB"},
+        {"action": "upload", "key": "upload/4GiB/10", "size": "4GiB"}
+    ]
+}

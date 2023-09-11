@@ -314,7 +314,7 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     if (config.filesOnDisk) {
         s3ClientConfig.enable_read_backpressure = true;
         /* 256MiB is Java Transfer Mgr v2 default.
-         * TODO: Investigate. At time of writing, this noticably impacts performance. */
+         * TODO: Investigate. At time of writing, this noticeably impacts performance. */
         s3ClientConfig.initial_read_window = bytesFromMiB(256);
     }
 

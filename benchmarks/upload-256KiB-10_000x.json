@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "filesOnDisk": true,
+    "comment": "Use case is an AI company with millions of JPGs",
     "tasks": [
         {"action": "upload", "key": "upload/256KiB/1", "size": "256KiB"},
         {"action": "upload", "key": "upload/256KiB/2", "size": "256KiB"},

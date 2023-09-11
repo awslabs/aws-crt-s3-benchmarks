@@ -75,7 +75,7 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
         benchmark = json.load(f)
 
     # whether the benchmark will use files on disk
-    files_on_disk = benchmark['filesOnDisk']
+    files_on_disk = benchmark.get('filesOnDisk', True)
 
     for task_info in benchmark['tasks']:
 

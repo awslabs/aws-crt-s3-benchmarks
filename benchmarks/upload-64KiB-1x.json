@@ -1,0 +1,6 @@
+{
+    "version": 1,
+    "tasks": [
+        {"action": "upload", "key": "upload/64KiB/1", "size": "64KiB"}
+    ]
+}

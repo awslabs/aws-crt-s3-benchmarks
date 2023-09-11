@@ -2,10 +2,13 @@
 import argparse
 import botocore
 import boto3
+import concurrent.futures
 from dataclasses import dataclass
+import io
 import json
 import os
 from pathlib import Path
+import random
 import re
 import subprocess
 import time
@@ -60,19 +63,6 @@ def size_from_str(size_str: str) -> int:
     else:
         raise Exception(
             f'Illegal size "{size_str}". Expected something like "1KiB"')
-
-
-def get_checksum_str_from_head_object_response(head_object_response):
-    """Return checksum algorithm name, given response from s3.head_object()"""
-    if 'ChecksumCRC32' in head_object_response:
-        return 'CRC32'
-    if 'ChecksumCRC32C' in head_object_response:
-        return 'CRC32C'
-    if 'ChecksumSHA1' in head_object_response:
-        return 'SHA1'
-    if 'ChecksumSHA256' in head_object_response:
-        return 'SHA256'
-    return None
 
 
 def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
@@ -200,7 +190,45 @@ def prep_bucket(s3, bucket: str, region: str):
             ]})
 
 
-def prep_file_on_disk(filepath: Path, size: int, quiet=False):
+@dataclass
+class ExistingS3Object:
+    key: str
+    size: int
+    checksum: Optional[str]  # checksum algorithms
+
+
+def get_existing_s3_objects(s3, bucket: str) -> dict[str, ExistingS3Object]:
+    """Get info on existing objects, so we can skip uploading ones that already exist."""
+    def _print_status(msg):
+        print(f's3://{bucket}: {msg}')
+
+    _print_status(f'Checking existing objects...')
+    existing_objects: dict[str, ExistingS3Object] = {}
+
+    # list_objects_v2() is paginated, call in loop until we have all the data
+    prev_response = None
+    while prev_response is None or prev_response['IsTruncated'] is True:
+        request_kwargs = {
+            'Bucket': bucket,
+        }
+        if prev_response:
+            request_kwargs['ContinuationToken'] = prev_response['NextContinuationToken']
+
+        response = s3.list_objects_v2(**request_kwargs)
+
+        for obj in response['Contents']:
+            key = obj['Key']
+            size = obj['Size']
+            checksum_algorithm_list = obj.get('ChecksumAlgorithm')
+            checksum = checksum_algorithm_list[0] if checksum_algorithm_list else None
+            existing_objects[key] = ExistingS3Object(key, size, checksum)
+
+        prev_response = response
+
+    return existing_objects
+
+
+def prep_file_on_disk(filepath: Path, size: int):
     """Create file on disk, if it doesn't already exist"""
     def _print_status(msg):
         print(f'file://{str(filepath)}: {msg}')
@@ -208,8 +236,6 @@ def prep_file_on_disk(filepath: Path, size: int, quiet=False):
     if filepath.exists():
         # if the file already exists, there's no work to do
         if filepath.stat().st_size == size:
-            if not quiet:
-                _print_status('✓ file already exists')
             return
         else:
             # file exists, but's it's the wrong size, delete it
@@ -229,35 +255,78 @@ def prep_file_on_disk(filepath: Path, size: int, quiet=False):
         raise Exception(f'Failed running: {cmd_str}')
 
 
-def prep_file_in_s3(task: Task, s3, bucket: str, tmp_dir: Path):
+class RandomFileStream(io.RawIOBase):
+    """
+    File-like object used to upload random bytes.
+    Use seeded random number generator (RNG) so we can regenerate the same
+    contents again after a seek.
+    """
+
+    def __init__(self, task):
+        super().__init__()
+        self._task = task
+        self._pos = 0
+        # seed random number generator with key
+        self._rng = random.Random(task.key)
+        self._rng_pos = 0
+
+    def readinto(self, b):
+        assert self._pos >= 0 and self._pos <= self._task.size
+
+        # if seek happened, reset generator and get back to current position
+        if self._rng_pos != self._pos:
+            self._rng = random.Random(self._task.key)
+            self._rng_pos = self._pos
+            if self._rng_pos > 0:
+                self._rng.randbytes(self._rng_pos)
+
+        # figure out amount to read
+        remaining = self._task.size - self._pos
+        amount = min(remaining, len(b))
+
+        if amount > 0:
+            b[:] = self._rng.randbytes(amount)
+            self._pos += amount
+            self._rng_pos += amount
+
+        return amount
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def seek(self, pos, whence=0):
+        if whence == os.SEEK_SET:
+            self._pos = pos
+        elif whence == os.SEEK_CUR:
+            self._pos += pos
+        elif whence == os.SEEK_END:
+            self._pos = self._task.size + pos
+
+        return self._pos
+
+
+def prep_file_in_s3(task: Task, s3, bucket: str, existing_s3_objects: dict[str, ExistingS3Object]):
     """Upload file to S3, if it doesn't already exist"""
     def _print_status(msg):
         print(f's3://{bucket}/{task.key}: {msg}')
 
-    try:
-        response = s3.head_object(Bucket=bucket, Key=task.key)
+    if task.key in existing_s3_objects:
+        existing = existing_s3_objects[task.key]
         # file already exists
         # if it's the right size etc, then we can skip the upload
-        if response['ContentLength'] != task.size:
+        if existing.size != task.size:
             _print_status('re-uploading due to size mismatch')
-        elif get_checksum_str_from_head_object_response(response) != task.checksum:
+        elif existing.checksum != task.checksum:
             _print_status('re-uploading due to checksum mismatch')
         else:
             # return early, file already exists
-            _print_status('✓ object already exists')
             return
 
-    except botocore.exceptions.ClientError as e:
-        # 404 Not Found is expected
-        if e.response['Error']['Code'] != '404':
-            raise e
-
-    # OK, we need to upload.
-    # first, create a tmp file on disk
-    # just name it after the size to maximize the chance we can re-use it
-    tmp_filepath = tmp_dir.joinpath(f'{task.size}-bytes')
-    prep_file_on_disk(tmp_filepath, task.size, quiet=True)
-
+    # upload fake file stream with random contents
+    file_stream = RandomFileStream(task)
     _print_status('uploading...')
     extra_args = {}
     if task.checksum:
@@ -277,13 +346,18 @@ def prep_file_in_s3(task: Task, s3, bucket: str, tmp_dir: Path):
             progress_timestamp = latest_timestamp
             ratio = progress_bytes / task.size
             percent = int(ratio * 100)
-            print(f'{percent}%')
+            _print_status(f'{percent}% uploaded...')
 
-    s3.upload_file(str(tmp_filepath), bucket, task.key,
-                   extra_args, _progress_callback)
+    s3.upload_fileobj(
+        file_stream,
+        bucket,
+        task.key,
+        extra_args,
+        _progress_callback,
+    )
 
 
-def prep_task(task: Task, files_dir: Path, s3, bucket: str):
+def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects: dict[str, ExistingS3Object]):
     """
     Prepare task (e.g. upload file, or create it on disk).
     """
@@ -294,12 +368,12 @@ def prep_task(task: Task, files_dir: Path, s3, bucket: str):
 
     elif task.action == 'download':
         # create file in S3, so benchmark can download it
-        tmp_dir = files_dir.joinpath('tmp')
-        prep_file_in_s3(task, s3, bucket, tmp_dir)
+        prep_file_in_s3(task, s3, bucket, existing_s3_objects)
 
         if task.on_disk:
             # create local dir, for benchmark to save into
-            files_dir.joinpath(task.key).parent.mkdir(parents=True, exist_ok=True)
+            parent_dir = files_dir.joinpath(task.key).parent
+            parent_dir.mkdir(parents=True, exist_ok=True)
 
     else:
         raise Exception(f'Unknown action: {task.action}')
@@ -325,6 +399,9 @@ if __name__ == '__main__':
     # prep bucket
     prep_bucket(s3, args.bucket, args.region)
 
+    # gather existing files in bucket
+    existing_s3_objects = get_existing_s3_objects(s3, args.bucket)
+
     # prep files_dir
     files_dir = Path(args.files_dir).resolve()  # normalize path
     files_dir.mkdir(parents=True, exist_ok=True)
@@ -338,11 +415,20 @@ if __name__ == '__main__':
             print(f'Failure while processing: {str(benchmark)}')
             raise e
 
-    # prep tasks from all benchmarks
-    for key, task in all_tasks.items():
-        try:
-            prep_task(task, files_dir, s3, args.bucket)
-        except Exception as e:
-            print(
-                f'Failure while processing "{key}" from: {str(task.first_benchmark_file)}')
-            raise e
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # use thread-pool to prepare all tasks
+        future_to_task = {}
+        for key, task in all_tasks.items():
+            future = executor.submit(
+                prep_task, task, files_dir, s3, args.bucket, existing_s3_objects)
+            future_to_task[future] = task
+
+        # wait for each prep to complete, and ensure it was successful
+        for future in concurrent.futures.as_completed(future_to_task):
+            try:
+                future.result()
+            except Exception as e:
+                task = future_to_task[future]
+                print(
+                    f'Failure while processing "{task.key}" from: {str(task.first_benchmark_file)}')
+                raise e

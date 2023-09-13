@@ -313,8 +313,8 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     // data faster than we can write it to disk.
     if (config.filesOnDisk) {
         s3ClientConfig.enable_read_backpressure = true;
-        /* 256MiB is Java Transfer Mgr v2 default.
-         * TODO: Investigate. At time of writing, this noticeably impacts performance. */
+        // 256MiB is Java Transfer Mgr v2 default.
+        // TODO: Investigate. At time of writing, this noticeably impacts performance.
         s3ClientConfig.initial_read_window = bytesFromMiB(256);
     }
 
@@ -506,7 +506,7 @@ int Task::onDownloadData(struct aws_s3_meta_request *meta_request,
     size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
     AWS_FATAL_ASSERT(written == body->len);
 
-    /* Increment read window so data will continue downloading */
+    // Increment read window so data will continue downloading
     aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
@@ -535,7 +535,7 @@ int main(int argc, char *argv[])
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
-        printf("Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%0.1f GiB/s:%0.1f MiB/s:%0.1f\n",
+        printf("Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
                runI + 1,
                runSecs,
                bytesToGigabit(bytesPerRun) / runSecs,

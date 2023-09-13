@@ -189,7 +189,7 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
     if (version > 1)
         skip("config version not supported");
 
-    config.maxRepeatCount = json.value("maxRepeatCount", 100);
+    config.maxRepeatCount = json.value("maxRepeatCount", 10);
     config.maxRepeatSecs = json.value("maxRepeatSecs", 600);
 
     config.checksum = AWS_SCA_NONE;
@@ -307,6 +307,16 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     s3ClientConfig.signing_config = &signingConfig;
     s3ClientConfig.part_size = bytesFromMiB(8);
     s3ClientConfig.throughput_target_gbps = targetThroughputGbps;
+
+    // If writing data to disk, enable backpressure.
+    // This prevents us from running out of memory due to downloading
+    // data faster than we can write it to disk.
+    if (config.filesOnDisk) {
+        s3ClientConfig.enable_read_backpressure = true;
+        /* 256MiB is Java Transfer Mgr v2 default.
+         * TODO: Investigate. At time of writing, this noticeably impacts performance. */
+        s3ClientConfig.initial_read_window = bytesFromMiB(256);
+    }
 
     // struct aws_http_connection_monitoring_options httpMonitoringOpts;
     // AWS_ZERO_STRUCT(httpMonitoringOpts);
@@ -493,9 +503,11 @@ int Task::onDownloadData(struct aws_s3_meta_request *meta_request,
 {
     auto *task = static_cast<Task *>(user_data);
 
-    // TODO: adjust read window
     size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
     AWS_FATAL_ASSERT(written == body->len);
+
+    /* Increment read window so data will continue downloading */
+    aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
 }

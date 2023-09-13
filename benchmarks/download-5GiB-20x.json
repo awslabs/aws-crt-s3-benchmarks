@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "tasks": [
+        {"action": "download", "key": "download/5GiB/1", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/2", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/3", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/4", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/5", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/6", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/7", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/8", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/9", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/10", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/11", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/12", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/13", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/14", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/15", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/16", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/17", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/18", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/19", "size": "5GiB"},
+        {"action": "download", "key": "download/5GiB/20", "size": "5GiB"}
+    ]
+}

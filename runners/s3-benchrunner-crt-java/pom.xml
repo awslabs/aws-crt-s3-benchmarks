@@ -9,8 +9,8 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <!-- build with -Dawscrt.version=1.0.0-SNAPSHOT to use installed dev version -->
-    <awscrt.version>0.26.1</awscrt.version>
+    <!-- build with -Dawscrt.version=1.0.0-SNAPSHOT to use the locally installed dev version) -->
+    <awscrt.version>[0.26,)</awscrt.version>
 
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

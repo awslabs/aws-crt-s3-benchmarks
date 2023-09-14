@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+import argparse
+import os
+from pathlib import Path
+import subprocess
+
+ARG_PARSER = argparse.ArgumentParser(
+    description='Build runner and its dependencies',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+ARG_PARSER.add_argument(
+    '--branch', default='main',
+    help='Git branch/commit/tag to use when pulling dependencies.')
+ARG_PARSER.add_argument(
+    '--build-dir', required=True,
+    help='Root dir for build artifacts')
+
+
+def run(cmd_args: list[str]):
+    if not try_run(cmd_args):
+        exit(f'FAILED: {subprocess.list2cmdline(cmd_args)}')
+
+
+def try_run(cmd_args: list[str]):
+    print(f'> {subprocess.list2cmdline(cmd_args)}')
+    result = subprocess.run(cmd_args)
+    return result.returncode == 0
+
+
+def fetch_dep(work_dir: Path, repository: str, branch: str) -> Path:
+    """
+    Fetch git repo to live in work_dir.
+    Returns its location.
+    """
+
+    # extract dep name from repository URL
+    # i.e. "https://github.com/awslabs/aws-crt-java.git" -> "aws-crt-java"
+    dep_name = repository.split('/')[-1].split('.git')[0]
+
+    dep_dir = work_dir.joinpath(dep_name)
+
+    # git clone (if necessary)
+    os.chdir(str(work_dir))
+    if not dep_dir.exists():
+        run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
+
+    # git checkout branch, but if it doesn't exist use main
+    os.chdir(str(dep_dir))
+    if not try_run(['git', 'checkout', branch]):
+        run(['git', 'checkout', 'main'])
+
+    # git pull (in case repo was already there without latest commits)
+    run(['git', 'pull'])
+
+    # update submodules (if necessary)
+    run(['git', 'submodule', 'update', '--init'])
+    return dep_dir
+
+
+def main(work_dir: Path, branch: str):
+    work_dir = work_dir.resolve()  # normalize path
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
+    awscrt_repo = 'https://github.com/awslabs/aws-crt-java.git'
+    awscrt_src = fetch_dep(work_dir, awscrt_repo, branch)
+    os.chdir(str(awscrt_src))
+    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())  # for faster C compilation
+    run(['mvn', 'install', '-Dmaven.test.skip'])
+
+    # build runner
+    runner_src = Path(__file__).parent.parent
+    os.chdir(str(runner_src))
+    run(['mvn',
+         'package',  # package along with dependencies in executable uber-java
+         '-Dawscrt.version=1.0.0-SNAPSHOT',  # use locally installed version of aws-crt-java
+         ])
+    uberjar_path = runner_src.joinpath('target/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar')
+
+    # finally, print command for executing the runner
+    runner_cmd = ['java', '-jar', str(uberjar_path)]
+    print(subprocess.list2cmdline(runner_cmd))
+
+
+if __name__ == '__main__':
+    args = ARG_PARSER.parse_args()
+    main(Path(args.build_dir), args.branch)

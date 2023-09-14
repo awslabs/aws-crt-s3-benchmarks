@@ -47,8 +47,11 @@ class BenchmarkConfig {
 
         config.filesOnDisk = (boolean) json.getOrDefault("filesOnDisk", true);
 
-        config.tasks = new ArrayList<TaskConfig>();
-        for (Map<String, Object> taskJson : (List<Map<String, Object>>) json.get("tasks")) {
+        config.tasks = new ArrayList<>();
+
+        @SuppressWarnings("unchecked")
+        var tasksJson = (List<Map<String, Object>>) json.get("tasks");
+        for (Map<String, Object> taskJson : tasksJson) {
             var task = new TaskConfig();
 
             task.action = (String) taskJson.get("action");
@@ -65,19 +68,12 @@ class BenchmarkConfig {
             task.size = Long.parseLong(sizeMatch.group(1));
             var sizeUnit = sizeMatch.group(2);
             switch (sizeUnit) {
-                case "KiB":
-                    task.size = Util.bytesFromKiB(task.size);
-                    break;
-                case "MiB":
-                    task.size = Util.bytesFromMiB(task.size);
-                    break;
-                case "GiB":
-                    task.size = Util.bytesFromGiB(task.size);
-                    break;
-                case "":
-                    break;
-                default:
-                    throw new RuntimeException("Invalid size unit:" + sizeUnit);
+                case "KiB" -> task.size = Util.bytesFromKiB(task.size);
+                case "MiB" -> task.size = Util.bytesFromMiB(task.size);
+                case "GiB" -> task.size = Util.bytesFromGiB(task.size);
+                case "" -> {
+                }
+                default -> throw new RuntimeException("Invalid size unit:" + sizeUnit);
             }
 
             config.tasks.add(task);

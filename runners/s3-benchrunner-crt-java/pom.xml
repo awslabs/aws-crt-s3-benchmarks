@@ -16,8 +16,22 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>snapshot</id>
+      <properties>
+        <awscrt.version>1.0.0-SNAPSHOT</awscrt.version>
+      </properties>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+      </plugin>
       <plugin>
         <!-- shade plugin packages dependencies into uber-jar -->
         <groupId>org.apache.maven.plugins</groupId>

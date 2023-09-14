@@ -62,7 +62,7 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     return dep_dir
 
 
-def build(work_dir: Path, src_dir: str):
+def build(work_dir: Path, src_dir: Path):
     """
     Build CMake project
     """
@@ -79,7 +79,7 @@ def build(work_dir: Path, src_dir: str):
 
     build_cmd = ['cmake',
                  '--build', str(build_dir),
-                 '--parallel',
+                 '--parallel', str(os.cpu_count()),
                  '--target', 'install',
                  ]
 
@@ -111,6 +111,7 @@ def main(work_dir: Path, branch: str):
     build(work_dir, runner_src)
 
     # finally, print command for executing the runner
+    print("------ runner-cmd ------")
     runner_cmd = str(work_dir.joinpath('install/bin/s3-benchrunner-c'))
     print(runner_cmd)
 

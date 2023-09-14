@@ -4,6 +4,8 @@ This project is for benchmarking different S3 workloads using various languages 
 
 It contains simple apps that can be run locally, and automation to run them on different EC2 instance types.
 
+See [runners](runners/) for instructions on running benchmarks.
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.

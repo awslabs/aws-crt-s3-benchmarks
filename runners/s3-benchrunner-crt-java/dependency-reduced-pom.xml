@@ -31,6 +31,14 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>snapshot</id>
+      <properties>
+        <awscrt.version>1.0.0-SNAPSHOT</awscrt.version>
+      </properties>
+    </profile>
+  </profiles>
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <awscrt.version>[0.26,)</awscrt.version>

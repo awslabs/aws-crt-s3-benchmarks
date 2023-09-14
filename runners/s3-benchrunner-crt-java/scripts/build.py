@@ -56,28 +56,47 @@ def fetch_dep(work_dir: Path, repository: str, branch: str) -> Path:
     return dep_dir
 
 
+def build_aws_crt_java(work_dir: Path, branch: str):
+    """fetch latest aws-crt-java and install 1.0.0-SNAPSHOT"""
+
+    awscrt_repo = 'https://github.com/awslabs/aws-crt-java.git'
+    awscrt_src = fetch_dep(work_dir, awscrt_repo, branch)
+    os.chdir(str(awscrt_src))
+
+    # for faster C compilation
+    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
+
+    run(['mvn', 'install', '-Dmaven.test.skip'])
+
+
+def build_runner() -> Path:
+    """
+    Build s3-benchrunner-crt-java.
+    Returns path to the runner uber-jar.
+    """
+    runner_src = Path(__file__).parent.parent
+    os.chdir(str(runner_src))
+    run(['mvn',
+         # package along with dependencies in executable uber-java
+         'package',
+         # use locally installed version of aws-crt-java
+         '--activate-profiles', 'snapshot',
+         ])
+
+    return runner_src.joinpath('target/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar')
+
+
 def main(work_dir: Path, branch: str):
     work_dir = work_dir.resolve()  # normalize path
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
-    awscrt_repo = 'https://github.com/awslabs/aws-crt-java.git'
-    awscrt_src = fetch_dep(work_dir, awscrt_repo, branch)
-    os.chdir(str(awscrt_src))
-    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())  # for faster C compilation
-    run(['mvn', 'install', '-Dmaven.test.skip'])
+    build_aws_crt_java(work_dir, branch)
 
-    # build runner
-    runner_src = Path(__file__).parent.parent
-    os.chdir(str(runner_src))
-    run(['mvn',
-         'package',  # package along with dependencies in executable uber-java
-         '-Dawscrt.version=1.0.0-SNAPSHOT',  # use locally installed version of aws-crt-java
-         ])
-    uberjar_path = runner_src.joinpath('target/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar')
+    runner_jar = build_runner()
 
     # finally, print command for executing the runner
-    runner_cmd = ['java', '-jar', str(uberjar_path)]
+    print("------ runner-cmd ------")
+    runner_cmd = ['java', '-jar', str(runner_jar)]
     print(subprocess.list2cmdline(runner_cmd))
 
 

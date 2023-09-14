@@ -58,9 +58,7 @@ class Benchmark {
         // data faster than we can write it to disk.
         if (config.filesOnDisk) {
             s3ClientOpts.withReadBackpressureEnabled(true);
-            // 256MiB is Java Transfer Mgr v2 default.
-            // TODO: Investigate. At time of writing, this noticeably impacts performance.
-            s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(256));
+            s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         }
 
         s3Client = new S3Client(s3ClientOpts);

@@ -1,6 +1,15 @@
 package com.example.s3benchrunner.crtjava;
 
 public class Main {
+
+    /////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
+
+    // 256MiB is Java Transfer Mgr v2 default.
+    // TODO: Investigate. At time of writing, this noticeably impacts performance.
+    static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 256;
+
+    /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
+
     public static void main(String[] args) {
         if (args.length != 4) {
             throw new RuntimeException("expected args: <config.json> <bucket> <region> <target-throughput-Gbps>");

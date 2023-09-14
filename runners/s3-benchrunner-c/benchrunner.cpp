@@ -28,6 +28,14 @@ using json = nlohmann::json;
 struct TaskConfig;
 class Benchmark;
 
+/////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
+
+// 256MiB is Java Transfer Mgr V2's default
+// TODO: Investigate. At time of writing, this noticeably impacts performance.
+#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
+
+/////////////// END ARBITRARY HARD-CODED VALUES ///////////////
+
 // exit due to failure
 [[noreturn]] void fail(string_view msg)
 {
@@ -311,11 +319,10 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     // If writing data to disk, enable backpressure.
     // This prevents us from running out of memory due to downloading
     // data faster than we can write it to disk.
-    if (config.filesOnDisk) {
+    if (config.filesOnDisk)
+    {
         s3ClientConfig.enable_read_backpressure = true;
-        // 256MiB is Java Transfer Mgr v2 default.
-        // TODO: Investigate. At time of writing, this noticeably impacts performance.
-        s3ClientConfig.initial_read_window = bytesFromMiB(256);
+        s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
     }
 
     // struct aws_http_connection_monitoring_options httpMonitoringOpts;

@@ -7,6 +7,10 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.5.0</version>
         <executions>
@@ -29,7 +33,7 @@
   </build>
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
-    <awscrt.version>0.26.1</awscrt.version>
+    <awscrt.version>[0.26,)</awscrt.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>

@@ -6,7 +6,6 @@
 #include <future>
 #include <list>
 #include <random>
-#include <regex>
 #include <thread>
 
 #include <aws/auth/credentials.h>
@@ -194,14 +193,14 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
         fail(string("Couldn't parse JSON: ") + string(jsonFilepath));
 
     int version = json["version"];
-    if (version > 1)
+    if (version != 2)
         skip("config version not supported");
 
-    config.maxRepeatCount = json.value("maxRepeatCount", 10);
-    config.maxRepeatSecs = json.value("maxRepeatSecs", 600);
+    config.maxRepeatCount = json["maxRepeatCount"];
+    config.maxRepeatSecs = json["maxRepeatSecs"];
 
     config.checksum = AWS_SCA_NONE;
-    if (json.contains("checksum") && !json["checksum"].is_null())
+    if (!json["checksum"].is_null())
     {
         string checksumStr = json["checksum"];
         if (checksumStr == "CRC32")
@@ -216,30 +215,14 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
             fail(string("Unknown checksum: ") + checksumStr);
     }
 
-    config.filesOnDisk = json.value("filesOnDisk", true);
+    config.filesOnDisk = json["filesOnDisk"];
 
     for (auto &&taskJson : json["tasks"])
     {
         auto &task = config.tasks.emplace_back();
-
         task.action = taskJson["action"];
         task.key = taskJson["key"];
-
-        // size looks like "5GiB" or "10KiB" or "1" (bytes)
-        string sizeStr = taskJson["size"];
-        regex sizeRegex("^([0-9]+)(GiB|MiB|KiB|)$");
-        cmatch sizeMatch;
-        if (!regex_match(sizeStr.c_str(), sizeMatch, sizeRegex))
-            fail(string("invalid size: ") + string(sizeStr));
-
-        task.size = stoull(sizeMatch[1]);
-        string sizeUnit = sizeMatch[2];
-        if (sizeUnit == "KiB")
-            task.size = bytesFromKiB(task.size);
-        else if (sizeUnit == "MiB")
-            task.size = bytesFromMiB(task.size);
-        else if (sizeUnit == "GiB")
-            task.size = bytesFromGiB(task.size);
+        task.size = taskJson["size"];
     }
 
     return config;

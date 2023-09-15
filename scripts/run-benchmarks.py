@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
+import shlex
 import subprocess
 
 parser = argparse.ArgumentParser(
@@ -39,7 +40,10 @@ for benchmark in benchmarks:
     if not benchmark.exists():
         exit(f'benchmark not found: {str(benchmark)}')
 
-    cmd = args.runner_cmd.split()
+    # split using shell-like syntax,
+    # in case runner-cmd has weird stuff like quotes, spaces, etc
+    cmd = shlex.split(args.runner_cmd)
+
     cmd += [benchmark, args.bucket, args.region, str(args.throughput)]
     print(f'> {subprocess.list2cmdline(cmd)}')
     run = subprocess.run(cmd, text=True)

@@ -58,6 +58,10 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
     # whether the benchmark will use files on disk
     files_on_disk = benchmark['filesOnDisk']
 
+    checksum = benchmark['checksum']
+    if not checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256'):
+        raise Exception(f'Unknown checksum: {checksum}')
+
     for task_info in benchmark['tasks']:
 
         action = task_info['action']
@@ -79,10 +83,6 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
                     f'Bad key: "{key}". Only uploads should use "upload/" prefix')
 
         size = task_info['size']
-
-        checksum = task_info['checksum']
-        if not checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256'):
-            raise Exception(f'Unknown checksum: {checksum}')
 
         if key in all_tasks:
             # there's an existing task, check for clashes

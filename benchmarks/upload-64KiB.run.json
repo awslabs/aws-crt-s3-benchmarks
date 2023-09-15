@@ -1,6 +1,13 @@
 {
     "version": 1,
+    "comment": "",
+    "filesOnDisk": true,
+    "checksum": null,
     "tasks": [
-        {"action": "upload", "key": "upload/64KiB/1", "size": "64KiB"}
+        {
+            "action": "upload",
+            "key": "upload/64KiB/1",
+            "size": 65536
+        }
     ]
 }

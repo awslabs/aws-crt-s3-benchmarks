@@ -1,15 +1,58 @@
 {
     "version": 1,
+    "comment": "",
+    "filesOnDisk": true,
+    "checksum": null,
     "tasks": [
-        {"action": "download", "key": "download/5GiB/1", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/2", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/3", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/4", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/5", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/6", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/7", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/8", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/9", "size": "5GiB"},
-        {"action": "download", "key": "download/5GiB/10", "size": "5GiB"}
+        {
+            "action": "download",
+            "key": "download/5GiB/1",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/2",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/3",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/4",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/5",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/6",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/7",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/8",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/9",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB/10",
+            "size": 5368709120
+        }
     ]
 }

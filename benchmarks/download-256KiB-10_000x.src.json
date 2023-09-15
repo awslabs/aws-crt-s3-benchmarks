@@ -1,0 +1,6 @@
+{
+    "comment": "Use case is an AI company with millions of JPGs",
+    "action": "download",
+    "fileSize": "256KiB",
+    "numFiles": 10000
+}

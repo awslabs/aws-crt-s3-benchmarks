@@ -75,7 +75,7 @@ class Task implements S3MetaRequestResponseHandler {
             throw new RuntimeException("Unknown task action: " + config.action);
         }
 
-        if (benchmark.config.checksum != ChecksumAlgorithm.NONE) {
+        if (benchmark.config.checksum != null) {
             options.withChecksumConfig(new ChecksumConfig()
                     .withChecksumAlgorithm(benchmark.config.checksum)
                     .withChecksumLocation(ChecksumConfig.ChecksumLocation.HEADER)

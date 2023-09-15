@@ -17,7 +17,7 @@ PARSER = argparse.ArgumentParser(
 PARSER.add_argument(
     'src_file', nargs='*',
     help='Benchmark src.json file. ' +
-    'If none specified, builds everything in benchmarks/*.src.json')
+    'If none specified, builds all benchmarks/*.src.json')
 
 
 def size_from_str(size_str: str) -> int:
@@ -68,8 +68,7 @@ def build_benchmark(src_file: Path):
 
     # validation
     assert action in ('download', 'upload')
-    if checksum is not None:
-        assert checksum in ('CRC32', 'CRC32C', 'SHA1', 'SHA256')
+    assert checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256')
 
     # warn if benchmark's name doesn't match its contents
     expected_name = f'{action}-{file_size_str}'

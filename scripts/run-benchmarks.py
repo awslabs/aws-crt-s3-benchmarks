@@ -31,7 +31,7 @@ if args.benchmark:
             exit(f'benchmark not found: {str(benchmark)}')
 else:
     benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-    benchmarks = sorted(benchmarks_dir.glob('*.json'))
+    benchmarks = sorted(benchmarks_dir.glob('*.run.json'))
     if not benchmarks:
         exit(f'no benchmark files found !?!')
 

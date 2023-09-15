@@ -1,8 +1,10 @@
 {
-    "version": 1,
+    "version": 2,
     "comment": "Use case is an AI company with millions of JPGs",
     "filesOnDisk": true,
     "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
     "tasks": [
         {
             "action": "upload",

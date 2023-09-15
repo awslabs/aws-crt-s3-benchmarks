@@ -5,10 +5,12 @@ import json
 import re
 from typing import Optional
 
-VERSION = 1
+VERSION = 2
 DEFAULT_NUM_FILES = 1
 DEFAULT_FILES_ON_DISK = True
 DEFAULT_CHECKSUM = None
+DEFAULT_MAX_REPEAT_COUNT = 10
+DEFAULT_MAX_REPEAT_SECS = 600
 
 PARSER = argparse.ArgumentParser(
     description='Build benchmark *.src.json into *.run.json.')
@@ -61,6 +63,8 @@ def build_benchmark(src_file: Path):
     num_files: int = src_json.get('numFiles', DEFAULT_NUM_FILES)
     files_on_disk: bool = src_json.get('filesOnDisk', DEFAULT_FILES_ON_DISK)
     checksum: Optional[str] = src_json.get('checksum', DEFAULT_CHECKSUM)
+    max_repeat_count = src_json.get('maxRepeatCount', DEFAULT_MAX_REPEAT_COUNT)
+    max_repeat_secs = src_json.get('maxRepeatSecs', DEFAULT_MAX_REPEAT_SECS)
 
     # validation
     assert action in ('download', 'upload')
@@ -90,6 +94,8 @@ def build_benchmark(src_file: Path):
         'comment': comment,
         'filesOnDisk': files_on_disk,
         'checksum': checksum,
+        'maxRepeatCount': max_repeat_count,
+        'maxRepeatSecs': max_repeat_secs,
         'tasks': [],
     }
 

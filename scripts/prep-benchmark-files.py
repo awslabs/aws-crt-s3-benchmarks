@@ -23,12 +23,13 @@ PARSER.add_argument(
     help='AWS region (e.g. us-west-2)')
 PARSER.add_argument(
     '--files-dir', required=True,
-    help='Root directory for files to upload and download')
+    help='Root directory for files to upload and download (e.g. ~/files)')
 PARSER.add_argument(
     '--benchmark', action='append',
-    help='Path to specific benchmark JSON file. ' +
+    help='Path to specific benchmark.run.json file. ' +
     'May be specified multiple times. ' +
-    'By default, prepares all benchmarks/*.run.json')
+    'If not specified, everything in benchmarks/ is prepared ' +
+    '(uploading 100+ GiB to S3 and creating 100+ GiB on disk).')
 
 
 @dataclass

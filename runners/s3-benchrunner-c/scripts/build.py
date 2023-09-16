@@ -111,7 +111,7 @@ def main(work_dir: Path, branch: str):
     build(work_dir, runner_src)
 
     # finally, print command for executing the runner
-    print("------ runner-cmd ------")
+    print("------ RUNNER_CMD ------")
     runner_cmd = str(work_dir.joinpath('install/bin/s3-benchrunner-c'))
     print(runner_cmd)
 

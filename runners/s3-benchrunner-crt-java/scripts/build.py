@@ -95,7 +95,7 @@ def main(work_dir: Path, branch: str):
     runner_jar = build_runner()
 
     # finally, print command for executing the runner
-    print("------ runner-cmd ------")
+    print("------ RUNNER_CMD ------")
     runner_cmd = ['java', '-jar', str(runner_jar)]
     print(subprocess.list2cmdline(runner_cmd))
 

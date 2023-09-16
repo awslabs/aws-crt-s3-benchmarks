@@ -42,7 +42,7 @@ Submissions welcome, I'm bad at Java.
 
 ## Running
 
-If you built the uber-jar via `mvn package`, the `runner-cmd` is:
+If you built the uber-jar via `mvn package`, the `RUNNER_CMD` is:
 
 `java -jar path/to/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar [args...]`
 

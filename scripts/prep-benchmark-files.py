@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import random
-import re
 import subprocess
 import time
 from typing import Optional
@@ -29,7 +28,7 @@ PARSER.add_argument(
     '--benchmark', action='append',
     help='Path to specific benchmark JSON file. ' +
     'May be specified multiple times. ' +
-    'By default, processes everything in benchmarks/*.json')
+    'By default, prepares all benchmarks/*.run.json')
 
 
 @dataclass
@@ -47,24 +46,6 @@ class Task:
     on_disk: bool
 
 
-def size_from_str(size_str: str) -> int:
-    """Return size in bytes, given string like "5GiB" or "10KiB" or "1" (bytes)"""
-    m = re.match(r"(\d+)(KiB|MiB|GiB)?$", size_str)
-    if m:
-        size = int(m.group(1))
-        unit = m.group(2)
-        if unit == "KiB":
-            size *= 1024
-        elif unit == "MiB":
-            size *= 1024 * 1024
-        elif unit == "GiB":
-            size *= 1024 * 1024 * 1024
-        return size
-    else:
-        raise Exception(
-            f'Illegal size "{size_str}". Expected something like "1KiB"')
-
-
 def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
     """
     Update `all_tasks` with new tasks from benchmark file.
@@ -75,7 +56,11 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
         benchmark = json.load(f)
 
     # whether the benchmark will use files on disk
-    files_on_disk = benchmark.get('filesOnDisk', True)
+    files_on_disk = benchmark['filesOnDisk']
+
+    checksum = benchmark['checksum']
+    if not checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256'):
+        raise Exception(f'Unknown checksum: {checksum}')
 
     for task_info in benchmark['tasks']:
 
@@ -97,11 +82,7 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
                 raise Exception(
                     f'Bad key: "{key}". Only uploads should use "upload/" prefix')
 
-        size = size_from_str(task_info['size'])
-
-        checksum = task_info.get('checksum')
-        if not checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256'):
-            raise Exception(f'Unknown checksum: {checksum}')
+        size = task_info['size']
 
         if key in all_tasks:
             # there's an existing task, check for clashes
@@ -390,7 +371,7 @@ if __name__ == '__main__':
                 exit(f'benchmark not found: {str(benchmark)}')
     else:
         benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-        benchmarks = sorted(benchmarks_dir.glob('*.json'))
+        benchmarks = sorted(benchmarks_dir.glob('*.run.json'))
         if not benchmarks:
             exit(f'no benchmark files found !?!')
 

@@ -1,7 +1,0 @@
-{
-    "version": 1,
-    "filesOnDisk": false,
-    "tasks": [
-        {"action": "download", "key": "download/64KiB/1", "size": "64KiB"}
-    ]
-}

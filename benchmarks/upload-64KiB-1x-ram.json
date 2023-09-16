@@ -1,7 +1,0 @@
-{
-    "version": 1,
-    "filesOnDisk": false,
-    "tasks": [
-        {"action": "upload", "key": "upload/64KiB/1", "size": "64KiB"}
-    ]
-}

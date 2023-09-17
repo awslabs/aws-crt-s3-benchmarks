@@ -22,7 +22,7 @@ Then install packages needed by the python scripts:
 python3.9 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 ```
 
-### Prepare S3 files
+### Prepare S3 Files
 
 Next, run this script to create and configure an S3 bucket,
 put files in S3 for benchmarks to download,
@@ -70,7 +70,7 @@ NOTE: Each runner has a `README.md` with more advanced instructions.
 `build.py` isn't meant to handle advanced use cases like tweaking dependencies,
 iterating locally, DEBUG builds, etc.
 
-### Run a benchmark
+### Run a Benchmark
 
 All runners have the same command line interface, and expect to be run from the
 `FILES_DIR` you passed to the [prep-benchmark-files.py](#prepare-s3-files) script.
@@ -95,6 +95,10 @@ Most runners should search for AWS credentials
 
 If you want to run multiple benchmarks (or ALL benchmarks) in one go,
 use this helper script: [run-benchmarks.py](scripts/run-benchmarks.py).
+
+### Authoring New Benchmarks
+
+See [benchmarks/](benchmarks/)
 
 ## Security
 

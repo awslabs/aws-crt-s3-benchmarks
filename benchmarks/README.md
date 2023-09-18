@@ -5,7 +5,7 @@
 We use JSON files to detail each benchmark's workload.
 
 For example, `download-256KiB-10_000x.run.json`:
-```json
+```
 {
     "version": 2,
     "comment": "Use case is an AI company with tons of JPGs",
@@ -17,7 +17,7 @@ For example, `download-256KiB-10_000x.run.json`:
         {"action": "download", "key": "download/256KiB/1", "size": 262144},
         {"action": "download", "key": "download/256KiB/2", "size": 262144},
         {"action": "download", "key": "download/256KiB/3", "size": 262144},
-        // ... etc etc 9994 more lines ...
+        ... etc etc 9994 more lines ...
         {"action": "download","key": "download/256KiB/9998", "size": 262144},
         {"action": "download","key": "download/256KiB/9999", "size": 262144},
         {"action": "download","key": "download/256KiB/10000", "size": 262144}
@@ -30,7 +30,7 @@ A runner will read a `.run.json` file, perform all tasks, and report how long th
 Most benchmarks also have a `.src.json` file that is much more human readable.
 
 For example, `download-256KiB-10_000x.src.json`:
-```json
+```
 {
     "comment": "Use case is an AI company with tons of JPGs",
     "action": "download",

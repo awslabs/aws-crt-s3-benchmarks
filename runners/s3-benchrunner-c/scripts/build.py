@@ -55,11 +55,14 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     # git checkout branch, but if it doesn't exist use main
     os.chdir(str(dep_dir))
 
-    # git pull before checkout (in case repo was already there and new branch was not fetched)
-    run(['git', 'pull'])
+    # git fetch before checkout (in case repo was already there and new branch was not fetched)
+    run(['git', 'fetch'])
 
     if not try_run(['git', 'checkout', branch]):
         run(['git', 'checkout', 'main'])
+
+    # git pull (in case repo was already there without latest commits)
+    run(['git', 'pull'])
 
     return dep_dir
 

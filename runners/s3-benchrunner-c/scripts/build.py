@@ -77,7 +77,6 @@ def build(work_dir: Path, src_dir: Path):
                   '-DCMAKE_BUILD_TYPE=Release',
                   f'-DCMAKE_PREFIX_PATH={str(install_dir)}',
                   f'-DCMAKE_INSTALL_PREFIX={str(install_dir)}',
-                  f'-DAWS_ENABLE_TRACING=ON',
                   ]
 
     build_cmd = ['cmake',

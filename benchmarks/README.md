@@ -17,7 +17,7 @@ For example, `download-256KiB-10_000x.run.json`:
         {"action": "download", "key": "download/256KiB/1", "size": 262144},
         {"action": "download", "key": "download/256KiB/2", "size": 262144},
         {"action": "download", "key": "download/256KiB/3", "size": 262144},
-        ... etc etc 9994 more lines ...
+        // ... etc etc 9994 more lines ...
         {"action": "download","key": "download/256KiB/9998", "size": 262144},
         {"action": "download","key": "download/256KiB/9999", "size": 262144},
         {"action": "download","key": "download/256KiB/10000", "size": 262144}
@@ -68,9 +68,9 @@ consider adding support in the build script.
 *   `comment`: str (default is "").
        A good comment would be the use case that motivated the benchmark.
         Omit if you'd just be repeating the file name.
-*   `action`: str. {"upload", "download"}.
+*   `action`: str (required). {"upload", "download"}.
        Whether files are uploaded or downloaded in this benchmark.
-*   `fileSize`: str. Examples: "5GiB", "8MiB"", "256KiB", "1byte", "0bytes".
+*   `fileSize`: str (required). Examples: "5GiB", "8MiB"", "256KiB", "1byte", "0bytes".
        Human readable file size.
 *   `numFiles`: int (default is 1).
        Number of files to benchmark. Each file is the same size: `fileSize`.
@@ -88,7 +88,13 @@ consider adding support in the build script.
 
 All fields are required in a `.run.json` file. Most were described above.
 
-*   `version`: int. {2}. This should be incremented any time a new field or value is added.
+*   `version`: int. {2}.
+       This must be incremented any time a new field or value is added.
+       Runners must skip benchmarks whose version != expected.
+       If we don't do all this, someone will add a new field and forget to
+       update a runner. Then the forgotten runner will ignore the new field
+       and report misleading benchmark times because it's not actually doing
+       what it's supposed to be doing.
 *   `comment`: str.
 *   `filesOnDisk`: bool.
 *   `checksum`: str. {null, "CRC32", "CRC32C", "SHA1", "SHA256"}.

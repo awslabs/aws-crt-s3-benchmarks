@@ -2,10 +2,11 @@
 
 This project is for benchmarking different S3 workloads using various languages and libraries.
 
-## Quick Start
+## Running Benchmarks
 
-You need a modern OS with up-to-date tools. For starters:
-*   Python 3.9+ with pip
+### Minimum Requirements
+
+*   Python 3.9+
 
 If you use Amazon Linux 2023 (recommended), there are scripts to help install further tools.
 
@@ -14,6 +15,8 @@ and fast enough internet to upload a terabyte to S3 within your lifetime.
 But if you're only running 1 benchmark, you'll upload fewer files and use less disk space.
 
 Your machine must have AWS credentials, with permission to read and write to an S3 bucket.
+
+### Get Started
 
 First, clone this repo.
 
@@ -24,8 +27,8 @@ python3.9 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 
 ### Prepare S3 Files
 
-Next, run this script to create and configure an S3 bucket,
-put files in S3 for benchmarks to download,
+Next, run `prep-benchmark-files.py`. This script creates and configures
+an S3 bucket, put files in S3 for benchmarks to download,
 and create files on disk for benchmarks to upload:
 
 ```sh
@@ -39,7 +42,8 @@ and create files on disk for benchmarks to upload:
         If not specified, everything in [benchmarks/](benchmarks/) is prepared
         (uploading 100+ GiB to S3 and creating 100+ GiB on disk).
 
-This can be run repeatedly. It skips unnecessary work (e.g. won't upload a file that already exists).
+This script can be run repeatedly. It skips unnecessary work
+(e.g. won't upload a file that already exists).
 
 ### Build a Runner
 
@@ -50,13 +54,13 @@ See [runners/](runners/) for more info.
 
 Every runner comes with 2 scripts, which you should run now.
 
-A script to install tools on Amazon Linux 2023
-(On another OS? Read the script to see what's needed):
+`install-tools.py` installs tools on Amazon Linux 2023
+(On another OS? Read the script to see what you need):
 ```sh
 ./aws-crt-s3-benchmarks/runners/RUNNER_X/scripts/install-tools.py
 ```
 
-And a script to build the runner:
+And `build.py` to build the runner:
 ```sh
 ./aws-crt-s3-benchmarks/runners/RUNNER_X/scripts/build.py --build-dir BUILD_DIR
 ```
@@ -96,7 +100,7 @@ Most runners should search for AWS credentials
 If you want to run multiple benchmarks (or ALL benchmarks) in one go,
 use this helper script: [run-benchmarks.py](scripts/run-benchmarks.py).
 
-### Authoring New Benchmarks
+## Authoring New Benchmarks
 
 See [benchmarks/](benchmarks/)
 

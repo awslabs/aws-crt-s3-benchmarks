@@ -102,7 +102,7 @@ use this helper script: [run-benchmarks.py](scripts/run-benchmarks.py).
 
 ## Authoring New Benchmarks
 
-See [benchmarks/](benchmarks/)
+See [benchmarks/](benchmarks/#readme)
 
 ## Security
 

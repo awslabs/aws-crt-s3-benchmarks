@@ -54,11 +54,13 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
 
     # git checkout branch, but if it doesn't exist use main
     os.chdir(str(dep_dir))
+
+    # git pull before checkout (in case repo was already there and new branch was not fetched)
+    run(['git', 'pull'])
+
     if not try_run(['git', 'checkout', branch]):
         run(['git', 'checkout', 'main'])
 
-    # git pull (in case repo was already there without latest commits)
-    run(['git', 'pull'])
     return dep_dir
 
 
@@ -75,6 +77,7 @@ def build(work_dir: Path, src_dir: Path):
                   '-DCMAKE_BUILD_TYPE=Release',
                   f'-DCMAKE_PREFIX_PATH={str(install_dir)}',
                   f'-DCMAKE_INSTALL_PREFIX={str(install_dir)}',
+                  f'-DAWS_ENABLE_TRACING=ON',
                   ]
 
     build_cmd = ['cmake',

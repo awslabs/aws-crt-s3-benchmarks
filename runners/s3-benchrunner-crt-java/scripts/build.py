@@ -43,13 +43,13 @@ def fetch_dep(work_dir: Path, repository: str, branch: str) -> Path:
     if not dep_dir.exists():
         run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
 
+    # git pull before checkout (in case repo was already there and new branch was not fetched)
+    run(['git', 'pull'])
+
     # git checkout branch, but if it doesn't exist use main
     os.chdir(str(dep_dir))
     if not try_run(['git', 'checkout', branch]):
         run(['git', 'checkout', 'main'])
-
-    # git pull (in case repo was already there without latest commits)
-    run(['git', 'pull'])
 
     # update submodules (if necessary)
     run(['git', 'submodule', 'update', '--init'])

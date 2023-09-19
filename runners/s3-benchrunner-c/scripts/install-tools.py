@@ -12,7 +12,7 @@ def run(cmd_args: list[str]):
     subprocess.run(cmd_args, check=True)
 
 
-run(['sudo', 'yum', 'install', '-y',
+run(['sudo', 'dnf', 'install', '-y',
      'git',
      'cmake',
      'gcc-c++',

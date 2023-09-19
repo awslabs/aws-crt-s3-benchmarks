@@ -6,7 +6,7 @@ This project is for benchmarking different S3 workloads using various languages 
 
 ### Minimum Requirements
 
-*   Python 3.9+
+*   Python 3.9+ with pip
 
 If you use Amazon Linux 2023 (recommended), there are scripts to help install further tools.
 
@@ -22,7 +22,7 @@ First, clone this repo.
 
 Then install packages needed by the python scripts:
 ```sh
-python3.9 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
+python3 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 ```
 
 ### Prepare S3 Files

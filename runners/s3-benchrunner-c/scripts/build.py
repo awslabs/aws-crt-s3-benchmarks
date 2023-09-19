@@ -52,12 +52,12 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     if not dep_dir.exists():
         run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
 
-    # git checkout branch, but if it doesn't exist use main
     os.chdir(str(dep_dir))
 
     # git fetch before checkout (in case repo was already there and new branch was not fetched)
     run(['git', 'fetch'])
 
+    # git checkout branch, but if it doesn't exist use main
     if not try_run(['git', 'checkout', branch]):
         run(['git', 'checkout', 'main'])
 

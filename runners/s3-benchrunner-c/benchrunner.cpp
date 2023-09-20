@@ -505,7 +505,7 @@ int Task::onDownloadData(struct aws_s3_meta_request *meta_request,
 int main(int argc, char *argv[])
 {
     if (argc != 5)
-        fail("usage: s3benchrunner-c <config.json> <bucket> <region> <target-throughput-Gbps>");
+        fail("usage: s3-benchrunner-c BENCHMARK BUCKET REGION TARGET_THROUGHPUT");
 
     auto config = BenchmarkConfig::fromJson(argv[1]);
     string bucket = argv[2];

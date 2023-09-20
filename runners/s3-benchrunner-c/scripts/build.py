@@ -52,12 +52,12 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     if not dep_dir.exists():
         run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
 
-    # git checkout branch, but if it doesn't exist use main
     os.chdir(str(dep_dir))
 
     # git fetch before checkout (in case repo was already there and new branch was not fetched)
     run(['git', 'fetch'])
 
+    # git checkout branch, but if it doesn't exist use main
     if not try_run(['git', 'checkout', branch]):
         run(['git', 'checkout', 'main'])
 
@@ -116,7 +116,7 @@ def main(work_dir: Path, branch: str):
     build(work_dir, runner_src)
 
     # finally, print command for executing the runner
-    print("------ runner-cmd ------")
+    print("------ RUNNER_CMD ------")
     runner_cmd = str(work_dir.joinpath('install/bin/s3-benchrunner-c'))
     print(runner_cmd)
 

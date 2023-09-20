@@ -16,7 +16,7 @@ PARSER = argparse.ArgumentParser(
     description='Build benchmark *.src.json into *.run.json.')
 PARSER.add_argument(
     'src_file', nargs='*',
-    help='Benchmark src.json file. ' +
+    help='Path to specific benchmark.src.json file. ' +
     'If none specified, builds all benchmarks/*.src.json')
 
 

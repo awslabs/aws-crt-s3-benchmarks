@@ -12,7 +12,9 @@ def run(cmd_args: list[str]):
     subprocess.run(cmd_args, check=True)
 
 
-run(['sudo', 'yum', 'install', '-y',
+run(['sudo', 'dnf', 'install', '-y',
      'git',
      'maven',
+     'cmake', # for building aws-crt-java
+     'gcc', # for building aws-crt-java
      ])

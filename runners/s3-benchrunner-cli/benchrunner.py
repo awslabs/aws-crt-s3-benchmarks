@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Optional
 
 PARSER = argparse.ArgumentParser(
     description='Benchmark runner for AWS CLI')
@@ -17,6 +18,8 @@ PARSER.add_argument('BENCHMARK')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
 PARSER.add_argument('TARGET_THROUGHPUT', type=float)
+PARSER.add_argument('--without-crt', action='store_true',
+                    help="If set, use existing CLI config")
 PARSER.add_argument('--verbose', action='store_true',
                     help="Print CLI commands and output")
 
@@ -90,47 +93,52 @@ class BenchmarkConfig:
         return sum([task.size for task in self.tasks])
 
 
-CLI_CRT_CONFIG = """[default]
-s3 =
-  preferred_transfer_client = crt
-  target_throughput = {target_throughput_Gbps} Gb/s
-"""
-
-
 class Benchmark:
-    def __init__(self, config: BenchmarkConfig, bucket: str, region: str, target_throughput_Gbps: float, verbose: bool):
+    def __init__(self, config: BenchmarkConfig, bucket: str, region: str,
+                 target_throughput_Gbps: float, use_crt: bool, verbose: bool):
         self.config = config
         self.bucket = bucket
         self.region = region
         self.target_throughput_Gbps = target_throughput_Gbps
+        self.use_crt = use_crt
         self.verbose = verbose
 
-        # Write out temp AWS CLI config file, so it uses CRT
-        # https://awscli.amazonaws.com/v2/documentation/api/latest/topic/s3-config.html
-        self.config_file = tempfile.NamedTemporaryFile(prefix='awsconfig')
-        config_text = CLI_CRT_CONFIG.format(
-            target_throughput_Gbps=target_throughput_Gbps)
-        self.config_file.write(config_text.encode())
-        self.config_file.flush()
+        if self.use_crt:
+            # Write out temp AWS CLI config file, so it uses CRT
+            # https://awscli.amazonaws.com/v2/documentation/api/latest/topic/s3-config.html
+            self._config_file = tempfile.NamedTemporaryFile(prefix='awsconfig')
+            config_text = self._derive_cli_config()
+            self._config_file.write(config_text.encode())
+            self._config_file.flush()
 
-        os.environ['AWS_CONFIG_FILE'] = self.config_file.name
+            os.environ['AWS_CONFIG_FILE'] = self._config_file.name
 
-        if self.verbose:
-            print(f'--- AWS_CONFIG_FILE ---')
-            print(config_text)
+            if self.verbose:
+                print(f'--- AWS_CONFIG_FILE ---')
+                print(config_text)
 
-        self.cli_cmd = self._derive_cmd()
+        self._cli_cmd, self._stdin_for_cli = self._derive_cli_cmd()
 
-    def _derive_cmd(self) -> list[str]:
+    def _derive_cli_config(self) -> str:
+        lines = ['[default]',
+                 's3 =',
+                 '  preferred_transfer_client = crt',
+                 f'  target_throughput = {self.target_throughput_Gbps} Gb/s',
+                 '']  # blank line at end of file
+        return '\n'.join(lines)
+
+    def _derive_cli_cmd(self) -> (list[str], Optional[str]):
         """
-        Return single CLI command that will do everything in the benchmark.
+        Figures out single CLI command that will do everything in the benchmark.
         Exits with skip code if we can't do this benchmark in one CLI command.
-        """
 
+        Returns (list_of_cli_args, optional_stdin_for_cli)
+        """
         num_tasks = len(self.config.tasks)
         first_task = self.config.tasks[0]
 
         cmd = ['aws', 's3', 'cp']
+        stdin = None
 
         if num_tasks == 1:
             # doing 1 file is simple, just name the src and dst
@@ -149,6 +157,10 @@ class Benchmark:
                     cmd.append(first_task.key)
                 else:
                     cmd.append('-')  # read file from stdin
+
+                    # generate random data to upload
+                    stdin = os.urandom(first_task.size)
+
                 # dst
                 cmd.append(f's3://{self.bucket}/{first_task.key}')
         else:
@@ -196,10 +208,12 @@ class Benchmark:
         # Add common options, used by all commands
         cmd += ['--region', self.region]
 
+        # As of Sept 2023, can't pick checksum
         if self.config.checksum:
-            exit_with_skip_code('Not sure if CLI can do specific checksums')
+            exit_with_skip_code(
+                "CLI doesn't currently checksum for 'aws s3 cp'")
 
-        return cmd
+        return cmd, stdin
 
     def _using_all_files_in_dir(self, action: str, prefix: str) -> bool:
         """
@@ -231,27 +245,32 @@ class Benchmark:
         return True
 
     def run(self):
+        run_kwargs = {'args': self._cli_cmd,
+                      'input': self._stdin_for_cli}
         if self.verbose:
-            # show live output
-            print(f'> {subprocess.list2cmdline(self.cli_cmd)}')
-            result = subprocess.run(self.cli_cmd, check=True)
+            # show live output, and immediately raise exception if process fails
+            print(f'> {subprocess.list2cmdline(self._cli_cmd)}')
+            run_kwargs['check'] = True
         else:
-            # suppress output unless there's an error
-            result = subprocess.run(
-                self.cli_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            if result.returncode != 0:
-                errmsg = f'{subprocess.list2cmdline(self.cli_cmd)}'
-                output = result.stdout.strip()
-                if output:
-                    errmsg += f'\n{output}'
-                exit_with_error(errmsg)
+            # capture output, and only print if there's an error
+            run_kwargs['capture_output'] = True
+
+        result = subprocess.run(**run_kwargs)
+        if result.returncode != 0:
+            # show command that failed, and stderr if any
+            errmsg = f'{subprocess.list2cmdline(self._cli_cmd)}'
+            stderr = result.stderr.decode().strip()
+            if stderr:
+                errmsg += f'\n{stderr}'
+            exit_with_error(errmsg)
 
 
-def main(benchmark_path: Path, bucket: str, region: str, target_throughput_Gbps: float, verbose: bool):
+def main(benchmark_path: Path, bucket: str, region: str,
+         target_throughput_Gbps: float, use_crt: bool, verbose: bool):
     config = BenchmarkConfig.from_json(benchmark_path)
 
-    benchmark = Benchmark(config, bucket, region,
-                          target_throughput_Gbps, verbose)
+    benchmark = Benchmark(config, bucket, region, target_throughput_Gbps,
+                          use_crt, verbose)
     bytes_per_run = config.bytes_per_run()
 
     # Repeat benchmark until we exceed max_repeat_count or max_repeat_secs
@@ -264,10 +283,10 @@ def main(benchmark_path: Path, bucket: str, region: str, target_throughput_Gbps:
         run_secs = ns_to_secs(time.perf_counter_ns() - run_start_ns)
         print(f'Run:{run_i+1} ' +
               f'Secs:{run_secs:.3f} ' +
-              f'Gb/s:{bytes_to_gigabit(bytes_per_run):.3f} ' +
-              f'Mb/s:{bytes_to_megabit(bytes_per_run):.3f} ' +
-              f'GiB/s:{bytes_to_GiB(bytes_per_run):.3f} ' +
-              f'MiB/s:{bytes_to_MiB(bytes_per_run):.3f}')
+              f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:.3f} ' +
+              f'Mb/s:{bytes_to_megabit(bytes_per_run) / run_secs:.3f} ' +
+              f'GiB/s:{bytes_to_GiB(bytes_per_run) / run_secs:.3f} ' +
+              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}')
 
         # Break out if we've exceeded max_repeat_secs
         app_secs = ns_to_secs(time.perf_counter_ns() - app_start_ns)
@@ -278,4 +297,4 @@ def main(benchmark_path: Path, bucket: str, region: str, target_throughput_Gbps:
 if __name__ == '__main__':
     args = PARSER.parse_args()
     main(Path(args.BENCHMARK), args.BUCKET, args.REGION,
-         args.TARGET_THROUGHPUT, args.verbose)
+         args.TARGET_THROUGHPUT, not args.without_crt, args.verbose)

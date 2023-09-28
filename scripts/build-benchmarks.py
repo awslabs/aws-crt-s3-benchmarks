@@ -15,7 +15,7 @@ DEFAULT_MAX_REPEAT_SECS = 600
 PARSER = argparse.ArgumentParser(
     description='Build benchmark *.src.json into *.run.json.')
 PARSER.add_argument(
-    'src_file', nargs='*',
+    'SRC_FILE', nargs='*',
     help='Path to specific benchmark.src.json file. ' +
     'If none specified, builds all benchmarks/*.src.json')
 
@@ -118,8 +118,8 @@ def build_benchmark(src_file: Path):
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
-    if args.src_file:
-        src_files = [Path(x) for x in args.src_file]
+    if args.SRC_FILE:
+        src_files = [Path(x) for x in args.SRC_FILE]
         for src_file in src_files:
             if not src_file.exists():
                 exit(f'file not found: {src_file}')

@@ -172,9 +172,14 @@ class Benchmark:
                 if first_task_dir != os.path.split(task_i.key)[0]:
                     exit_with_skip_code(
                         'CLI cannot run benchmark unless all keys are in the same directory')
+
                 if first_task.action != task_i.action:
                     exit_with_skip_code(
                         'CLI cannot run benchmark unless all actions are the same')
+
+                if first_task.key == task_i.key:
+                    exit_with_skip_code(
+                        'CLI cannot run benchmark that uses same key multiple times')
 
             if not self.config.files_on_disk:
                 exit_with_skip_code(

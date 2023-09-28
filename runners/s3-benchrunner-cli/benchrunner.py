@@ -195,12 +195,8 @@ class Benchmark:
             # Need --recursive to do multiple files
             cmd.append('--recursive')
 
-            # If not using all files in dir, use --include to specify the ones we want.
-            # Note: we could have done --exclude instead, but that would probably
-            # break in the case of a dir with 10,000 files and we're only uploading 10.
+            # If not using all files in dir, --exclude "*" and then --include the ones we want.
             if not self._using_all_files_in_dir(first_task.action, first_task_dir):
-                # Not sure why --include X is ignored unless I first pass --exclude "*"
-                # but that seems to be the case...
                 cmd += ['--exclude', '*']
                 for task in self.config.tasks:
                     cmd += ['--include', os.path.split(task.key)[1]]
@@ -208,10 +204,10 @@ class Benchmark:
         # Add common options, used by all commands
         cmd += ['--region', self.region]
 
-        # As of Sept 2023, can't pick checksum
+        # As of Sept 2023, can't pick checksum for: aws s3 cp
         if self.config.checksum:
             exit_with_skip_code(
-                "CLI doesn't currently checksum for 'aws s3 cp'")
+                "CLI cannot run benchmark with specific checksum algorithm")
 
         return cmd, stdin
 

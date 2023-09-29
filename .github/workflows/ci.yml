@@ -9,7 +9,7 @@ jobs:
     steps:
     - name: Checkout Sources
       uses: actions/checkout@v4
-
     - name: Lint
-      run: $PYTHON_VER -m pip install -r scripts/requirements.txt
-      run: $PYTHON_VER -m scripts/lint-python.py
+      run: |
+        $PYTHON_VER -m pip install -r scripts/requirements.txt
+        $PYTHON_VER -m scripts/lint-python.py

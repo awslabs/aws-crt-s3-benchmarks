@@ -14,12 +14,13 @@ jobs:
       run: python scripts/lint-python.py
 
     - name: Check that benchmark files are up to date
+      # run build script and see if any files change
       run: |
         python scripts/build-benchmarks.py
         git diff --exit-code
 
     - name: Build s3-benchrunner-c
-      run: python runners/s3-benchrunner-c/scripts/build.py
+      run: python runners/s3-benchrunner-c/scripts/build.py --build-dir ${{runner.temp}}/build/c
 
     - name: Build s3-benchrunner-crt-java
-      run: python runners/s3-benchrunner-crt-java/scripts/build.py
+      run: python runners/s3-benchrunner-crt-java/scripts/build.py --build-dir ${{runner.temp}}/build/crt-java

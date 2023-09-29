@@ -44,7 +44,7 @@ for benchmark in benchmarks:
     # in case runner-cmd has weird stuff like quotes, spaces, etc
     cmd = shlex.split(args.runner_cmd)
 
-    cmd += [benchmark, args.bucket, args.region, str(args.throughput)]
+    cmd += [str(benchmark), args.bucket, args.region, str(args.throughput)]
     print(f'> {subprocess.list2cmdline(cmd)}')
     run = subprocess.run(cmd, text=True)
 

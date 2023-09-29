@@ -5,15 +5,12 @@ from pathlib import Path
 
 PARSER = argparse.ArgumentParser(description="Check formatting")
 
-GLOB_PATTERNS = [
-    '*.cpp',
-    '*.h',
-]
-
 if __name__ == '__main__':
+    args = PARSER.parse_args()
+
     runner_dir = Path(__file__).parent.parent
     files: list[str] = []
-    for pattern in GLOB_PATTERNS:
+    for pattern in ['*.cpp', '*.h']:
         for i in runner_dir.glob(pattern):
             files.append(str(i))
 

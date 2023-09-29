@@ -12,9 +12,10 @@ GLOB_PATTERNS = [
 
 if __name__ == '__main__':
     runner_dir = Path(__file__).parent.parent
-    files = []
+    files: list[str] = []
     for pattern in GLOB_PATTERNS:
-        files.extend(runner_dir.glob(pattern))
+        for i in runner_dir.glob(pattern):
+            files.append(str(i))
 
     failed = False
     for file in files:

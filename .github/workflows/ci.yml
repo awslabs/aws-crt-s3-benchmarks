@@ -15,8 +15,7 @@ jobs:
         distribution: 'corretto'
         java-version: '17' # default version on Amazon Linux 2023
 
-    - name: Install requirements
-      run: python -m pip install -r scripts/requirements.txt
+    - run: python -m pip install -r scripts/requirements.txt
 
     - name: Lint Python scripts
       run: python scripts/lint-python.py

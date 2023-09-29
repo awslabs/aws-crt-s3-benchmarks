@@ -1,0 +1,15 @@
+name: CI
+on: [push]
+env:
+  PYTHON_VER: python3.9 # 3.9 is default on Amazon Linux 2023
+
+jobs:
+  Lint-Python:
+    runs-on: ubuntu-22.04 # latest at time of writing
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@v4
+
+    - name: Lint
+      run: $PYTHON_VER -m pip install -r scripts/requirements.txt
+      run: $PYTHON_VER -m scripts/lint-python.py

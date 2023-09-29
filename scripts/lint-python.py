@@ -22,12 +22,10 @@ def get_script_dirs() -> list[str]:
     # add this scripts/ dir
     dirs.append(root.joinpath('scripts'))
 
-    # add each runner's scripts/ dir
+    # add each runner dir
     for runner_child in root.joinpath('runners').iterdir():
         if runner_child.is_dir():
-            runner_scripts = runner_child.joinpath('scripts')
-            if runner_scripts.is_dir():
-                dirs.append(runner_scripts)
+            dirs.append(runner_child)
 
     return [str(i) for i in dirs]
 

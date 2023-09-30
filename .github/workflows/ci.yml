@@ -23,6 +23,9 @@ jobs:
     - name: Lint s3-benchrunner-c
       run: python runners/s3-benchrunner-c/scripts/lint.py
 
+    - name: Lint s3-benchrunner-crt-java
+      run: python runners/s3-benchrunner-crt-java/scripts/lint.py
+
     - name: Check that benchmark.run.json files are up to date
       # build benchmarks and see if any files change
       run: |

@@ -3,6 +3,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 ARG_PARSER = argparse.ArgumentParser(
     description='Build runner and its dependencies',
@@ -16,55 +17,21 @@ ARG_PARSER.add_argument(
 
 
 def run(cmd_args: list[str]):
-    if not try_run(cmd_args):
-        exit(f'FAILED: {subprocess.list2cmdline(cmd_args)}')
-
-
-def try_run(cmd_args: list[str]):
     print(f'> {subprocess.list2cmdline(cmd_args)}')
-    result = subprocess.run(cmd_args)
-    return result.returncode == 0
-
-
-def fetch_dep(work_dir: Path, repository: str, branch: str) -> Path:
-    """
-    Fetch git repo to live in work_dir.
-    Returns its location.
-    """
-
-    # extract dep name from repository URL
-    # i.e. "https://github.com/awslabs/aws-crt-java.git" -> "aws-crt-java"
-    dep_name = repository.split('/')[-1].split('.git')[0]
-
-    dep_dir = work_dir.joinpath(dep_name)
-
-    # git clone (if necessary)
-    os.chdir(str(work_dir))
-    if not dep_dir.exists():
-        run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
-
-    os.chdir(str(dep_dir))
-
-    # git fetch before checkout (in case repo was already there and new branch was not fetched)
-    run(['git', 'fetch'])
-
-    # git checkout branch, but if it doesn't exist use main
-    if not try_run(['git', 'checkout', branch]):
-        run(['git', 'checkout', 'main'])
-
-    # git pull (in case repo was already there without latest commits)
-    run(['git', 'pull'])
-
-    # update submodules (if necessary)
-    run(['git', 'submodule', 'update', '--init'])
-    return dep_dir
+    subprocess.run(cmd_args, check=True)
 
 
 def build_aws_crt_java(work_dir: Path, branch: str):
     """fetch latest aws-crt-java and install 1.0.0-SNAPSHOT"""
 
-    awscrt_repo = 'https://github.com/awslabs/aws-crt-java.git'
-    awscrt_src = fetch_dep(work_dir, awscrt_repo, branch)
+    awscrt_src = work_dir.joinpath('aws-crt-java')
+
+    root = Path(__file__).parent.parent.parent.parent
+    run([sys.executable, root.joinpath('scripts/fetch-git-repo.py'),
+         '--repo', 'https://github.com/awslabs/aws-crt-java.git',
+         '--preferred-branch', branch,
+         '--dir', str(awscrt_src)])
+
     os.chdir(str(awscrt_src))
 
     # for faster C compilation

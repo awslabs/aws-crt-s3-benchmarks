@@ -37,17 +37,14 @@ if __name__ == '__main__':
     repo_dir = Path(args.dir).resolve()  # normalize path
 
     # git clone (if necessary)
-    using_fresh_clone = not repo_dir.exists()
-    if using_fresh_clone:
-        repo_dir.parent.mkdir(parents=True, exist_ok=True)
-        os.chdir(str(repo_dir.parent))
-        run(['git', 'clone', args.repo])
-        using_fresh_clone = True
+    fresh_clone = not repo_dir.exists()
+    if fresh_clone:
+        run(['git', 'clone', '--branch', args.main_branch, args.repo, str(repo_dir)])
 
     os.chdir(str(repo_dir))
 
-    # fetch latest branches (unless this is a fresh clone)
-    if not using_fresh_clone:
+    # fetch latest branches (not necessary for fresh clone)
+    if not fresh_clone:
         run(['git', 'fetch'])
 
     # if preferred branch specified, try to check it out...
@@ -56,10 +53,13 @@ if __name__ == '__main__':
         if try_run(['git', 'checkout', args.preferred_branch]):
             using_preferred_branch = True
 
-    # ...but fall back using main branch
+    # ...otherwise use main branch
     if not using_preferred_branch:
         run(['git', 'checkout', args.main_branch])
 
-    # pull latest commit (unless this is a fresh clone)
-    if not using_fresh_clone:
+    # pull latest commit (not necessary for fresh clone)
+    if not fresh_clone:
         run(['git', 'pull'])
+
+    # update submodules
+    run(['git', 'submodule', 'update', '--init'])

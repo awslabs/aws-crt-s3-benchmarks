@@ -90,6 +90,9 @@ def main(work_dir: Path, branch: str):
     work_dir = work_dir.resolve()  # normalize path
     work_dir.mkdir(parents=True, exist_ok=True)
 
+    # for faster C compilation
+    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
+
     # fetch and build dependencies
     for dep in DEPS:
         dep_src = fetch_dep(work_dir, dep, branch)

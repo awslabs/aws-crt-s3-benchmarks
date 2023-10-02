@@ -15,6 +15,6 @@ def run(cmd_args: list[str]):
 run(['sudo', 'dnf', 'install', '-y',
      'git',
      'maven',
-     'cmake', # for building aws-crt-java
-     'gcc', # for building aws-crt-java
+     'cmake',  # for building aws-crt-java
+     'gcc',  # for building aws-crt-java
      ])

@@ -1,9 +1,9 @@
 #include <chrono>
 #include <cstdio>
-#include <iostream>
 #include <fstream>
 #include <functional>
 #include <future>
+#include <iostream>
 #include <list>
 #include <random>
 #include <thread>
@@ -14,9 +14,9 @@
 #include <aws/io/channel_bootstrap.h>
 #include <aws/io/event_loop.h>
 #include <aws/io/host_resolver.h>
-#include <aws/s3/s3_client.h>
 #include <aws/io/stream.h>
 #include <aws/io/tls_channel_handler.h>
+#include <aws/s3/s3_client.h>
 #include <nlohmann/json.hpp>
 
 using namespace std;
@@ -132,16 +132,18 @@ class Task
 
     FILE *downloadFile = NULL;
 
-    static int onDownloadData(struct aws_s3_meta_request *meta_request,
-                              const struct aws_byte_cursor *body,
-                              uint64_t range_start,
-                              void *user_data);
+    static int onDownloadData(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_byte_cursor *body,
+        uint64_t range_start,
+        void *user_data);
 
-    static void onFinished(struct aws_s3_meta_request *meta_request,
-                           const struct aws_s3_meta_request_result *meta_request_result,
-                           void *user_data);
+    static void onFinished(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_s3_meta_request_result *meta_request_result,
+        void *user_data);
 
-public:
+  public:
     // Creates the task and begins its work
     Task(Benchmark &benchmark, size_t taskI);
 
@@ -169,7 +171,7 @@ class Benchmark
     // if uploading, and filesOnDisk is false, then upload this
     vector<uint8_t> randomDataForUpload;
 
-public:
+  public:
     // Instantiates S3 Client, does not run the benchmark yet
     Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps);
 
@@ -374,10 +376,7 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
 }
 
 Task::Task(Benchmark &benchmark, size_t taskI)
-    : benchmark(benchmark),
-      taskI(taskI),
-      config(benchmark.config.tasks[taskI]),
-      donePromise(),
+    : benchmark(benchmark), taskI(taskI), config(benchmark.config.tasks[taskI]), donePromise(),
       doneFuture(donePromise.get_future())
 {
 
@@ -406,8 +405,8 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         else
         {
             // set up input-stream that uploads random data from a buffer
-            auto randomDataCursor = aws_byte_cursor_from_array(
-                benchmark.randomDataForUpload.data(), benchmark.randomDataForUpload.size());
+            auto randomDataCursor =
+                aws_byte_cursor_from_array(benchmark.randomDataForUpload.data(), benchmark.randomDataForUpload.size());
             auto inMemoryStreamForUpload = aws_input_stream_new_from_cursor(benchmark.alloc, &randomDataCursor);
             aws_http_message_set_body_stream(request, inMemoryStreamForUpload);
             aws_input_stream_release(inMemoryStreamForUpload);
@@ -447,17 +446,21 @@ Task::Task(Benchmark &benchmark, size_t taskI)
     aws_http_message_release(request);
 }
 
-void Task::onFinished(struct aws_s3_meta_request *meta_request,
-                      const struct aws_s3_meta_request_result *meta_request_result,
-                      void *user_data)
+void Task::onFinished(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_s3_meta_request_result *meta_request_result,
+    void *user_data)
 {
     Task *task = static_cast<Task *>(user_data);
     // TODO: report failed meta-requests instead of killing benchmark?
     if (meta_request_result->error_code != 0)
     {
-        printf("Task[%zu] failed. action:%s key:%s error_code:%s\n",
-               task->taskI, task->config.action.c_str(), task->config.key.c_str(),
-               aws_error_name(meta_request_result->error_code));
+        printf(
+            "Task[%zu] failed. action:%s key:%s error_code:%s\n",
+            task->taskI,
+            task->config.action.c_str(),
+            task->config.key.c_str(),
+            aws_error_name(meta_request_result->error_code));
         if (meta_request_result->response_status != 0)
             printf("Status-Code: %d\n", meta_request_result->response_status);
 
@@ -468,7 +471,8 @@ void Task::onFinished(struct aws_s3_meta_request *meta_request,
             {
                 aws_http_header headerI;
                 aws_http_headers_get_index(headers, i, &headerI);
-                printf(PRInSTR ": " PRInSTR "\n", AWS_BYTE_CURSOR_PRI(headerI.name), AWS_BYTE_CURSOR_PRI(headerI.value));
+                printf(
+                    PRInSTR ": " PRInSTR "\n", AWS_BYTE_CURSOR_PRI(headerI.name), AWS_BYTE_CURSOR_PRI(headerI.value));
             }
         }
 
@@ -486,10 +490,11 @@ void Task::onFinished(struct aws_s3_meta_request *meta_request,
     task->donePromise.set_value();
 }
 
-int Task::onDownloadData(struct aws_s3_meta_request *meta_request,
-                         const struct aws_byte_cursor *body,
-                         uint64_t range_start,
-                         void *user_data)
+int Task::onDownloadData(
+    struct aws_s3_meta_request *meta_request,
+    const struct aws_byte_cursor *body,
+    uint64_t range_start,
+    void *user_data)
 {
     auto *task = static_cast<Task *>(user_data);
 
@@ -525,13 +530,14 @@ int main(int argc, char *argv[])
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
-        printf("Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
-               runI + 1,
-               runSecs,
-               bytesToGigabit(bytesPerRun) / runSecs,
-               bytesToMegabit(bytesPerRun) / runSecs,
-               bytesToGiB(bytesPerRun) / runSecs,
-               bytesToMiB(bytesPerRun) / runSecs);
+        printf(
+            "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
+            runI + 1,
+            runSecs,
+            bytesToGigabit(bytesPerRun) / runSecs,
+            bytesToMegabit(bytesPerRun) / runSecs,
+            bytesToGiB(bytesPerRun) / runSecs,
+            bytesToMiB(bytesPerRun) / runSecs);
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;

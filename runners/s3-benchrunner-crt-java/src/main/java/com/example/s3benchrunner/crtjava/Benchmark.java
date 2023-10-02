@@ -65,7 +65,8 @@ class Benchmark {
 
         // If we're uploading, and not using files on disk,
         // then generate an in-memory buffer of random data to upload.
-        // All uploads will use this same buffer, so make it big enough for the largest file.
+        // All uploads will use this same buffer,
+        // so make it big enough for the largest file.
         if (!config.filesOnDisk) {
             long largestUpload = 0;
             for (var task : config.tasks) {
@@ -77,7 +78,8 @@ class Benchmark {
             // NOTE: if this raises an exception, either the size > Integer.MAX_VALUE
             // or we failed allocating such a large buffer.
             // So we need a new technique.
-            // Either generate random data within sendRequestBody() (may impact performance).
+            // Either generate random data within sendRequestBody()
+            // (may impact performance).
             // Or just use a smaller buffer that we send repeatedly.
             randomDataForUpload = new byte[Math.toIntExact(largestUpload)];
             new Random().nextBytes(randomDataForUpload);

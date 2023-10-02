@@ -4,11 +4,16 @@ This project is for benchmarking different S3 workloads using various languages 
 
 ## Running Benchmarks
 
-### Minimum Requirements
-
-*   Python 3.9+ with pip
-
-If you use Amazon Linux 2023 (recommended), there are scripts to help install further tools.
+### Requirements
+*   To start:
+    *   Python 3.9+ with pip
+*   On Amazon Linux 2023, a script is provided to install further tools.
+    Otherwise, depending on the language you want to benchmark, you'll need:
+    *   CMake 3.22+
+    *   C99 / C++20 compiler (e.g. gcc, clang)
+    *   JDK17+ (e.g. corretto, openjdk)
+    *   Maven
+    *   Python C extension headers and libraries (e.g. python3-devel)
 
 To run **ALL** the benchmarks, your machine needs 300+ GiB of disk space available,
 and fast enough internet to upload a terabyte to S3 within your lifetime.
@@ -20,7 +25,13 @@ Your machine must have AWS credentials, with permission to read and write to an 
 
 First, clone this repo.
 
-Then install packages needed by the python scripts:
+Then install the [requirements](#requirements) listed above.
+On Amazon Linux 2023, you can simply run this script:
+```sh
+./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
+```
+
+Then, install packages needed by the python scripts:
 ```sh
 python3 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 ```
@@ -52,15 +63,7 @@ For example, [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) tests the
 [aws-c-s3](https://github.com/awslabs/aws-c-s3/) library.
 See [runners/](runners/#readme) for more info.
 
-Every runner comes with 2 scripts, which you should run now.
-
-`install-tools.py` installs tools on Amazon Linux 2023
-(On another OS? Read the script to see what you need):
-```sh
-./aws-crt-s3-benchmarks/runners/RUNNER_X/scripts/install-tools.py
-```
-
-And `build.py` to build the runner:
+Every runner comes a `build.py` script:
 ```sh
 ./aws-crt-s3-benchmarks/runners/RUNNER_X/scripts/build.py --build-dir BUILD_DIR
 ```

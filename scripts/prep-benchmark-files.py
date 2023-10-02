@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
-import botocore
-import boto3
+import botocore  # type: ignore
+import boto3  # type: ignore
 import concurrent.futures
 from dataclasses import dataclass
 import io

@@ -1090,3 +1090,6 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/c++,python,node,java,visualstudiocode,intellij,pycharm,clion,macos,windows,visualstudio
+
+# temporary file created by maven-shade-plugin
+dependency-reduced-pom.xml

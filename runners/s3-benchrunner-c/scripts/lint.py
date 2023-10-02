@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     runner_dir = Path(__file__).parent.parent
     files: list[str] = []
-    for pattern in ['*.cpp', '*.h']:
+    for pattern in ['*.cpp', '*.c', '*.h']:
         for i in runner_dir.glob(pattern):
             files.append(str(i))
 

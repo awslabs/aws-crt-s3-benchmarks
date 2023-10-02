@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-import boto3
+import boto3  # type: ignore
 from dataclasses import dataclass
 import json
 import os
@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 PARSER = argparse.ArgumentParser(
     description='Benchmark runner for AWS CLI')
@@ -127,7 +127,7 @@ class Benchmark:
                  '']  # blank line at end of file
         return '\n'.join(lines)
 
-    def _derive_cli_cmd(self) -> (list[str], Optional[str]):
+    def _derive_cli_cmd(self) -> Tuple[list[str], Optional[bytes]]:
         """
         Figures out single CLI command that will do everything in the benchmark.
         Exits with skip code if we can't do this benchmark in one CLI command.
@@ -138,7 +138,7 @@ class Benchmark:
         first_task = self.config.tasks[0]
 
         cmd = ['aws', 's3', 'cp']
-        stdin = None
+        stdin: Optional[bytes] = None
 
         if num_tasks == 1:
             # doing 1 file is simple, just name the src and dst

@@ -20,11 +20,12 @@ optional arguments:
 ```
 
 This runner uses your existing `aws` CLI installation.
-If you want to build/install the CLI from Github, see [instructions below](#building-locally).
+If you want to build the CLI yourself, see [instructions below](#building-locally).
 
 This runner skips benchmarks unless it can do them in a single AWS CLI command.
-We do this because it wouldn't be fair comparing CLI commands issued one
-after the other, against other runners that do multiple commands in parallel.
+If we used multiple commands, one after another, performance would look bad
+compared to other runners that run multiple commands in parallel.
+That's not a fair comparison (no one runs CLI commands in parallel) so we skip those benchmarks.
 
 Here are examples, showing how a given benchmark is run in a single CLI command:
 

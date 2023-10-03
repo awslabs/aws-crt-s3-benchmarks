@@ -43,7 +43,7 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     dep_dir = work_dir.joinpath(dep_name)
 
     root = Path(__file__).parent.parent.parent.parent
-    run([sys.executable, root.joinpath('scripts/fetch-git-repo.py'),
+    run([sys.executable, str(root.joinpath('scripts/fetch-git-repo.py')),
          '--repo', f'https://github.com/awslabs/{dep_name}.git',
          '--preferred-branch', branch,
          '--dir', str(dep_dir)])

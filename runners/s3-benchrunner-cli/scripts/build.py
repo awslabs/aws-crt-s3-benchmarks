@@ -24,7 +24,7 @@ def run(cmd_args: list[str]):
 def fetch_git_repo(url: str, dir: Path, main_branch: str, preferred_branch: Optional[str]):
     # use helper script
     root = Path(__file__).parent.parent.parent.parent
-    fetch_cmd = [sys.executable, root.joinpath('scripts/fetch-git-repo.py'),
+    fetch_cmd = [sys.executable, str(root.joinpath('scripts/fetch-git-repo.py')),
                  '--repo', url,
                  '--main-branch', main_branch,
                  '--dir', str(dir)]
@@ -90,5 +90,5 @@ if __name__ == '__main__':
 
     # finally, print command for executing the runner, using the virtual environment
     print("------ RUNNER_CMD ------")
-    runner_cmd = [venv_python, runner_dir.joinpath('benchrunner.py')]
+    runner_cmd = [venv_python, str(runner_dir.joinpath('benchrunner.py'))]
     print(subprocess.list2cmdline(runner_cmd))

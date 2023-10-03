@@ -27,7 +27,7 @@ def build_aws_crt_java(work_dir: Path, branch: str):
     awscrt_src = work_dir.joinpath('aws-crt-java')
 
     root = Path(__file__).parent.parent.parent.parent
-    run([sys.executable, root.joinpath('scripts/fetch-git-repo.py'),
+    run([sys.executable, str(root.joinpath('scripts/fetch-git-repo.py')),
          '--repo', 'https://github.com/awslabs/aws-crt-java.git',
          '--preferred-branch', branch,
          '--dir', str(awscrt_src)])

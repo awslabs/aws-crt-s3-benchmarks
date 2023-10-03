@@ -37,3 +37,6 @@ jobs:
 
     - name: Build s3-benchrunner-crt-java
       run: python runners/s3-benchrunner-crt-java/scripts/build.py --build-dir ${{runner.temp}}/build/crt-java
+
+    - name: Build s3-benchrunner-cli
+      run: python runners/s3-benchrunner-cli/scripts/build.py --build-dir ${{runner.temp}}/build/cli

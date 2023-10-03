@@ -1,7 +1,8 @@
 name: CI
 on: [push]
 jobs:
-  CI:
+
+  Lint:
     runs-on: ubuntu-22.04 # latest at time of writing
     steps:
     - uses: actions/checkout@v4
@@ -32,8 +33,27 @@ jobs:
         python scripts/build-benchmarks.py
         git diff --exit-code
 
-    - name: Build s3-benchrunner-c
-      run: python runners/s3-benchrunner-c/scripts/build.py --build-dir ${{runner.temp}}/build/c
+  Build:
+    runs-on: ubuntu-22.04 # latest at time of writing
+    strategy:
+      matrix:
+        runner:
+          - s3-benchrunner-c
+          - s3-benchrunner-cli
+          - s3-benchrunner-crt-java
+    steps:
+    - uses: actions/checkout@v4
 
-    - name: Build s3-benchrunner-crt-java
-      run: python runners/s3-benchrunner-crt-java/scripts/build.py --build-dir ${{runner.temp}}/build/crt-java
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9' # default version on Amazon Linux 2023
+
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'corretto'
+        java-version: '17' # default version on Amazon Linux 2023
+
+    - run: python -m pip install -r scripts/requirements.txt
+
+    - name: Build
+      run: python runners/${{ matrix.runner }}/scripts/build.py --build-dir ${{runner.temp}}/build

@@ -3,6 +3,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 ARG_PARSER = argparse.ArgumentParser(
     description='Build runner and its dependencies',
@@ -30,14 +31,8 @@ DEPS = [
 
 
 def run(cmd_args: list[str]):
-    if not try_run(cmd_args):
-        exit(f'FAILED: {subprocess.list2cmdline(cmd_args)}')
-
-
-def try_run(cmd_args: list[str]):
     print(f'> {subprocess.list2cmdline(cmd_args)}')
-    result = subprocess.run(cmd_args)
-    return result.returncode == 0
+    subprocess.run(cmd_args, check=True)
 
 
 def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
@@ -47,22 +42,11 @@ def fetch_dep(work_dir: Path, dep_name: str, branch: str) -> Path:
     """
     dep_dir = work_dir.joinpath(dep_name)
 
-    # git clone (if necessary)
-    os.chdir(str(work_dir))
-    if not dep_dir.exists():
-        run(['git', 'clone', f'https://github.com/awslabs/{dep_name}'])
-
-    os.chdir(str(dep_dir))
-
-    # git fetch before checkout (in case repo was already there and new branch was not fetched)
-    run(['git', 'fetch'])
-
-    # git checkout branch, but if it doesn't exist use main
-    if not try_run(['git', 'checkout', branch]):
-        run(['git', 'checkout', 'main'])
-
-    # git pull (in case repo was already there without latest commits)
-    run(['git', 'pull'])
+    root = Path(__file__).parent.parent.parent.parent
+    run([sys.executable, str(root.joinpath('scripts/fetch-git-repo.py')),
+         '--repo', f'https://github.com/awslabs/{dep_name}.git',
+         '--preferred-branch', branch,
+         '--dir', str(dep_dir)])
 
     return dep_dir
 
@@ -105,6 +89,9 @@ def build(work_dir: Path, src_dir: Path):
 def main(work_dir: Path, branch: str):
     work_dir = work_dir.resolve()  # normalize path
     work_dir.mkdir(parents=True, exist_ok=True)
+
+    # for faster C compilation
+    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
 
     # fetch and build dependencies
     for dep in DEPS:

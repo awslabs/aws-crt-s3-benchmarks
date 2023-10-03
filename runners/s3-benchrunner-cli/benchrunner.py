@@ -18,10 +18,11 @@ PARSER.add_argument('BENCHMARK')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
 PARSER.add_argument('TARGET_THROUGHPUT', type=float)
-PARSER.add_argument('--without-crt', action='store_true',
-                    help="If set, use existing CLI config")
 PARSER.add_argument('--verbose', action='store_true',
-                    help="Print CLI commands and output")
+                    help="Show CLI commands and their output")
+PARSER.add_argument('--use-existing-aws-config', action='store_true', default=False,
+                    help="If set, your existing AWS_CONFIG_FILE is used. " +
+                    "(instead of one that customizes 'preferred_transfer_client')")
 
 
 def exit_with_skip_code(msg: str):
@@ -95,15 +96,16 @@ class BenchmarkConfig:
 
 class Benchmark:
     def __init__(self, config: BenchmarkConfig, bucket: str, region: str,
-                 target_throughput_Gbps: float, use_crt: bool, verbose: bool):
+                 target_throughput_Gbps: float, verbose: bool,
+                 use_existing_aws_config: bool):
         self.config = config
         self.bucket = bucket
         self.region = region
         self.target_throughput_Gbps = target_throughput_Gbps
-        self.use_crt = use_crt
         self.verbose = verbose
+        self.use_existing_aws_config = use_existing_aws_config
 
-        if self.use_crt:
+        if not self.use_existing_aws_config:
             # Write out temp AWS CLI config file, so it uses CRT
             # https://awscli.amazonaws.com/v2/documentation/api/latest/topic/s3-config.html
             self._config_file = tempfile.NamedTemporaryFile(prefix='awsconfig')
@@ -266,12 +268,11 @@ class Benchmark:
             exit_with_error(errmsg)
 
 
-def main(benchmark_path: Path, bucket: str, region: str,
-         target_throughput_Gbps: float, use_crt: bool, verbose: bool):
-    config = BenchmarkConfig.from_json(benchmark_path)
-
-    benchmark = Benchmark(config, bucket, region, target_throughput_Gbps,
-                          use_crt, verbose)
+if __name__ == '__main__':
+    args = PARSER.parse_args()
+    config = BenchmarkConfig.from_json(Path(args.BENCHMARK))
+    benchmark = Benchmark(config, args.BUCKET, args.REGION, args.TARGET_THROUGHPUT,
+                          args.verbose, args.use_existing_aws_config)
     bytes_per_run = config.bytes_per_run()
 
     # Repeat benchmark until we exceed max_repeat_count or max_repeat_secs
@@ -293,9 +294,3 @@ def main(benchmark_path: Path, bucket: str, region: str,
         app_secs = ns_to_secs(time.perf_counter_ns() - app_start_ns)
         if app_secs >= config.max_repeat_secs:
             break
-
-
-if __name__ == '__main__':
-    args = PARSER.parse_args()
-    main(Path(args.BENCHMARK), args.BUCKET, args.REGION,
-         args.TARGET_THROUGHPUT, not args.without_crt, args.verbose)

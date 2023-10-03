@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 2,
     "comment": "Find the limits of network I/O. Don't do anything that might slow us down, like touch the disk",
     "filesOnDisk": false,
     "checksum": null,

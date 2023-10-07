@@ -21,12 +21,12 @@ PARSER.add_argument(
 
 
 def run(cmd_args: list[str]):
-    print(f'> {subprocess.list2cmdline(cmd_args)}')
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
     subprocess.run(cmd_args, check=True)
 
 
 def try_run(cmd_args: list[str]) -> bool:
-    print(f'> {subprocess.list2cmdline(cmd_args)}')
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
     result = subprocess.run(cmd_args)
     return result.returncode == 0
 

@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 
 parser = argparse.ArgumentParser(
     description='Run benchmarks with a specific runner')
@@ -22,7 +23,13 @@ parser.add_argument(
     '--benchmark', action='append',
     help='Path to specific benchmark JSON file. ' +
     'May be specified multiple times. ' +
-    'By default, everything in benchmarks/ is run.')
+    'If omitted, everything in benchmarks/ is run.')
+parser.add_argument(
+    '--files-dir',
+    help='Launch runner in this directory. ' +
+    'Files are uploaded from and downloaded to here' +
+    'If omitted, CWD is used.')
+
 args = parser.parse_args()
 
 if args.benchmark:
@@ -40,18 +47,23 @@ for benchmark in benchmarks:
     if not benchmark.exists():
         exit(f'benchmark not found: {str(benchmark)}')
 
+    files_dir = args.files_dir if args.files_dir else str(Path.cwd())
+
     # split using shell-like syntax,
     # in case runner-cmd has weird stuff like quotes, spaces, etc
     cmd = shlex.split(args.runner_cmd)
 
     cmd += [str(benchmark), args.bucket, args.region, str(args.throughput)]
-    print(f'> {subprocess.list2cmdline(cmd)}')
-    run = subprocess.run(cmd, text=True)
+    print(f'> {subprocess.list2cmdline(cmd)}', flush=True)
+    run = subprocess.run(cmd, text=True, cwd=files_dir)
 
     # if runner skipped the benchmark, keep going
     if run.returncode == 123:
         continue
 
-    # TODO: keep going or not?
+    # if runner failed and we're only running 1 benchmark, exit with failure
+    # but if we're running multiple benchmarks, keep going
     if run.returncode != 0:
-        exit('benchmark failed')
+        print('benchmark failed')
+        if len(benchmarks) == 1:
+            exit(1)

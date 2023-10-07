@@ -143,12 +143,12 @@ class CrtBenchmark(Benchmark):
 
     def run(self):
         # kick off all tasks
-        futures = [self._make_request(i)
-                   for i in range(len(self.config.tasks))]
+        requests = [self._make_request(i)
+                    for i in range(len(self.config.tasks))]
 
         # wait until all tasks are done
-        for future in futures:
-            future.result()
+        for request in requests:
+            request.finished_future.result()
 
     def _make_request(self, task_i) -> Future:
         task = self.config.tasks[task_i]
@@ -179,8 +179,6 @@ class CrtBenchmark(Benchmark):
             if self.config.files_on_disk:
                 recv_filepath = task.key
 
-        future: Future[None] = Future()
-
         # completion callback sets the future as complete,
         # or exits the program on error
         def on_done(error: Optional[Exception],
@@ -200,19 +198,13 @@ class CrtBenchmark(Benchmark):
                 if error_body is not None:
                     print(error_body)
 
-                future.set_exception(error)
-            else:
-                future.set_result(None)
-
-        self._s3_client.make_request(
+        return self._s3_client.make_request(
             request=awscrt.http.HttpRequest(
                 method, path, headers, send_stream),
             type=s3type,
             recv_filepath=recv_filepath,
             send_filepath=send_filepath,
             on_done=on_done)
-
-        return future
 
 
 class Boto3Benchmark(Benchmark):
@@ -289,7 +281,8 @@ if __name__ == '__main__':
               f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:.3f} ' +
               f'Mb/s:{bytes_to_megabit(bytes_per_run) / run_secs:.3f} ' +
               f'GiB/s:{bytes_to_GiB(bytes_per_run) / run_secs:.3f} ' +
-              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}')
+              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}',
+              flush=True)
 
         # Break out if we've exceeded max_repeat_secs
         app_secs = ns_to_secs(time.perf_counter_ns() - app_start_ns)

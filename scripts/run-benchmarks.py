@@ -3,7 +3,6 @@ import argparse
 from pathlib import Path
 import shlex
 import subprocess
-import sys
 
 parser = argparse.ArgumentParser(
     description='Run benchmarks with a specific runner')

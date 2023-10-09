@@ -234,7 +234,7 @@ class Benchmark:
             paginator = s3.get_paginator('list_objects_v2')
             for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
                 for obj in page['Contents']:
-                    if obj['Key'] in all_task_keys:
+                    if not obj['Key'] in all_task_keys:
                         return False
 
         else:  # upload
@@ -252,7 +252,7 @@ class Benchmark:
                       'input': self._stdin_for_cli}
         if self.verbose:
             # show live output, and immediately raise exception if process fails
-            print(f'> {subprocess.list2cmdline(self._cli_cmd)}')
+            print(f'> {subprocess.list2cmdline(self._cli_cmd)}', flush=True)
             run_kwargs['check'] = True
         else:
             # capture output, and only print if there's an error
@@ -288,7 +288,8 @@ if __name__ == '__main__':
               f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:.3f} ' +
               f'Mb/s:{bytes_to_megabit(bytes_per_run) / run_secs:.3f} ' +
               f'GiB/s:{bytes_to_GiB(bytes_per_run) / run_secs:.3f} ' +
-              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}')
+              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}',
+              flush=True)
 
         # Break out if we've exceeded max_repeat_secs
         app_secs = ns_to_secs(time.perf_counter_ns() - app_start_ns)

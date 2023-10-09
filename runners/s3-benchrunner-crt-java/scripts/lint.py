@@ -8,7 +8,7 @@ PARSER = argparse.ArgumentParser(description="Check formatting")
 
 
 def run(cmd_args: list[str]):
-    print(f'> {subprocess.list2cmdline(cmd_args)}')
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
     if subprocess.run(cmd_args).returncode != 0:
         exit('FAILED')
 

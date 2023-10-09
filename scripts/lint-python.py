@@ -9,7 +9,7 @@ PARSER = argparse.ArgumentParser(
 
 
 def run(cmd_args: list[str]):
-    print(f'> {subprocess.list2cmdline(cmd_args)}')
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
     result = subprocess.run(cmd_args)
     if result.returncode != 0:
         exit('FAILED')

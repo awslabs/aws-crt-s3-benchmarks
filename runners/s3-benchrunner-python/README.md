@@ -1,7 +1,7 @@
 # s3-benchrunner-cli
 
 ```
-usage: s3-benchrunner-python/main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
+usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
 
 Python benchmark runner. Pick which S3 library to use.
 
@@ -80,7 +80,7 @@ python3 -m pip install --upgrade "boto3[crt]"
 
 ## Building locally
 
-To test against in-development of these libraries, install from source:
+To test against the bleeding edge, install these libraries from source.
 
 First, create a virtual environment, to isolate your dev versions from system defaults:
 ```sh

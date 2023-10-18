@@ -39,8 +39,8 @@ jobs:
       matrix:
         runner:
           - s3-benchrunner-c
-          - s3-benchrunner-cli
           - s3-benchrunner-crt-java
+          - s3-benchrunner-python
     steps:
     - uses: actions/checkout@v4
 

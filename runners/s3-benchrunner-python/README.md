@@ -1,11 +1,12 @@
 # s3-benchrunner-cli
 
 ```
-usage: benchrunner.py [-h] [--verbose] [--use-existing-aws-config] BENCHMARK BUCKET REGION TARGET_THROUGHPUT
+usage: benchrunner.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
 
-Benchmark runner for AWS CLI
+Python benchmark runner. Pick which S3 library to use.
 
 positional arguments:
+  {crt,boto3-python,cli-python,cli-crt}
   BENCHMARK
   BUCKET
   REGION
@@ -13,18 +14,36 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --verbose             Show CLI commands and their output
-  --use-existing-aws-config
-                        If set, your existing AWS_CONFIG_FILE is used. (instead of one that customizes
-                        'preferred_transfer_client')
+  --verbose
 ```
 
-This runner uses your existing `aws` CLI installation.
-If you want to build the CLI yourself, see [instructions below](#building-locally).
+This is the runner for python libraries. Pass which library you want to benchmark:
+* `crt`: Uses the [aws-crt-python](https://github.com/awslabs/aws-crt-python/) (the CRT bindings for python) directly.
+* `boto3-python`: Uses [boto3](https://github.com/boto/boto3), with pure-python transfer manager.
+* ~~boto3-crt: Uses boto3, with CRT transfer manager.~~ COMING SOON
+* `cli-python`: Uses [AWS CLI](https://github.com/aws/aws-cli/), with pure-python transfer manager.
+* `cli-crt`: Uses AWS CLI, with CRT transfer manager.
 
-This runner skips benchmarks unless it can do them in a single AWS CLI command.
+See [installation instructions](#installation) before running.
+
+### How this works with aws-crt-python
+
+When using aws-crt-python (async API), all tasks are kicked off from the main thread,
+then it waits for all tasks to finish. The CRT maintains its own thread pool
+(EventLoopGroup) where the actual work is done.
+
+### How this works with boto3
+
+When using boto3 (synchronous API), a [ThreadPoolExecutor](https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor)
+is used to run all tasks. This is significantly faster than running tasks one
+after another on the main thread. I'm not sure if this is how Python programmers
+would naturally do things, but it's simple enough to recommend given the huge payoff.
+
+### How this works with AWS CLI
+
+When using AWS CLI, this runner skips benchmarks unless it can do them in a single command.
 If we used multiple commands, one after another, performance would look bad
-compared to other runners that run multiple commands in parallel.
+compared to other libraries that run multiple commands in parallel.
 That's not a fair comparison (no one runs CLI commands in parallel) so we skip those benchmarks.
 
 Here are examples, showing how a given benchmark is run in a single CLI command:
@@ -45,37 +64,69 @@ Here are examples, showing how a given benchmark is run in a single CLI command:
     * benchmark: `upload-5GiB-ram`
     * cmd: `<5GiB_random_data> | aws s3 cp - s3://my-s3-benchmarks/upload/5GiB/1`
 
+# Installation
+
+## Quick install
+
+To test against the most recent public releases of these libraries:
+
+First, install the CLI if you don't already have it:
+https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+
+Then install boto3 with CRT:
+```sh
+python3 -m pip install --upgrade "boto3[crt]"
+```
+
 ## Building locally
 
-Here are instructions to use a locally built AWS CLI.
+To test against in-development of these libraries, we'll install from source:
 
 First, create a virtual environment, to isolate your dev versions from system defaults:
 ```sh
 python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-Now we'll use python in the virtual environment...
-Install some dependencies...
+Now make a build dir somewhere.
+We're going to pull the source code for dependencies and install them...
 ```
-.venv/bin/python3 -m pip install --upgrade pip boto3
+(.venv) cd path/to/my/build/dir
 ```
 
-Next, pull the AWS CLI source code and install it in your virtual environment
-(`--editable` so we can modify its source without reinstalling):
+First, AWS CLI (`--editable` so we can modify its source without reinstalling):
 ```sh
-git clone --branch v2 https://github.com/aws/aws-cli.git
-.venv/bin/python3 -m pip install --editable aws-cli
+(.venv) git clone --branch v2 https://github.com/aws/aws-cli.git
+(.venv) python3 -m pip install --editable aws-cli
 ```
 
-And if you want the latest aws-crt-python, pull it and install that too:
+Next boto3:
 ```sh
-git clone --recurse-submodules https://github.com/awslabs/aws-crt-python.git
-.venv/bin/python3 -m pip install --editable aws-crt-python
+(.venv) git clone https://github.com/boto/boto3.git
+(.venv) python3 -m pip install --editable boto3
+```
+
+Next s3transfer:
+```sh
+(.venv) git clone https://github.com/boto/s3transfer.git
+(.venv) python3 -m pip install --editable s3transfer
+```
+
+Next botocore:
+```sh
+(.venv) git clone https://github.com/boto/botocore.git
+(.venv) python3 -m pip install --editable botocore
+```
+
+Finally aws-crt-python:
+```sh
+(.venv) git clone --recurse-submodules https://github.com/awslabs/aws-crt-python.git
+(.venv) python3 -m pip install --editable aws-crt-python
 ```
 pip complains that the newly installed 1.0.0.dev0 clashes
-with the version requirements from awscli, but we ignore this.
+with the version requirements from other packages, but we ignore this.
 
-Now, you can execute the runner using your virtual environment with the latest CLI and CRT:
+Now, you can execute the runner using your virtual environment with all the latest code:
 ```sh
-.venv/bin/python3 path/to/aws-crt-s3-benchmarks/runners/s3-benchrunner-cli/benchrunner.py --help
+(.venv) python3 path/to/aws-crt-s3-benchmarks/runners/s3-benchrunner-python/benchrunner.py --help
 ```

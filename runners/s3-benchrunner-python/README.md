@@ -1,7 +1,7 @@
 # s3-benchrunner-cli
 
 ```
-usage: benchrunner.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
+usage: s3-benchrunner-python/main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
 
 Python benchmark runner. Pick which S3 library to use.
 
@@ -128,5 +128,5 @@ with the version requirements from other packages, but you can ignore this.
 
 Now, you can execute the runner using your virtual environment with all the latest code:
 ```sh
-(.venv) python3 path/to/aws-crt-s3-benchmarks/runners/s3-benchrunner-python/benchrunner.py --help
+(.venv) python3 path/to/aws-crt-s3-benchmarks/runners/s3-benchrunner-python/main.py --help
 ```

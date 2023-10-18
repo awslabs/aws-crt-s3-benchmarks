@@ -104,5 +104,5 @@ if __name__ == '__main__':
 
     # finally, print command for executing the runner, using the virtual environment
     print("------ RUNNER_CMD ------")
-    runner_cmd = [venv_python, str(runner_dir.joinpath('benchrunner.py'))]
+    runner_cmd = [venv_python, str(runner_dir.joinpath('main.py'))]
     print(subprocess.list2cmdline(runner_cmd))

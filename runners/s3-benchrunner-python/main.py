@@ -3,17 +3,17 @@ import argparse
 import time
 
 from runner import (
-    Benchmark,
     BenchmarkConfig,
+    BenchmarkRunner,
     bytes_to_MiB,
     bytes_to_GiB,
     bytes_to_megabit,
     bytes_to_gigabit,
     ns_to_secs,
 )
-from runner.boto3 import Boto3Benchmark
-from runner.cli import CliBenchmark
-from runner.crt import CrtBenchmark
+from runner.boto3 import Boto3BenchmarkRunner
+from runner.cli import CliBenchmarkRunner
+from runner.crt import CrtBenchmarkRunner
 
 PARSER = argparse.ArgumentParser(
     description='Python benchmark runner. Pick which S3 library to use.')
@@ -26,14 +26,14 @@ PARSER.add_argument('TARGET_THROUGHPUT', type=float)
 PARSER.add_argument('--verbose', action='store_true')
 
 
-def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> Benchmark:
+def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> BenchmarkRunner:
     """Factory function. Create appropriate subclass, given the lib."""
     if lib == 'crt':
-        return CrtBenchmark(config)
+        return CrtBenchmarkRunner(config)
     if lib == 'boto3-python':
-        return Boto3Benchmark(config)
+        return Boto3BenchmarkRunner(config)
     if lib.startswith('cli-'):
-        return CliBenchmark(config, use_crt=lib.endswith('crt'))
+        return CliBenchmarkRunner(config, use_crt=lib.endswith('crt'))
     else:
         raise ValueError(f'Unknown lib: {lib}')
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
                              args.TARGET_THROUGHPUT, args.verbose)
 
     # create appropriate benchmark runner for given library
-    benchmark = create_runner_for_lib(args.LIB, config)
+    runner = create_runner_for_lib(args.LIB, config)
 
     bytes_per_run = config.bytes_per_run()
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     for run_i in range(config.max_repeat_count):
         run_start_ns = time.perf_counter_ns()
 
-        benchmark.run()
+        runner.run()
 
         run_secs = ns_to_secs(time.perf_counter_ns() - run_start_ns)
         print(f'Run:{run_i+1} ' +

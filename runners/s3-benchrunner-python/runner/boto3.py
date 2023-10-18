@@ -1,11 +1,11 @@
 import boto3  # type: ignore
 from concurrent.futures import ThreadPoolExecutor
 
-from runner import Benchmark, BenchmarkConfig
+from runner import BenchmarkConfig, BenchmarkRunner
 
 
-class Boto3Benchmark(Benchmark):
-    """Runnable benchmark using boto3.client('s3')"""
+class Boto3BenchmarkRunner(BenchmarkRunner):
+    """Benchmark runner using boto3.client('s3')"""
 
     def __init__(self, config: BenchmarkConfig):
         super().__init__(config)

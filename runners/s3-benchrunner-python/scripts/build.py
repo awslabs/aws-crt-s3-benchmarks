@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # create virtual environment (if necessary) awscli from Github
     # doesn't interfere with system installation of awscli
-    venv_dir = work_dir.joinpath('.venv')
+    venv_dir = work_dir.joinpath('venv')
     venv_python = str(venv_dir.joinpath('bin/python3'))
     if not venv_dir.exists():
         run([sys.executable, '-m', 'venv', str(venv_dir)])

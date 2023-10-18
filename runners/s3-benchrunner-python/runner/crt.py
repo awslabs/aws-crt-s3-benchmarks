@@ -2,14 +2,13 @@ import awscrt.auth  # type: ignore
 import awscrt.http  # type: ignore
 import awscrt.io  # type: ignore
 import awscrt.s3  # type: ignore
-from concurrent.futures import Future
 from typing import Optional, Tuple
 
-from runner import Benchmark, BenchmarkConfig
+from runner import BenchmarkConfig, BenchmarkRunner
 
 
-class CrtBenchmark(Benchmark):
-    """Runnable benchmark using aws-crt-python's S3Client"""
+class CrtBenchmarkRunner(BenchmarkRunner):
+    """Benchmark runner using aws-crt-python's S3Client"""
 
     def __init__(self, config: BenchmarkConfig):
         super().__init__(config)
@@ -39,7 +38,7 @@ class CrtBenchmark(Benchmark):
         for request in requests:
             request.finished_future.result()
 
-    def _make_request(self, task_i) -> Future:
+    def _make_request(self, task_i) -> awscrt.s3.S3Request:
         task = self.config.tasks[task_i]
 
         headers = awscrt.http.HttpHeaders()
@@ -80,7 +79,7 @@ class CrtBenchmark(Benchmark):
 
         # completion callback sets the future as complete,
         # or exits the program on error
-        def on_done(error: Optional[Exception],
+        def on_done(error: Optional[BaseException],
                     error_headers: Optional[list[Tuple[str, str]]],
                     error_body: Optional[bytes],
                     **kwargs):

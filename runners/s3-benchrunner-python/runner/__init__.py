@@ -82,7 +82,7 @@ class BenchmarkConfig:
         return sum([task.size for task in self.tasks])
 
 
-class Benchmark:
+class BenchmarkRunner:
     """Base class for runnable benchmark"""
 
     def __init__(self, config: BenchmarkConfig):

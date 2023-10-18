@@ -6,14 +6,16 @@ import tempfile
 from typing import Optional, Tuple
 
 from runner import (
-    Benchmark,
+    BenchmarkRunner,
     BenchmarkConfig,
     exit_with_error,
     exit_with_skip_code,
 )
 
 
-class CliBenchmark(Benchmark):
+class CliBenchmarkRunner(BenchmarkRunner):
+    """Benchmark runner using AWS CLI"""
+
     def __init__(self, config: BenchmarkConfig, use_crt: bool):
         super().__init__(config)
         self.use_crt = use_crt

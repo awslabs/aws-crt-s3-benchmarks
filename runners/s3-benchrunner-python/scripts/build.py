@@ -33,31 +33,16 @@ def fetch_git_repo(url: str, dir: Path, main_branch: str, preferred_branch: Opti
     run(fetch_cmd)
 
 
-def build_cli(work_dir: Path, branch: Optional[str], venv_python: str):
-    cli_dir = work_dir.joinpath('aws-cli')
-
-    # fetch git repo (if necessary)
-    fetch_git_repo('https://github.com/aws/aws-cli.git', cli_dir,
-                   main_branch='v2', preferred_branch=branch)
-
-    # install CLI into virtual env
-    # use --editable so we don't need to reinstall after simple file edits
-    run([venv_python, '-m', 'pip', 'install', '--editable', str(cli_dir)])
-
-
-def build_crt(work_dir: Path, branch: Optional[str], venv_python: str):
-    crt_dir = work_dir.joinpath('aws-crt-python')
-
-    # fetch git repo (if necessary)
-    fetch_git_repo('https://github.com/awslabs/aws-crt-python.git', crt_dir,
-                   main_branch='main', preferred_branch=branch)
-
-    # for faster C compilation
-    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
+def fetch_and_install(url: str,
+                      dir: Path,
+                      main_branch: str,
+                      preferred_branch: Optional[str],
+                      venv_python: str):
+    fetch_git_repo(url, dir, main_branch, preferred_branch)
 
     # install into virtual env
     # use --editable so we don't need to reinstall after simple file edits
-    run([venv_python, '-m', 'pip', 'install', '--editable', str(crt_dir)])
+    run([venv_python, '-m', 'pip', 'install', '--editable', str(dir)])
 
 
 if __name__ == '__main__':
@@ -66,7 +51,7 @@ if __name__ == '__main__':
 
     # create virtual environment (if necessary) awscli from Github
     # doesn't interfere with system installation of awscli
-    venv_dir = work_dir.joinpath('.venv')
+    venv_dir = work_dir.joinpath('venv')
     venv_python = str(venv_dir.joinpath('bin/python3'))
     if not venv_dir.exists():
         run([sys.executable, '-m', 'venv', str(venv_dir)])
@@ -74,21 +59,50 @@ if __name__ == '__main__':
         # upgrade pip to avoid warnings
         run([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
 
-    # install aws-cli from Github
-    build_cli(work_dir, args.branch, venv_python)
+    fetch_and_install(
+        url='https://github.com/aws/aws-cli.git',
+        dir=work_dir.joinpath('aws-cli'),
+        main_branch='v2',
+        preferred_branch=args.branch,
+        venv_python=venv_python)
 
-    # the runner uses boto3 too
-    run([venv_python, '-m', 'pip', 'install', 'boto3'])
+    fetch_and_install(
+        url='https://github.com/boto/boto3.git',
+        dir=work_dir.joinpath('boto3'),
+        main_branch='develop',
+        preferred_branch=args.branch,
+        venv_python=venv_python)
 
-    # install aws-crt-python from Github
-    # (pip complains that the newly installed 1.0.0.dev0 clashes
-    # with the version requirements from awscli, but we ignore this)
-    build_crt(work_dir, args.branch, venv_python)
+    fetch_and_install(
+        url='https://github.com/boto/s3transfer.git',
+        dir=work_dir.joinpath('s3transfer'),
+        main_branch='develop',
+        preferred_branch=args.branch,
+        venv_python=venv_python)
+
+    fetch_and_install(
+        url='https://github.com/boto/botocore.git',
+        dir=work_dir.joinpath('botocore'),
+        main_branch='develop',
+        preferred_branch=args.branch,
+        venv_python=venv_python)
+
+    # install aws-crt-python
+    # set CMAKE_BUILD_PARALLEL_LEVEL for faster C build
+    # NOTE: (pip complains that the newly installed 1.0.0.dev0 clashes
+    # with the version requirements from other packages, but we ignore this)
+    os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
+    fetch_and_install(
+        url='https://github.com/awslabs/aws-crt-python.git',
+        dir=work_dir.joinpath('aws-crt-python'),
+        main_branch='main',
+        preferred_branch=args.branch,
+        venv_python=venv_python)
 
     runner_dir = Path(__file__).parent.parent.resolve()  # normalize path
     runner_py = str(runner_dir.joinpath('benchrunner.py'))
 
     # finally, print command for executing the runner, using the virtual environment
     print("------ RUNNER_CMD ------")
-    runner_cmd = [venv_python, str(runner_dir.joinpath('benchrunner.py'))]
+    runner_cmd = [venv_python, str(runner_dir.joinpath('main.py'))]
     print(subprocess.list2cmdline(runner_cmd))

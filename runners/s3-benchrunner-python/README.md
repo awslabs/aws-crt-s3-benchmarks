@@ -80,7 +80,7 @@ python3 -m pip install --upgrade "boto3[crt]"
 
 ## Building locally
 
-To test against in-development of these libraries, we'll install from source:
+To test against in-development of these libraries, install from source:
 
 First, create a virtual environment, to isolate your dev versions from system defaults:
 ```sh
@@ -89,12 +89,12 @@ source .venv/bin/activate
 ```
 
 Now make a build dir somewhere.
-We're going to pull the source code for dependencies and install them...
+You're going to pull the source code for dependencies and install them...
 ```
 (.venv) cd path/to/my/build/dir
 ```
 
-First, AWS CLI (`--editable` so we can modify its source without reinstalling):
+First, AWS CLI (`--editable` so you can modify its source without reinstalling):
 ```sh
 (.venv) git clone --branch v2 https://github.com/aws/aws-cli.git
 (.venv) python3 -m pip install --editable aws-cli
@@ -124,7 +124,7 @@ Finally aws-crt-python:
 (.venv) python3 -m pip install --editable aws-crt-python
 ```
 pip complains that the newly installed 1.0.0.dev0 clashes
-with the version requirements from other packages, but we ignore this.
+with the version requirements from other packages, but you can ignore this.
 
 Now, you can execute the runner using your virtual environment with all the latest code:
 ```sh

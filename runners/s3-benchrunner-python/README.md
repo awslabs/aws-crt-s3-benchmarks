@@ -1,4 +1,4 @@
-# s3-benchrunner-cli
+# s3-benchrunner-python
 
 ```
 usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT

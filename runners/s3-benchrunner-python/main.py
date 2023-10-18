@@ -11,14 +11,11 @@ from runner import (
     bytes_to_gigabit,
     ns_to_secs,
 )
-from runner.boto3 import Boto3BenchmarkRunner
-from runner.cli import CliBenchmarkRunner
-from runner.crt import CrtBenchmarkRunner
 
 PARSER = argparse.ArgumentParser(
     description='Python benchmark runner. Pick which S3 library to use.')
 PARSER.add_argument('LIB', choices=(
-    'crt', 'boto3-python', 'cli-python', 'cli-crt'))
+    'crt', 'boto3-python', 'boto3-crt', 'cli-python', 'cli-crt'))
 PARSER.add_argument('BENCHMARK')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
@@ -28,12 +25,20 @@ PARSER.add_argument('--verbose', action='store_true')
 
 def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> BenchmarkRunner:
     """Factory function. Create appropriate subclass, given the lib."""
+    use_crt = lib.endswith('crt')
+
     if lib == 'crt':
+        from runner.crt import CrtBenchmarkRunner
         return CrtBenchmarkRunner(config)
-    if lib == 'boto3-python':
-        return Boto3BenchmarkRunner(config)
-    if lib.startswith('cli-'):
-        return CliBenchmarkRunner(config, use_crt=lib.endswith('crt'))
+
+    if lib.startswith('boto3'):
+        from runner.boto3 import Boto3BenchmarkRunner
+        return Boto3BenchmarkRunner(config, use_crt)
+
+    if lib.startswith('cli'):
+        from runner.cli import CliBenchmarkRunner
+        return CliBenchmarkRunner(config, use_crt)
+
     else:
         raise ValueError(f'Unknown lib: {lib}')
 

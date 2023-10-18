@@ -20,7 +20,7 @@ optional arguments:
 This is the runner for python libraries. Pass which library you want to benchmark:
 * `crt`: Uses the [aws-crt-python](https://github.com/awslabs/aws-crt-python/) (the CRT bindings for python) directly.
 * `boto3-python`: Uses [boto3](https://github.com/boto/boto3), with pure-python transfer manager.
-* ~~boto3-crt: Uses boto3, with CRT transfer manager.~~ COMING SOON
+* `boto3-crt`: Uses boto3, with CRT transfer manager.
 * `cli-python`: Uses [AWS CLI](https://github.com/aws/aws-cli/), with pure-python transfer manager.
 * `cli-crt`: Uses AWS CLI, with CRT transfer manager.
 

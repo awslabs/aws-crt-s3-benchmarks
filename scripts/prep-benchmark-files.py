@@ -198,7 +198,7 @@ def get_existing_s3_objects(s3, bucket: str) -> dict[str, ExistingS3Object]:
 
         response = s3.list_objects_v2(**request_kwargs)
 
-        for obj in response['Contents']:
+        for obj in response.get('Contents', []):
             key = obj['Key']
             size = obj['Size']
             checksum_algorithm_list = obj.get('ChecksumAlgorithm')

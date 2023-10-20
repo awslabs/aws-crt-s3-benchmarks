@@ -2,6 +2,7 @@ import awscrt.auth  # type: ignore
 import awscrt.http  # type: ignore
 import awscrt.io  # type: ignore
 import awscrt.s3  # type: ignore
+from threading import Semaphore
 from typing import Optional, Tuple
 
 from runner import BenchmarkConfig, BenchmarkRunner
@@ -29,10 +30,36 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             signing_config=signing_config,
             throughput_target_gbps=self.config.target_throughput_Gbps)
 
+        # Cap the number of meta-requests we'll work on simultaneously,
+        # so the application doesn't exceed its file-descriptor limits
+        # when a workload has tons of files.
+        max_concurrency = 10_000
+        try:
+            from resource import RLIMIT_NOFILE, getrlimit
+            current_file_limit, hard_limit = getrlimit(RLIMIT_NOFILE)
+            self._verbose(
+                f'RLIMIT_NOFILE - current: {current_file_limit} hard:{hard_limit}')
+            if current_file_limit > 0:
+                # An HTTP connection needs a file-descriptor too, so if we were
+                # really transferring every file simultaneously we'd need 2X.
+                # Set concurrency less than half to give some wiggle room.
+                max_concurrency = min(
+                    max_concurrency, int(current_file_limit * 0.40))
+
+        except ModuleNotFoundError:
+            # resource module not available on Windows
+            pass
+
+        self._verbose(f'max_concurrency: {max_concurrency}')
+        self._concurrency_semaphore = Semaphore(max_concurrency)
+
     def run(self):
         # kick off all tasks
-        requests = [self._make_request(i)
-                    for i in range(len(self.config.tasks))]
+        # respect concurrency semaphore so we don't have too many running at once
+        requests = []
+        for i in range(len(self.config.tasks)):
+            self._concurrency_semaphore.acquire()
+            requests.append(self._make_request(i))
 
         # wait until all tasks are done
         for request in requests:
@@ -57,12 +84,10 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             headers.add('Content-Type', 'application/octet-stream')
 
             if self.config.files_on_disk:
-                if self.config.verbose:
-                    print(f'aws-crt-python upload from disk: {task.key}')
+                self._verbose(f'aws-crt-python upload from disk: {task.key}')
                 send_filepath = task.key
             else:
-                if self.config.verbose:
-                    print(f'aws-crt-python upload from RAM: {task.key}')
+                self._verbose(f'aws-crt-python upload from RAM: {task.key}')
                 send_stream = self._new_iostream_to_upload_from_ram(task.size)
 
             if self.config.checksum:
@@ -76,12 +101,10 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             headers.add('Content-Length', '0')
 
             if self.config.files_on_disk:
-                if self.config.verbose:
-                    print(f'aws-crt-python download to disk: {task.key}')
+                self._verbose(f'aws-crt-python download to disk: {task.key}')
                 recv_filepath = task.key
             else:
-                if self.config.verbose:
-                    print(f'aws-crt-python download to RAM: {task.key}')
+                self._verbose(f'aws-crt-python download to RAM: {task.key}')
 
             if self.config.checksum:
                 checksum_config = awscrt.s3.S3ChecksumConfig(
@@ -93,6 +116,8 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                     error_headers: Optional[list[Tuple[str, str]]],
                     error_body: Optional[bytes],
                     **kwargs):
+
+            self._concurrency_semaphore.release()
 
             if error:
                 print(f'Task[{task_i}] failed. action:{task.action} ' +

@@ -29,9 +29,8 @@ class CliBenchmarkRunner(BenchmarkRunner):
 
         os.environ['AWS_CONFIG_FILE'] = self._cli_config_file.name
 
-        if self.config.verbose:
-            print(f'--- AWS_CONFIG_FILE ---')
-            print(config_text)
+        self._verbose(f'--- AWS_CONFIG_FILE ---')
+        self._verbose(config_text)
 
         self._cli_cmd, self._stdin_for_cli = self._derive_cli_cmd()
 

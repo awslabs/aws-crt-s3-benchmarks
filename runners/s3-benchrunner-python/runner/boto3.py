@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import os
 
-from runner import BenchmarkConfig, BenchmarkRunner
+from runner import BenchmarkConfig, BenchmarkRunner, gigabit_to_bytes
 
 
 class Boto3BenchmarkRunner(BenchmarkRunner):
@@ -10,10 +10,11 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
     def __init__(self, config: BenchmarkConfig, use_crt: bool):
         super().__init__(config)
 
-        # boto3 uses CRT if it's installed, unless env-var BOTO_DISABLE_CRT=true
+        # currently, boto3 uses CRT if it's installed, unless env-var BOTO_DISABLE_CRT=true
         # so set the env-var before importing boto3
         os.environ['BOTO_DISABLE_CRT'] = str(not use_crt).lower()
         import boto3  # type: ignore
+        import boto3.s3.transfer  # type: ignore
         import botocore.compat  # type: ignore
         assert use_crt == botocore.compat.HAS_CRT
 
@@ -25,40 +26,93 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
 
         self._s3_client = boto3.client('s3')
 
+        # Set up boto3 TransferConfig
+        # NOTE 1: Only SOME settings are used by both CRT and pure-python impl.
+        # NOTE 2: Don't set anything that's not publicly documented here:
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
+        transfer_kwargs = {
+            'max_bandwidth': gigabit_to_bytes(self.config.target_throughput_Gbps),
+        }
+        if not use_crt:
+            # I've tried tweaking settings to get performance up,
+            # but I'm not seeing a difference on benchmarks of single large files...
+            # transfer_kwargs['max_concurrency'] = os.cpu_count()
+            # transfer_kwargs['max_io_queue'] = 1000
+            pass
+
+        self._transfer_config = boto3.s3.transfer.TransferConfig(
+            **transfer_kwargs)
+
+        # report settings used by CRT and pure-python impl
+        self._verbose_config('max_bandwidth')
+        self._verbose_config('multipart_chunksize')
+        self._verbose_config('multipart_threshold')
+        if not use_crt:
+            # report settings that only the pure-python impl uses, including
+            # undocumented stuff on the s3transfer.manager.TransferConfig base class
+            self._verbose_config('max_request_concurrency')
+            self._verbose_config('max_submission_concurrency')
+            self._verbose_config('max_request_queue_size')
+            self._verbose_config('max_submission_queue_size')
+            self._verbose_config('max_io_queue_size')
+            self._verbose_config('io_chunksize')
+            self._verbose_config('num_download_attempts')
+            self._verbose_config('max_in_memory_upload_chunks')
+            self._verbose_config('max_in_memory_download_chunks')
+
     def _verbose(self, msg):
         if self.config.verbose:
             print(msg)
 
+    def _verbose_config(self, attr_name):
+        self._verbose(
+            f'  {attr_name}: {getattr(self._transfer_config, attr_name)}')
+
     def _make_request(self, task_i: int):
         task = self.config.tasks[task_i]
 
+        call_name = None
+        call_kwargs = {
+            'Bucket': self.config.bucket,
+            'Key': task.key,
+            'ExtraArgs': {},
+            'Config': self._transfer_config,
+        }
+
         if task.action == 'upload':
             if self.config.files_on_disk:
-                self._verbose(f'upload_file("{task.key}")')
-                self._s3_client.upload_file(
-                    task.key, self.config.bucket, task.key)
-
+                call_name = 'upload_file'
+                call_kwargs['Filename'] = task.key
             else:
-                self._verbose(f'upload_fileobj("{task.key}")')
-                upload_stream = self._new_iostream_to_upload_from_ram(
+                call_name = 'upload_fileobj'
+                call_kwargs['Fileobj'] = self._new_iostream_to_upload_from_ram(
                     task.size)
-                self._s3_client.upload_fileobj(
-                    upload_stream, self.config.bucket, task.key)
+
+            # NOTE: botocore will add a checksum for uploads, even if we don't
+            # tell it to (falls back to Content-MD5)
+            if self.config.checksum:
+                call_kwargs['ExtraArgs']['ChecksumAlgorithm'] = self.config.checksum
 
         elif task.action == 'download':
             if self.config.files_on_disk:
-                self._verbose(f'download_file("{task.key}")')
-                self._s3_client.download_file(
-                    self.config.bucket, task.key, task.key)
-
+                call_name = 'download_file'
+                call_kwargs['Filename'] = task.key
             else:
-                self._verbose(f'download_fileobj("{task.key}")')
-                download_stream = Boto3DownloadFileObj()
-                self._s3_client.download_fileobj(
-                    self.config.bucket, task.key, download_stream)
+                call_name = 'download_fileobj'
+                call_kwargs['Fileobj'] = Boto3DownloadFileObj()
+
+            # boto3 doesn't validate download checksums unless you tell it to
+            if self.config.checksum:
+                call_kwargs['ExtraArgs']['ChecksumMode'] = 'ENABLED'
 
         else:
             raise RuntimeError(f'Unknown action: {task.action}')
+
+        self._verbose(
+            f"{call_name} {call_kwargs['Key']} ExtraArgs={call_kwargs['ExtraArgs']}")
+
+        method = getattr(self._s3_client, call_name)
+        method(**call_kwargs)
 
     def run(self):
         # boto3 is a synchronous API, but we can run requests in parallel

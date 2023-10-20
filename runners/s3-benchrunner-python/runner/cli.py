@@ -39,8 +39,12 @@ class CliBenchmarkRunner(BenchmarkRunner):
         lines = ['[default]',
                  's3 =']
         if self.use_crt:
-            lines += ['  preferred_transfer_client = crt',
-                      f'  target_throughput = {self.config.target_throughput_Gbps} Gb/s']
+            lines += ['  preferred_transfer_client = crt']
+
+            # target_bandwidth can't be a float, so use Mb/s instead of Gb/s
+            megabits = int(self.config.target_throughput_Gbps * 1000)
+            lines += [f'  target_bandwidth = {megabits} Mb/s']
+
         else:
             lines += ['  preferred_transfer_client = default']
 
@@ -127,6 +131,10 @@ class CliBenchmarkRunner(BenchmarkRunner):
 
         # Add common options, used by all commands
         cmd += ['--region', self.config.region]
+
+        if not self.config.verbose:
+            # Progress callbacks may have performance impact
+            cmd += ['--quiet']
 
         # As of Sept 2023, can't pick checksum for: aws s3 cp
         if self.config.checksum:

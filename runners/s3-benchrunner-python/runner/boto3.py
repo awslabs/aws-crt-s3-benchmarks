@@ -60,10 +60,6 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
             self._verbose_config('max_in_memory_upload_chunks')
             self._verbose_config('max_in_memory_download_chunks')
 
-    def _verbose(self, msg):
-        if self.config.verbose:
-            print(msg)
-
     def _verbose_config(self, attr_name):
         self._verbose(
             f'  {attr_name}: {getattr(self._transfer_config, attr_name)}')

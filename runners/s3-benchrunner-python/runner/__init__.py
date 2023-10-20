@@ -106,6 +106,10 @@ class BenchmarkRunner:
     def run(self):
         raise NotImplementedError()
 
+    def _verbose(self, msg):
+        if self.config.verbose:
+            print(msg)
+
     def _new_iostream_to_upload_from_ram(self, size: int) -> io.BytesIO:
         """Return new BytesIO stream, to use when uploading from RAM"""
         # use memoryview to avoid creating a copy of the (possibly very large) underlying bytes

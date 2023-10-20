@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import io
 import json
+import math
 import os
 import sys
 
@@ -33,6 +34,10 @@ def bytes_to_megabit(bytes: int) -> float:
 
 def bytes_to_gigabit(bytes: int) -> float:
     return (bytes * 8) / 1_000_000_000.0
+
+
+def gigabit_to_bytes(gigabit: float) -> int:
+    return math.ceil((gigabit * 1_000_000_000.0) / 8.0)
 
 
 @dataclass

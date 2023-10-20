@@ -48,6 +48,7 @@ class CrtBenchmarkRunner(BenchmarkRunner):
         send_stream = None  # if uploading from ram
         send_filepath = None  # if uploading from disk
         recv_filepath = None  # if downloading to disk
+        checksum_config = None
 
         if task.action == 'upload':
             s3type = awscrt.s3.S3RequestType.PUT_OBJECT
@@ -64,6 +65,11 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                     print(f'aws-crt-python upload from RAM: {task.key}')
                 send_stream = self._new_iostream_to_upload_from_ram(task.size)
 
+            if self.config.checksum:
+                checksum_config = awscrt.s3.S3ChecksumConfig(
+                    algorithm=awscrt.s3.S3ChecksumAlgorithm[self.config.checksum],
+                    location=awscrt.s3.S3ChecksumLocation.TRAILER)
+
         elif task.action == 'download':
             s3type = awscrt.s3.S3RequestType.GET_OBJECT
             method = 'GET'
@@ -76,6 +82,10 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             else:
                 if self.config.verbose:
                     print(f'aws-crt-python download to RAM: {task.key}')
+
+            if self.config.checksum:
+                checksum_config = awscrt.s3.S3ChecksumConfig(
+                    validate_response=True)
 
         # completion callback sets the future as complete,
         # or exits the program on error
@@ -97,9 +107,10 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                     print(error_body)
 
         return self._s3_client.make_request(
+            type=s3type,
             request=awscrt.http.HttpRequest(
                 method, path, headers, send_stream),
-            type=s3type,
             recv_filepath=recv_filepath,
             send_filepath=send_filepath,
+            checksum_config=checksum_config,
             on_done=on_done)

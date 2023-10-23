@@ -511,6 +511,7 @@ int Task::onDownloadData(
 
 void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
     double n = durations.size();
+    printf("foo:%d", n); 
     double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
 
     double durationVariance = std::accumulate(durations.begin(), durations.end(), 0.0,
@@ -525,11 +526,11 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
     aws_init_memory_usage_for_current_process(&mu);
     
     printf(
-        "Overall stats; Duration Mean:%.3f Duration Variance:%.3f Gb/s Mean:%.1f Peak RSS:%zu\n",
+        "Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Througput Mean:%.1f Gb/s Peak RSS:%zu Gb\n",
         durationMean,
         durationVariance,
         gbsMean,
-        mu.maxrss);
+        (double)mu.maxrss / 1024.0 / 1024.0 );
 }
 
 int main(int argc, char *argv[])

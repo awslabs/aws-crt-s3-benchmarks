@@ -523,7 +523,7 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
 
     double gbsMean = bytesToGigabit(bytesPerRun) / durationMean;
 
-    struct aws_memory_usage mu;
+    struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
     printf(

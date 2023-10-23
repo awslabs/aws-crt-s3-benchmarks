@@ -567,7 +567,7 @@ int main(int argc, char *argv[])
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
-        durations.push_back(appDurationSecs);
+        durations.push_back(runDurationSecs);
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
     }

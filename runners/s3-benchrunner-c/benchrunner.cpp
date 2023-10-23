@@ -7,9 +7,11 @@
 #include <list>
 #include <random>
 #include <thread>
+#include <vector>
 
 #include <aws/auth/credentials.h>
 #include <aws/http/connection.h>
+#include <aws/common/system_resource_util.h>
 #include <aws/http/request_response.h>
 #include <aws/io/channel_bootstrap.h>
 #include <aws/io/event_loop.h>
@@ -507,6 +509,29 @@ int Task::onDownloadData(
     return AWS_OP_SUCCESS;
 }
 
+void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
+    double n = durations.size();
+    double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
+
+    double durationVariance = std::accumulate(durations.begin(), durations.end(), 0.0,
+        [&durationMean, &n](double accumulator, const double& val) {
+            return accumulator + ((val - durationMean) * (val - durationMean) / n);
+        }
+    );
+
+    double gbsMean = bytesToGigabit(bytesPerRun) / durationMean;
+
+    struct aws_memory_usage mu;
+    aws_init_memory_usage_for_current_process(&mu);
+    
+    printf(
+        "Overall stats; Duration Mean:%.3f Duration Variance:%.3f Gb/s Mean:%.1f Peak RSS:%zu\n",
+        durationMean,
+        durationVariance,
+        gbsMean,
+        mu.maxrss);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 5)
@@ -521,6 +546,7 @@ int main(int argc, char *argv[])
     uint64_t bytesPerRun = config.bytesPerRun();
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
+    std::vector<double> durations;
     auto appStart = high_resolution_clock::now();
     for (int runI = 0; runI < config.maxRepeatCount; ++runI)
     {
@@ -541,9 +567,12 @@ int main(int argc, char *argv[])
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
+        durations.push_back(appDurationSecs);
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
     }
+
+    printStats(bytesPerRun, durations);
 
     return 0;
 }

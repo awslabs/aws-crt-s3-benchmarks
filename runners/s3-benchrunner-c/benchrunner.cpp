@@ -511,7 +511,6 @@ int Task::onDownloadData(
 
 void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
     double n = durations.size();
-    printf("foo:%d", n); 
     double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
 
     double durationVariance = std::accumulate(durations.begin(), durations.end(), 0.0,

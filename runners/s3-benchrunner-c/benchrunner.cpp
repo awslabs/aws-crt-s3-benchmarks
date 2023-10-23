@@ -521,16 +521,18 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
         [&durationMean, &n](double accumulator, const double &val)
         { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
 
-    double gbsMean = bytesToGigabit(bytesPerRun) / durationMean;
+    double mbsMean = bytesToMegabit(bytesPerRun) / durationMean;
+    double mbsVariance = bytesToMegabit(bytesPerRun) / durationVariance;
 
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
     printf(
-        "Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s Peak RSS:%.3f Mb\n",
+        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s Peak RSS:%.3f Mb\n",
+        gbsMean,
+        gbsVariance,
         durationMean,
         durationVariance,
-        gbsMean,
         (double)mu.maxrss / 1024.0);
 }
 

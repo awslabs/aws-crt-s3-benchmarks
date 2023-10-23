@@ -25,12 +25,15 @@ public class Main {
             durationVariance += (durations.get(i) - durationMean) * (durations.get(i) - durationMean) / n;
         }
 
-        double gbsMean = Util.bytesToGigabit(bytesPerRun) / durationMean;
+        double mbsMean = Util.bytesToMegabit(bytesPerRun) / durationMean;
+        double mbsVariance = Util.bytesToMegabit(bytesPerRun) / durationVariance;
 
-        System.out.printf("Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s \n",
+        System.out.printf("Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
+                mbsMean,
+                mbsVariance,
                 durationMean,
-                durationVariance,
-                gbsMean);
+                durationVariance
+                );
     }
 
     public static void main(String[] args) {

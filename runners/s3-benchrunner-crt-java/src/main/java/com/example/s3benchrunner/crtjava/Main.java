@@ -27,7 +27,7 @@ public class Main {
 
         double gbsMean = Util.bytesToGigabit(bytesPerRun) / durationMean;
         
-        System.out.printf("Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s",
+        System.out.printf("Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s \n",
                     durationMean,
                     durationVariance,
                     gbsMean);

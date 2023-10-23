@@ -556,6 +556,7 @@ int main(int argc, char *argv[])
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
+        durations.push_back(runSecs);
         printf(
             "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
             runI + 1,
@@ -567,7 +568,6 @@ int main(int argc, char *argv[])
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
-        durations.push_back(runDurationSecs);
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
     }

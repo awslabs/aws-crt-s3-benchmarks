@@ -28,12 +28,12 @@ public class Main {
         double mbsMean = Util.bytesToMegabit(bytesPerRun) / durationMean;
         double mbsVariance = Util.bytesToMegabit(bytesPerRun) / durationVariance;
 
-        System.out.printf("Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
+        System.out.printf(
+                "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
                 mbsMean,
                 mbsVariance,
                 durationMean,
-                durationVariance
-                );
+                durationVariance);
     }
 
     public static void main(String[] args) {

@@ -15,22 +15,22 @@ public class Main {
 
     private static void printStats(long bytesPerRun, List<Double> durations) {
         double n = durations.size();
-        double durationMean = 0; 
+        double durationMean = 0;
         for (int i = 0; i < n; ++i) {
-            durationMean += durations.get(i) / n; 
+            durationMean += durations.get(i) / n;
         }
 
-        double durationVariance = 0; 
+        double durationVariance = 0;
         for (int i = 0; i < n; ++i) {
-            durationVariance += (durations.get(i) - durationMean) * (durations.get(i) - durationMean) / n; 
+            durationVariance += (durations.get(i) - durationMean) * (durations.get(i) - durationMean) / n;
         }
 
         double gbsMean = Util.bytesToGigabit(bytesPerRun) / durationMean;
-        
+
         System.out.printf("Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s \n",
-                    durationMean,
-                    durationVariance,
-                    gbsMean);
+                durationMean,
+                durationVariance,
+                gbsMean);
     }
 
     public static void main(String[] args) {

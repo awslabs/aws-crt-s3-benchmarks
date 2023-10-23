@@ -10,8 +10,8 @@
 #include <vector>
 
 #include <aws/auth/credentials.h>
-#include <aws/http/connection.h>
 #include <aws/common/system_resource_util.h>
+#include <aws/http/connection.h>
 #include <aws/http/request_response.h>
 #include <aws/io/channel_bootstrap.h>
 #include <aws/io/event_loop.h>
@@ -509,27 +509,29 @@ int Task::onDownloadData(
     return AWS_OP_SUCCESS;
 }
 
-void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
+void printStats(uint64_t bytesPerRun, const vector<double> &durations)
+{
     double n = durations.size();
     double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
 
-    double durationVariance = std::accumulate(durations.begin(), durations.end(), 0.0,
-        [&durationMean, &n](double accumulator, const double& val) {
-            return accumulator + ((val - durationMean) * (val - durationMean) / n);
-        }
-    );
+    double durationVariance = std::accumulate(
+        durations.begin(),
+        durations.end(),
+        0.0,
+        [&durationMean, &n](double accumulator, const double &val)
+        { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
 
     double gbsMean = bytesToGigabit(bytesPerRun) / durationMean;
 
     struct aws_memory_usage mu;
     aws_init_memory_usage_for_current_process(&mu);
-    
+
     printf(
         "Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s Peak RSS:%.3f Mb\n",
         durationMean,
         durationVariance,
         gbsMean,
-        (double)mu.maxrss / 1024.0 );
+        (double)mu.maxrss / 1024.0);
 }
 
 int main(int argc, char *argv[])

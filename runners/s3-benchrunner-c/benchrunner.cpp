@@ -525,11 +525,11 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations) {
     aws_init_memory_usage_for_current_process(&mu);
     
     printf(
-        "Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s Peak RSS:%.1f Gb\n",
+        "Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s Peak RSS:%.3f Mb\n",
         durationMean,
         durationVariance,
         gbsMean,
-        (double)mu.maxrss / 1024.0 / 1024.0 );
+        (double)mu.maxrss / 1024.0 );
 }
 
 int main(int argc, char *argv[])

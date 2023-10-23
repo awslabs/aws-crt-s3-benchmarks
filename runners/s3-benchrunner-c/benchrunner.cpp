@@ -528,9 +528,10 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
     aws_init_memory_usage_for_current_process(&mu);
 
     printf(
-        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s Peak RSS:%.3f Mb\n",
-        gbsMean,
-        gbsVariance,
+        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration "
+        "Variance:%.3f s Peak RSS:%.3f Mb\n",
+        mbsMean,
+        mbsVariance,
         durationMean,
         durationVariance,
         (double)mu.maxrss / 1024.0);

@@ -13,19 +13,19 @@ public class Main {
 
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
-    private static void printStats(long bytesPerRun, List<double> durations) {
+    private static void printStats(long bytesPerRun, List<Double> durations) {
         double n = durations.size();
         double durationMean = 0; 
         for (int i = 0; i < n; ++i) {
-            durationMean += durations[i] / n; 
+            durationMean += durations.get(i) / n; 
         }
 
         double durationVariance = 0; 
         for (int i = 0; i < n; ++i) {
-            durationVariance += (durations[i] - durationMean) * (durations[i] - durationMean) / n; 
+            durationVariance += (durations.get(i) - durationMean) * (durations.get(i) - durationMean) / n; 
         }
 
-        double gbsMean = bytesToGigabit(bytesPerRun) / durationMean;
+        double gbsMean = Util.bytesToGigabit(bytesPerRun) / durationMean;
         
         System.out.printf("Overall stats; Duration Mean:%.3f s Duration Variance:%.3f s Throughput Mean:%.1f Gb/s",
                     durationMean,
@@ -46,7 +46,7 @@ public class Main {
         var benchmark = new Benchmark(config, bucket, region, targetThroughputGbps);
         long bytesPerRun = config.bytesPerRun();
 
-        List<double> durations = new ArrayList<>();
+        List<Double> durations = new ArrayList<>();
         // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
         long appStartNs = System.nanoTime();
         for (int runI = 0; runI < config.maxRepeatCount; runI++) {

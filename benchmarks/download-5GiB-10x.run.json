@@ -8,52 +8,52 @@
     "tasks": [
         {
             "action": "download",
-            "key": "download/5GiB/1",
+            "key": "download/5GiB-10x/01",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/2",
+            "key": "download/5GiB-10x/02",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/3",
+            "key": "download/5GiB-10x/03",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/4",
+            "key": "download/5GiB-10x/04",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/5",
+            "key": "download/5GiB-10x/05",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/6",
+            "key": "download/5GiB-10x/06",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/7",
+            "key": "download/5GiB-10x/07",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/8",
+            "key": "download/5GiB-10x/08",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/9",
+            "key": "download/5GiB-10x/09",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/10",
+            "key": "download/5GiB-10x/10",
             "size": 5368709120
         }
     ]

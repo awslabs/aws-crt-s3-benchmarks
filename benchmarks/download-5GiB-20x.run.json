@@ -8,102 +8,102 @@
     "tasks": [
         {
             "action": "download",
-            "key": "download/5GiB/1",
+            "key": "download/5GiB-20x/01",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/2",
+            "key": "download/5GiB-20x/02",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/3",
+            "key": "download/5GiB-20x/03",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/4",
+            "key": "download/5GiB-20x/04",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/5",
+            "key": "download/5GiB-20x/05",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/6",
+            "key": "download/5GiB-20x/06",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/7",
+            "key": "download/5GiB-20x/07",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/8",
+            "key": "download/5GiB-20x/08",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/9",
+            "key": "download/5GiB-20x/09",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/10",
+            "key": "download/5GiB-20x/10",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/11",
+            "key": "download/5GiB-20x/11",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/12",
+            "key": "download/5GiB-20x/12",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/13",
+            "key": "download/5GiB-20x/13",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/14",
+            "key": "download/5GiB-20x/14",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/15",
+            "key": "download/5GiB-20x/15",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/16",
+            "key": "download/5GiB-20x/16",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/17",
+            "key": "download/5GiB-20x/17",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/18",
+            "key": "download/5GiB-20x/18",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/19",
+            "key": "download/5GiB-20x/19",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB/20",
+            "key": "download/5GiB-20x/20",
             "size": 5368709120
         }
     ]

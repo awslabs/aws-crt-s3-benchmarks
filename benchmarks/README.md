@@ -4,7 +4,8 @@
 
 We use JSON files to detail each benchmark's workload.
 
-For example, `download-256KiB-10_000x.run.json`:
+For example, `download-256KiB-10_000x.run.json` is a benchmark for
+downloading 10,000 files, each of which is 256KiB. It looks like:
 ```
 {
     "version": 2,
@@ -14,13 +15,13 @@ For example, `download-256KiB-10_000x.run.json`:
     "maxRepeatCount": 10,
     "maxRepeatSecs": 600,
     "tasks": [
-        {"action": "download", "key": "download/256KiB/1", "size": 262144},
-        {"action": "download", "key": "download/256KiB/2", "size": 262144},
-        {"action": "download", "key": "download/256KiB/3", "size": 262144},
+        {"action": "download", "key": "download/256KiB-10_000x/00001", "size": 262144},
+        {"action": "download", "key": "download/256KiB-10_000x/00002", "size": 262144},
+        {"action": "download", "key": "download/256KiB-10_000x/00003", "size": 262144},
         ... etc etc 9994 more lines ...
-        {"action": "download","key": "download/256KiB/9998", "size": 262144},
-        {"action": "download","key": "download/256KiB/9999", "size": 262144},
-        {"action": "download","key": "download/256KiB/10000", "size": 262144}
+        {"action": "download", "key": "download/256KiB-10_000x/09998", "size": 262144},
+        {"action": "download", "key": "download/256KiB-10_000x/09999", "size": 262144},
+        {"action": "download", "key": "download/256KiB-10_000x/10000", "size": 262144}
     ]
 }
 ```

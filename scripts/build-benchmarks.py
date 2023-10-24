@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import math
 from pathlib import Path
 import json
 import re
@@ -70,20 +71,33 @@ def build_benchmark(src_file: Path):
     assert action in ('download', 'upload')
     assert checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256')
 
-    # warn if benchmark's name doesn't match its contents
-    expected_name = f'{action}-{file_size_str}'
+    # Come up with "expected" name for the benchmark and the dir it uses.
+    # Benchmark name will be like: upload-256KiB-10_000x
+    # Filepaths will be like:      upload/256KiB-10_000x/00001
+    #
+    # All files for a given benchmark are in their own folder because
+    # AWS CLI has a bad time unless it's operating on ALL files in a directory.
+    # See: https://github.com/awslabs/aws-crt-s3-benchmarks/pull/24
+    #
+    # Use top-level directories named like "upload/" "download/" so that
+    # users can clean an S3 bucket by deleting just 1 or 2 directories
 
-    if num_files != 1:
-        expected_name += f'-{num_files:_}x'
+    dirname = f'{file_size_str}'
+    dirname += f'-{num_files:_}x'
 
     if checksum:
-        expected_name += f'-{checksum.lower()}'
+        dirname += f'-{checksum.lower()}'
 
+    # suffix is anything that shouldn't go into dir name
+    # (i.e. "-ram" because a download benchmark could use the same files in S3
+    # whether or not it's downloading to ram or disk)
+    suffix = ''
     if not files_on_disk:
-        expected_name += '-ram'
+        suffix += '-ram'
 
-    expected_name += '.src.json'
-
+    # warn if benchmark name doesn't match expected
+    # people might just be messing around locally, so this isn't a fatal error
+    expected_name = f'{action}-{dirname}{suffix}.src.json'
     if expected_name != src_file.name:
         print(f'WARNING: "{src_file.name}" should be named "{expected_name}"')
 
@@ -98,10 +112,17 @@ def build_benchmark(src_file: Path):
         'tasks': [],
     }
 
+    # format filenames like "00001" -> "10000" for a benchmark with 1000 files,
+    # so the names sort nicely, but aren't wider than they need to be
+    int_width = int(math.log10(num_files)) + 1
+    int_fmt = f"{{:0{int_width}}}"
+
     for i in range(num_files):
+        filename = int_fmt.format(i + 1)
+
         task = {
             'action': action,
-            'key': f'{action}/{file_size_str}/{i+1}',
+            'key': f'{action}/{dirname}/{filename}',
             'size': file_size,
         }
         dst_json['tasks'].append(task)

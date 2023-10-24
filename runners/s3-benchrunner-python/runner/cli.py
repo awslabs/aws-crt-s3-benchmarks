@@ -122,11 +122,11 @@ class CliBenchmarkRunner(BenchmarkRunner):
             # Need --recursive to do multiple files
             cmd.append('--recursive')
 
-            # If not using all files in dir, --exclude "*" and then --include the ones we want.
-            if not self._using_all_files_in_dir(first_task.action, first_task_dir):
-                cmd += ['--exclude', '*']
-                for task in self.config.tasks:
-                    cmd += ['--include', os.path.split(task.key)[1]]
+            # Ensure that we're using all files in dir.
+            # As of Oct 2023, CLI has bad performance if we do --recursive
+            # but then try and filter files via --exclude and --include.
+            self._assert_using_all_files_in_dir(
+                first_task.action, first_task_dir)
 
         # Add common options, used by all commands
         cmd += ['--region', self.config.region]
@@ -142,12 +142,12 @@ class CliBenchmarkRunner(BenchmarkRunner):
 
         return cmd, stdin
 
-    def _using_all_files_in_dir(self, action: str, prefix: str) -> bool:
+    def _assert_using_all_files_in_dir(self, action: str, prefix: str):
         """
-        Return True if benchmark uploads all files in dir, or downloads objects at S3 prefix.
-        Returns False if there are files that should be ignored.
+        Exit if dir is missing files from benchmark,
+        or if dir has extra files not listed in the benchmark.
         """
-        all_task_keys = {task.key for task in self.config.tasks}
+        remaining_task_keys = {task.key for task in self.config.tasks}
 
         if action == 'download':
             # Check all S3 objects at this prefix
@@ -158,18 +158,32 @@ class CliBenchmarkRunner(BenchmarkRunner):
             paginator = s3.get_paginator('list_objects_v2')
             for page in paginator.paginate(Bucket=self.config.bucket, Prefix=prefix):
                 for obj in page['Contents']:
-                    if not obj['Key'] in all_task_keys:
-                        return False
+                    key = obj['Key']
+                    try:
+                        remaining_task_keys.remove(key)
+                    except KeyError:
+                        exit_with_skip_code(
+                            f"Found file not listed in benchmark: s3://{self.config.bucket}/{key}\n" +
+                            "CLI cannot run multi-file benchmark unless it downloads the whole directory.")
+
+            if any(remaining_task_keys):
+                exit_with_error(
+                    f"File not found in s3://{self.config.bucket}: {next(iter(remaining_task_keys))}")
 
         else:  # upload
             # Check all files in this local dir
             for child_i in Path(prefix).iterdir():
-                if child_i.is_file():
-                    child_str = str(child_i)
-                    if not child_str in all_task_keys:
-                        return False
+                key = str(child_i)
+                try:
+                    remaining_task_keys.remove(key)
+                except KeyError:
+                    exit_with_skip_code(
+                        f"Found file not listed in benchmark: {os.getcwd()}/{key}\n" +
+                        "CLI cannot run multi-file benchmark unless it uploads the whole directory.")
 
-        return True
+            if any(remaining_task_keys):
+                exit_with_error(
+                    f"File not found: {next(iter(remaining_task_keys))}")
 
     def run(self):
         run_kwargs = {'args': self._cli_cmd,

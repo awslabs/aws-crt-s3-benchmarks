@@ -1,5 +1,8 @@
 package com.example.s3benchrunner.crtjava;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
 
     /////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
@@ -9,6 +12,29 @@ public class Main {
     static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 256;
 
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
+
+    private static void printStats(long bytesPerRun, List<Double> durations) {
+        double n = durations.size();
+        double durationMean = 0;
+        for (int i = 0; i < n; ++i) {
+            durationMean += durations.get(i) / n;
+        }
+
+        double durationVariance = 0;
+        for (int i = 0; i < n; ++i) {
+            durationVariance += (durations.get(i) - durationMean) * (durations.get(i) - durationMean) / n;
+        }
+
+        double mbsMean = Util.bytesToMegabit(bytesPerRun) / durationMean;
+        double mbsVariance = Util.bytesToMegabit(bytesPerRun) / durationVariance;
+
+        System.out.printf(
+                "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
+                mbsMean,
+                mbsVariance,
+                durationMean,
+                durationVariance);
+    }
 
     public static void main(String[] args) {
         if (args.length != 4) {
@@ -23,6 +49,7 @@ public class Main {
         var benchmark = new Benchmark(config, bucket, region, targetThroughputGbps);
         long bytesPerRun = config.bytesPerRun();
 
+        List<Double> durations = new ArrayList<>();
         // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
         long appStartNs = System.nanoTime();
         for (int runI = 0; runI < config.maxRepeatCount; runI++) {
@@ -32,6 +59,7 @@ public class Main {
 
             long runDurationNs = System.nanoTime() - runStartNs;
             double runSecs = Util.nanoToSecs(runDurationNs);
+            durations.add(runSecs);
             System.out.printf("Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f%n",
                     runI + 1,
                     runSecs,
@@ -46,5 +74,7 @@ public class Main {
                 break;
             }
         }
+
+        printStats(bytesPerRun, durations);
     }
 }

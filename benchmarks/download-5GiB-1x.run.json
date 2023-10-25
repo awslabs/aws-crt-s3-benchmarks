@@ -7,8 +7,8 @@
     "maxRepeatSecs": 600,
     "tasks": [
         {
-            "action": "upload",
-            "key": "upload/5GiB/1",
+            "action": "download",
+            "key": "download/5GiB-1x/1",
             "size": 5368709120
         }
     ]

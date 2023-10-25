@@ -52,15 +52,12 @@ Here are examples, showing how a given benchmark is run in a single CLI command:
     * benchmark: `upload-5GiB`
     * cmd: `aws s3 cp upload/5GiB/1 s3://my-s3-benchmarks/upload/5GiB/1`
 
-2) A benchmark with multiple files only works if they're in the same directory:
+2) A benchmark with multiple files only works if they're in the same directory
+   (and no other files exist in that directory):
     * benchmark: `upload-5GiB-20x`
     * cmd: `aws s3 cp upload/5GiB s3://my-s3-benchmarks/upload/5GiB --recursive`
 
-3) If the benchmark doesn't use every file in the directory, then we `--include` the ones we want:
-    * benchmark: `upload-5GiB-10x`
-    * cmd: `aws s3 cp upload/5GiB s3://my-s3-benchmarks/upload/5GiB --recursive --exclude "*" --include 1 --include 2 --include 3 --include 4 --include 5 --include 6 --include 7 --include 8 --include 9 --include 10`
-
-4) If the benchmark has `"filesOnDisk": false` then we upload from stdin, or download to stdout. This only works if the benchmark has 1 file.
+3) If the benchmark has `"filesOnDisk": false` then we upload from stdin, or download to stdout. This only works if the benchmark has 1 file.
     * benchmark: `upload-5GiB-ram`
     * cmd: `<5GiB_random_data> | aws s3 cp - s3://my-s3-benchmarks/upload/5GiB/1`
 

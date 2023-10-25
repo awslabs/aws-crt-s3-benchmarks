@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import os
+import sys
 
 from runner import BenchmarkConfig, BenchmarkRunner, gigabit_to_bytes
 
@@ -118,8 +119,13 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
             task_futures = [executor.submit(self._make_request, task_i)
                             for task_i in range(len(self.config.tasks))]
             # wait until all tasks are done
-            for task in task_futures:
-                task.result()
+            for task_i, task_future in enumerate(task_futures):
+                try:
+                    task_future.result()
+                except Exception as e:
+                    print(f'Failed on task {task_i+1}/{len(self.config.tasks)}: {self.config.tasks[task_i]}',
+                          file=sys.stderr)
+                    raise e
 
 
 class Boto3DownloadFileObj:

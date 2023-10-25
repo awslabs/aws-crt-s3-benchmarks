@@ -156,9 +156,11 @@ class CliBenchmarkRunner(BenchmarkRunner):
             # list_objects_v2() is paginated, call in loop until we have all the data
             s3 = boto3.client('s3')
             paginator = s3.get_paginator('list_objects_v2')
-            for page in paginator.paginate(Bucket=self.config.bucket, Prefix=prefix):
+            for page in paginator.paginate(Bucket=self.config.bucket, Prefix=prefix + '/'):
                 for obj in page['Contents']:
                     key = obj['Key']
+                    if key.endswith('/'):  # ignore directory objects
+                        continue
                     try:
                         remaining_task_keys.remove(key)
                     except KeyError:

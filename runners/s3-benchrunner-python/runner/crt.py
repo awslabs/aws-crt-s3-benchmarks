@@ -2,7 +2,8 @@ import awscrt.auth  # type: ignore
 import awscrt.http  # type: ignore
 import awscrt.io  # type: ignore
 import awscrt.s3  # type: ignore
-from threading import Semaphore
+from concurrent.futures import as_completed
+from threading import Event, Semaphore
 from typing import Optional, Tuple
 
 from runner import BenchmarkConfig, BenchmarkRunner
@@ -53,17 +54,27 @@ class CrtBenchmarkRunner(BenchmarkRunner):
         self._verbose(f'max_concurrency: {max_concurrency}')
         self._concurrency_semaphore = Semaphore(max_concurrency)
 
+        # if any request fails, it sets this event
+        # so we know to stop scheduling new requests
+        self._failed_event = Event()
+
     def run(self):
         # kick off all tasks
         # respect concurrency semaphore so we don't have too many running at once
         requests = []
         for i in range(len(self.config.tasks)):
             self._concurrency_semaphore.acquire()
+
+            # stop kicking off new tasks if one has failed
+            if self._failed_event.is_set():
+                break
+
             requests.append(self._make_request(i))
 
         # wait until all tasks are done
-        for request in requests:
-            request.finished_future.result()
+        request_futures = [r.finished_future for r in requests]
+        for finished_future in as_completed(request_futures):
+            finished_future.result()
 
     def _make_request(self, task_i) -> awscrt.s3.S3Request:
         task = self.config.tasks[task_i]
@@ -116,10 +127,9 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                     error_headers: Optional[list[Tuple[str, str]]],
                     error_body: Optional[bytes],
                     **kwargs):
-
-            self._concurrency_semaphore.release()
-
             if error:
+                self._failed_event.set()
+
                 print(f'Task[{task_i}] failed. action:{task.action} ' +
                       f'key:{task.key} error:{repr(error)}')
 
@@ -130,6 +140,8 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                         print(f'{header[0]}: {header[1]}')
                 if error_body is not None:
                     print(error_body)
+
+            self._concurrency_semaphore.release()
 
         return self._s3_client.make_request(
             type=s3type,

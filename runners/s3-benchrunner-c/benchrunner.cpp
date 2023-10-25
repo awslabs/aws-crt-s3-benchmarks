@@ -7,8 +7,10 @@
 #include <list>
 #include <random>
 #include <thread>
+#include <vector>
 
 #include <aws/auth/credentials.h>
+#include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
 #include <aws/io/channel_bootstrap.h>
@@ -507,6 +509,34 @@ int Task::onDownloadData(
     return AWS_OP_SUCCESS;
 }
 
+void printStats(uint64_t bytesPerRun, const vector<double> &durations)
+{
+    double n = durations.size();
+    double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
+
+    double durationVariance = std::accumulate(
+        durations.begin(),
+        durations.end(),
+        0.0,
+        [&durationMean, &n](double accumulator, const double &val)
+        { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
+
+    double mbsMean = bytesToMegabit(bytesPerRun) / durationMean;
+    double mbsVariance = bytesToMegabit(bytesPerRun) / durationVariance;
+
+    struct aws_memory_usage_stats mu;
+    aws_init_memory_usage_for_current_process(&mu);
+
+    printf(
+        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration "
+        "Variance:%.3f s Peak RSS:%.3f Mb\n",
+        mbsMean,
+        mbsVariance,
+        durationMean,
+        durationVariance,
+        (double)mu.maxrss / 1024.0);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 5)
@@ -521,6 +551,7 @@ int main(int argc, char *argv[])
     uint64_t bytesPerRun = config.bytesPerRun();
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
+    std::vector<double> durations;
     auto appStart = high_resolution_clock::now();
     for (int runI = 0; runI < config.maxRepeatCount; ++runI)
     {
@@ -530,6 +561,7 @@ int main(int argc, char *argv[])
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
+        durations.push_back(runSecs);
         printf(
             "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
             runI + 1,
@@ -544,6 +576,8 @@ int main(int argc, char *argv[])
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
     }
+
+    printStats(bytesPerRun, durations);
 
     return 0;
 }

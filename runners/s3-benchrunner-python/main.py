@@ -15,7 +15,10 @@ from runner import (
 PARSER = argparse.ArgumentParser(
     description='Python benchmark runner. Pick which S3 library to use.')
 PARSER.add_argument('LIB', choices=(
-    'crt', 'boto3-python', 'boto3-crt', 'cli-python', 'cli-crt'))
+    'crt',
+    'boto3-python', 'boto3-crt',
+    'cli-python', 'cli-crt',
+    's3transfer-python', 's3transfer-crt'))
 PARSER.add_argument('BENCHMARK')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
@@ -38,6 +41,10 @@ def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> BenchmarkRunner:
     if lib.startswith('cli'):
         from runner.cli import CliBenchmarkRunner
         return CliBenchmarkRunner(config, use_crt)
+
+    if lib.startswith('s3transfer'):
+        from runner.s3transfer import S3TransferBenchmarkRunner
+        return S3TransferBenchmarkRunner(config, use_crt)
 
     else:
         raise ValueError(f'Unknown lib: {lib}')

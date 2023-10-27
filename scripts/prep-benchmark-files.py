@@ -413,4 +413,8 @@ if __name__ == '__main__':
                 task = future_to_task[future]
                 print(
                     f'Failure while processing "{task.key}" from: {str(task.first_benchmark_file)}')
+
+                # cancel remaining tasks
+                executor.shutdown(cancel_futures=True)
+
                 raise e

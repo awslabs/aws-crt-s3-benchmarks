@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import sys
 
@@ -116,15 +116,23 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
         # so do that in a threadpool
         with ThreadPoolExecutor() as executor:
             # submit tasks to threadpool
-            task_futures = [executor.submit(self._make_request, task_i)
-                            for task_i in range(len(self.config.tasks))]
+            task_futures_to_idx = {}
+            for task_i in range(len(self.config.tasks)):
+                task_future = executor.submit(self._make_request, task_i)
+                task_futures_to_idx[task_future] = task_i
+
             # wait until all tasks are done
-            for task_i, task_future in enumerate(task_futures):
+            for task_future in as_completed(task_futures_to_idx):
                 try:
                     task_future.result()
                 except Exception as e:
+                    task_i = task_futures_to_idx[task_future]
                     print(f'Failed on task {task_i+1}/{len(self.config.tasks)}: {self.config.tasks[task_i]}',
                           file=sys.stderr)
+
+                    # cancel remaining tasks
+                    executor.shutdown(cancel_futures=True)
+
                     raise e
 
 

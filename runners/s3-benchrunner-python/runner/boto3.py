@@ -25,7 +25,7 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
         else:
             self._verbose('--- boto3-python ---')
 
-        self._s3_client = boto3.client('s3')
+        self._s3_client = boto3.client('s3', region_name=config.region)
 
         # Set up boto3 TransferConfig
         # NOTE 1: Only SOME settings are used by both CRT and pure-python impl.

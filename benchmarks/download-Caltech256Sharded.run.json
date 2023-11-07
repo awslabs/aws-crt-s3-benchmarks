@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "comment": "Caltech 256 dataset. Sharded into 100MiB chunks, totaling 1.08 GiB. https://data.caltech.edu/records/nyy15-4j048",
+    "comment": "Caltech 256 dataset. Sharded into 100MiB chunks, totaling 1.13 GiB. https://data.caltech.edu/records/nyy15-4j048",
     "filesOnDisk": true,
     "checksum": null,
     "maxRepeatCount": 10,

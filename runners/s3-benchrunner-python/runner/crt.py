@@ -34,7 +34,7 @@ class CrtBenchmarkRunner(BenchmarkRunner):
         # Cap the number of meta-requests we'll work on simultaneously,
         # so the application doesn't exceed its file-descriptor limits
         # when a workload has tons of files.
-        max_concurrency = 1_000
+        max_concurrency = 10_000
         try:
             from resource import RLIMIT_NOFILE, getrlimit
             current_file_limit, hard_limit = getrlimit(RLIMIT_NOFILE)

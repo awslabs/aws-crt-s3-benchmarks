@@ -108,10 +108,6 @@ class CliBenchmarkRunner(BenchmarkRunner):
                     exit_with_skip_code(
                         'CLI cannot run benchmark unless all actions are the same')
 
-                if first_task.key == task_i.key:
-                    exit_with_skip_code(
-                        'CLI cannot run benchmark that uses same key multiple times')
-
             if not self.config.files_on_disk:
                 exit_with_skip_code(
                     "CLI cannot run benchmark with multiple files unless they're on disk")
@@ -154,9 +150,15 @@ class CliBenchmarkRunner(BenchmarkRunner):
     def _assert_using_all_files_in_dir(self, action: str, prefix: str):
         """
         Exit if dir is missing files from benchmark,
-        or if dir has extra files not listed in the benchmark.
+        or if dir has extra files not listed in the benchmark,
+        or if the benchmark uses the same file multiple times.
         """
-        remaining_task_keys = {task.key for task in self.config.tasks}
+        remaining_task_keys = set()
+        for task in self.config.tasks:
+            if task.key in remaining_task_keys:
+                exit_with_skip_code(
+                    f"CLI cannot run benchmark that uses same key multiple times: {task.key}")
+            remaining_task_keys.add(task.key)
 
         if action == 'download':
             # Check all S3 objects at this prefix

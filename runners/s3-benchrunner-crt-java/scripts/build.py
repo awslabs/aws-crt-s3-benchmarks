@@ -37,7 +37,7 @@ def build_aws_crt_java(work_dir: Path, branch: str):
     # for faster C compilation
     os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
 
-    run(['mvn', 'install', '-Dmaven.test.skip'])
+    run(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
 
 
 def build_runner() -> Path:
@@ -48,6 +48,7 @@ def build_runner() -> Path:
     runner_src = Path(__file__).parent.parent
     os.chdir(str(runner_src))
     run(['mvn',
+         'clean',
          # package along with dependencies in executable uber-java
          'package',
          # use locally installed version of aws-crt-java

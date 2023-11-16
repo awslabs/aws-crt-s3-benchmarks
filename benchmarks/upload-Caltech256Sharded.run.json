@@ -1,0 +1,70 @@
+{
+    "version": 2,
+    "comment": "Caltech 256 dataset. Sharded into 12 100MiB chunks, totaling 1.13 GiB. https://data.caltech.edu/records/nyy15-4j048",
+    "filesOnDisk": true,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_0.tar",
+            "size": 109690880
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_1.tar",
+            "size": 111452160
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_2.tar",
+            "size": 105205760
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_3.tar",
+            "size": 114155520
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_4.tar",
+            "size": 109742080
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_5.tar",
+            "size": 110448640
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_6.tar",
+            "size": 112271360
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_7.tar",
+            "size": 109424640
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_8.tar",
+            "size": 108779520
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_9.tar",
+            "size": 109363200
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_10.tar",
+            "size": 109957120
+        },
+        {
+            "action": "upload",
+            "key": "upload/Caltech256Sharded/train_shard_11.tar",
+            "size": 3788800
+        }
+    ]
+}

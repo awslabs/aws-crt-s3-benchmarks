@@ -56,6 +56,8 @@ if __name__ == '__main__':
     # Repeat benchmark until we exceed max_repeat_count or max_repeat_secs
     app_start_ns = time.perf_counter_ns()
     for run_i in range(config.max_repeat_count):
+        runner.prepare_run()
+
         run_start_ns = time.perf_counter_ns()
 
         runner.run()

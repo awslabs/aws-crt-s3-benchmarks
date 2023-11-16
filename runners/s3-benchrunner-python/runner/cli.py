@@ -86,47 +86,52 @@ class CliBenchmarkRunner(BenchmarkRunner):
                 # dst
                 cmd.append(f's3://{self.config.bucket}/{first_task.key}')
         else:
-            # For CLI to do multiple files, we need to cp a directory
-            first_task_dir = os.path.split(first_task.key)[0]
+            # For CLI to do multiple files, we need to cp a directory.
 
-            # Check that we can do all files in one cmd
-            for task_i in self.config.tasks[1:]:
-                if first_task_dir != os.path.split(task_i.key)[0]:
-                    exit_with_skip_code(
-                        'CLI cannot run benchmark unless all keys are in the same directory')
+            # Find the directory that is root to all files.
+            # We start by using the first task's folder.
+            # Then look at every other task, moving the root higher
+            # if necessary, until it contains all task files.
+            root_dir = Path(first_task.key).parent
+            if root_dir.name == '':
+                exit_with_skip_code(
+                    'CLI cannot run benchmark unless all keys are in a directory')
+            for task_i in self.config.tasks:
+                task_path = Path(task_i.key)
+                while not task_path.is_relative_to(root_dir):
+                    root_dir = root_dir.parent
+                    if root_dir.name == '':
+                        exit_with_skip_code(
+                            'CLI cannot run benchmark unless all keys are under the same directory')
 
                 if first_task.action != task_i.action:
                     exit_with_skip_code(
                         'CLI cannot run benchmark unless all actions are the same')
 
-                if first_task.key == task_i.key:
-                    exit_with_skip_code(
-                        'CLI cannot run benchmark that uses same key multiple times')
-
             if not self.config.files_on_disk:
                 exit_with_skip_code(
                     "CLI cannot run benchmark with multiple files unless they're on disk")
 
+            # Assert that root dir contains ONLY the files from the benchmark.
+            # Once upon a time we tried to using --exclude and --include
+            # to cherry-pick specific files, but as of Oct 2023 this led to bad performance.
+            self._assert_using_all_files_in_dir(
+                first_task.action, str(root_dir))
+
             # Add src and dst
             if first_task.action == 'download':
                 # src
-                cmd.append(f's3://{self.config.bucket}/{first_task_dir}')
+                cmd.append(f's3://{self.config.bucket}/{str(root_dir)}')
                 # dst
-                cmd.append(first_task_dir)
+                cmd.append(str(root_dir))
             else:  # upload
                 # src
-                cmd.append(first_task_dir)
+                cmd.append(str(root_dir))
                 # dst
-                cmd.append(f's3://{self.config.bucket}/{first_task_dir}')
+                cmd.append(f's3://{self.config.bucket}/{str(root_dir)}')
 
             # Need --recursive to do multiple files
             cmd.append('--recursive')
-
-            # Ensure that we're using all files in dir.
-            # As of Oct 2023, CLI has bad performance if we do --recursive
-            # but then try and filter files via --exclude and --include.
-            self._assert_using_all_files_in_dir(
-                first_task.action, first_task_dir)
 
         # Add common options, used by all commands
         cmd += ['--region', self.config.region]
@@ -145,9 +150,15 @@ class CliBenchmarkRunner(BenchmarkRunner):
     def _assert_using_all_files_in_dir(self, action: str, prefix: str):
         """
         Exit if dir is missing files from benchmark,
-        or if dir has extra files not listed in the benchmark.
+        or if dir has extra files not listed in the benchmark,
+        or if the benchmark uses the same file multiple times.
         """
-        remaining_task_keys = {task.key for task in self.config.tasks}
+        remaining_task_keys = set()
+        for task in self.config.tasks:
+            if task.key in remaining_task_keys:
+                exit_with_skip_code(
+                    f"CLI cannot run benchmark that uses same key multiple times: {task.key}")
+            remaining_task_keys.add(task.key)
 
         if action == 'download':
             # Check all S3 objects at this prefix
@@ -174,14 +185,15 @@ class CliBenchmarkRunner(BenchmarkRunner):
 
         else:  # upload
             # Check all files in this local dir
-            for child_i in Path(prefix).iterdir():
-                key = str(child_i)
-                try:
-                    remaining_task_keys.remove(key)
-                except KeyError:
-                    exit_with_skip_code(
-                        f"Found file not listed in benchmark: {os.getcwd()}/{key}\n" +
-                        "CLI cannot run multi-file benchmark unless it uploads the whole directory.")
+            for root, dirnames, filenames in os.walk(prefix):
+                for filename in filenames:
+                    key = os.path.join(root, filename)
+                    try:
+                        remaining_task_keys.remove(key)
+                    except KeyError:
+                        exit_with_skip_code(
+                            f"Found file not listed in benchmark: {os.getcwd()}/{key}\n" +
+                            "CLI cannot run multi-file benchmark unless it uploads the whole directory.")
 
             if any(remaining_task_keys):
                 exit_with_error(

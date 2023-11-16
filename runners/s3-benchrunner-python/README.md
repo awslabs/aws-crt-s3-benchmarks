@@ -6,7 +6,7 @@ usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK 
 Python benchmark runner. Pick which S3 library to use.
 
 positional arguments:
-  {crt,boto3-python,cli-python,cli-crt}
+  {crt,boto3-python,boto3-crt,cli-python,cli-crt}
   BENCHMARK
   BUCKET
   REGION

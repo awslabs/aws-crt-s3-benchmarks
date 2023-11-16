@@ -3,6 +3,7 @@ import io
 import json
 import math
 import os
+from pathlib import Path
 import sys
 
 
@@ -102,6 +103,20 @@ class BenchmarkRunner:
                 if task.action == 'upload' and task.size > largest_upload:
                     largest_upload = task.size
             self._random_data_for_upload = os.urandom(largest_upload)
+
+    def prepare_run(self):
+        """Do preparation work between runs, before the timer starts."""
+        self._verbose('preparing run...')
+        for task in self.config.tasks:
+            if task.action == 'download':
+                task_path = Path(task.key)
+                if task_path.exists():
+                    # Before downloading, clean up any pre-existing files.
+                    # CLI and boto3 download to a tmp filename, then rename to the final filename.
+                    # The rename is way slower if it's replacing an existing file.
+                    task_path.unlink()
+                elif not task_path.parent.exists:
+                    task_path.parent.mkdir(parents=True)
 
     def run(self):
         raise NotImplementedError()

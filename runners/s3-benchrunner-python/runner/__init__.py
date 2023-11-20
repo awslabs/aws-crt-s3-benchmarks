@@ -115,7 +115,7 @@ class BenchmarkRunner:
                     # CLI and boto3 download to a tmp filename, then rename to the final filename.
                     # The rename is way slower if it's replacing an existing file.
                     task_path.unlink()
-                elif not task_path.parent.exists:
+                elif not task_path.parent.exists():
                     task_path.parent.mkdir(parents=True)
 
     def run(self):

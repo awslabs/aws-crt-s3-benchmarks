@@ -15,9 +15,9 @@ This project is for benchmarking different S3 workloads using various languages 
     *   Maven
     *   Python C extension headers and libraries (e.g. python3-devel)
 
-To run **ALL** the benchmarks, your machine needs 300+ GiB of disk space available,
+To benchmark **ALL** the workloads, your machine needs 300+ GiB of disk space available,
 and fast enough internet to upload a terabyte to S3 within your lifetime.
-But if you're only running 1 benchmark, you'll upload fewer files and use less disk space.
+But if you're only running 1 workload, you'll upload fewer files and use less disk space.
 
 Your machine must have AWS credentials, with permission to read and write to an S3 bucket.
 
@@ -38,19 +38,19 @@ python3 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 
 ### Prepare S3 Files
 
-Next, run `prep-benchmark-files.py`. This script creates and configures
+Next, run `prep-s3-files.py`. This script creates and configures
 an S3 bucket, put files in S3 for benchmarks to download,
 and create files on disk for benchmarks to upload:
 
 ```sh
-./aws-crt-s3-benchmarks/scripts/prep-benchmark-files.py --bucket BUCKET --region REGION --files-dir FILES_DIR [--benchmark BENCHMARK]
+./aws-crt-s3-benchmarks/scripts/prep-s3-files.py --bucket BUCKET --region REGION --files-dir FILES_DIR [--workload WORKLOAD]
 ```
 *   `--bucket BUCKET`: S3 Bucket (created if necessary)
 *   `--region REGION`: AWS region (e.g. us-west-2)
 *   `--files-dir FILES_DIR`: Root directory for files to upload and download (e.g. ~/files) (created if necessary)
-*   `--benchmark BENCHMARK`: Path to specific benchmark.run.json file.
+*   `--workload WORKLOAD`: Path to specific workload.run.json file.
         May be specified multiple times.
-        If not specified, everything in [benchmarks/](benchmarks/) is prepared
+        If not specified, everything in [workloads/](workloads/) is prepared
         (uploading 100+ GiB to S3 and creating 100+ GiB on disk).
 
 This script can be run repeatedly. It skips unnecessary work
@@ -80,17 +80,17 @@ iterating locally, DEBUG builds, etc.
 ### Run a Benchmark
 
 All runners have the same command line interface, and expect to be run from the
-`FILES_DIR` you passed to the [prep-benchmark-files.py](#prepare-s3-files) script.
+`FILES_DIR` you passed to the [prep-s3-files.py](#prepare-s3-files) script.
 
 ```sh
 cd FILES_DIR
 
-RUNNER_CMD BENCHMARK BUCKET REGION TARGET_THROUGHPUT
+RUNNER_CMD WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 ```
 
 *   `RUNNER_CMD`: Command to launch runner (e.g. java -jar path/to/runner.jar)
         This is the last line printed by `build.py` in the [previous step](#build-a-runner).
-*   `BENCHMARK`: Path to benchmark `.run.json` file (see: [benchmarks/](../benchmarks))
+*   `WORKLOAD`: Path to workload `.run.json` file (see: [workloads/](../workloads))
 *   `BUCKET`: S3 bucket name (e.g. my-test-bucket)
 *   `REGION`: AWS Region (e.g. us-west-2)
 *   `TARGET_THROUGHPUT`: Target throughput, in gigabits per second.
@@ -100,12 +100,12 @@ RUNNER_CMD BENCHMARK BUCKET REGION TARGET_THROUGHPUT
 Most runners should search for AWS credentials
 [something like this](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#configure-precedence).
 
-If you want to run multiple benchmarks (or ALL benchmarks) in one go,
+If you want to run multiple workloads (or ALL workloads) in one go,
 use this helper script: [run-benchmarks.py](scripts/run-benchmarks.py).
 
-## Authoring New Benchmarks
+## Authoring New Workloads
 
-See [benchmarks/](benchmarks/#readme)
+See [workloads/](workloads/#readme)
 
 ## Security
 

@@ -25,45 +25,45 @@ PARSER.add_argument(
     '--files-dir', required=True,
     help='Root directory for files to upload and download (e.g. ~/files)')
 PARSER.add_argument(
-    '--benchmark', action='append',
-    help='Path to specific benchmark.run.json file. ' +
+    '--workload', action='append',
+    help='Path to specific workload.run.json file. ' +
     'May be specified multiple times. ' +
-    'If not specified, everything in benchmarks/ is prepared ' +
+    'If not specified, everything in workloads/ is prepared ' +
     '(uploading 100+ GiB to S3 and creating 100+ GiB on disk).')
 
 
 @dataclass
 class Task:
     """
-    A benchmark task that we need to prepare for.
+    A workload task that we need to prepare for.
     These tasks are stored in a dict, by key, so we can prep
-    a file once, even if it's used by multiple benchmarks.
+    a file once, even if it's used by multiple workloads.
     """
     key: str
-    first_benchmark_file: Path
+    first_workload_file: Path
     action: str
     size: int  # in bytes
     checksum: Optional[str]
     on_disk: bool
 
 
-def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
+def gather_tasks(workload_filepath: Path, all_tasks: dict[str, Task]):
     """
-    Update `all_tasks` with new tasks from benchmark file.
+    Update `all_tasks` with new tasks from workload file.
     We check that tasks don't "clash" with one another
     (e.g. downloading the same key twice, but expecting a different size each time).
     """
-    with open(benchmark_filepath) as f:
-        benchmark = json.load(f)
+    with open(workload_filepath) as f:
+        workload = json.load(f)
 
-    # whether the benchmark will use files on disk
-    files_on_disk = benchmark['filesOnDisk']
+    # whether the workload will use files on disk
+    files_on_disk = workload['filesOnDisk']
 
-    checksum = benchmark['checksum']
+    checksum = workload['checksum']
     if not checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256'):
         raise Exception(f'Unknown checksum: {checksum}')
 
-    for task_info in benchmark['tasks']:
+    for task_info in workload['tasks']:
 
         action = task_info['action']
         if not action in ('upload', 'download'):
@@ -95,14 +95,14 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
                 raise Exception(
                     f'Clashing actions: "{action}" != "{existing_task.action}". ' +
                     f'Key: "{key}". ' +
-                    f'From: "{str(existing_task.first_benchmark_file)}".')
+                    f'From: "{str(existing_task.first_workload_file)}".')
 
             # a key can't have two different sizes
             if size != existing_task.size:
                 raise Exception(
                     f'Clashing sizes: {size} != {existing_task.size}. ' +
                     f'Key: "{key}". ' +
-                    f'From: "{str(existing_task.first_benchmark_file)}".')
+                    f'From: "{str(existing_task.first_workload_file)}".')
 
             # can't download same key with two different checksums
             # (but it would be OK to upload a file with different checksums)
@@ -110,19 +110,19 @@ def gather_tasks(benchmark_filepath: Path, all_tasks: dict[str, Task]):
                 raise Exception(
                     f'Clashing checksums: "{checksum}" != "{existing_task.checksum}". ' +
                     f'Key: "{key}". ' +
-                    f'From: "{str(existing_task.first_benchmark_file)}".')
+                    f'From: "{str(existing_task.first_workload_file)}".')
 
-            # it's ok if one benchmark uploads from disk, and another doesn't,
+            # it's ok if one workload uploads from disk, and another doesn't,
             # but we still need to make a file on disk
             if files_on_disk and not existing_task.on_disk:
-                existing_task.first_benchmark_file = benchmark_filepath
+                existing_task.first_workload_file = workload_filepath
                 existing_task.on_disk = True
 
         else:
             # create new task
             all_tasks[key] = Task(
                 key=key,
-                first_benchmark_file=benchmark_filepath,
+                first_workload_file=workload_filepath,
                 action=action,
                 size=size,
                 checksum=checksum,
@@ -345,15 +345,15 @@ def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects:
     """
     if task.action == 'upload':
         if task.on_disk:
-            # create file on disk, so benchmark can upload it
+            # create file on disk, so runner can upload it
             prep_file_on_disk(files_dir.joinpath(task.key), task.size)
 
     elif task.action == 'download':
-        # create file in S3, so benchmark can download it
+        # create file in S3, so runner can download it
         prep_file_in_s3(task, s3, bucket, existing_s3_objects)
 
         if task.on_disk:
-            # create local dir, for benchmark to save into
+            # create local dir, for runner to save into
             parent_dir = files_dir.joinpath(task.key).parent
             parent_dir.mkdir(parents=True, exist_ok=True)
 
@@ -364,17 +364,17 @@ def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects:
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
-    # validate benchmarks
-    if args.benchmark:
-        benchmarks = [Path(x) for x in args.benchmark]
-        for benchmark in benchmarks:
-            if not benchmark.exists():
-                exit(f'benchmark not found: {str(benchmark)}')
+    # validate workloads
+    if args.workload:
+        workloads = [Path(x) for x in args.workload]
+        for workload in workloads:
+            if not workload.exists():
+                exit(f'workload not found: {str(workload)}')
     else:
-        benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-        benchmarks = sorted(benchmarks_dir.glob('*.run.json'))
-        if not benchmarks:
-            exit(f'no benchmark files found !?!')
+        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
+        workloads = sorted(workloads_dir.glob('*.run.json'))
+        if not workloads:
+            exit(f'no workload files found !?!')
 
     s3 = boto3.client('s3', region_name=args.region)
 
@@ -388,13 +388,13 @@ if __name__ == '__main__':
     files_dir = Path(args.files_dir).resolve()  # normalize path
     files_dir.mkdir(parents=True, exist_ok=True)
 
-    # gather tasks from all benchmarks
+    # gather tasks from all workloads
     all_tasks: dict[str, Task] = {}
-    for benchmark in benchmarks:
+    for workload in workloads:
         try:
-            gather_tasks(benchmark, all_tasks)
+            gather_tasks(workload, all_tasks)
         except Exception as e:
-            print(f'Failure while processing: {str(benchmark)}')
+            print(f'Failure while processing: {str(workload)}')
             raise e
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -412,7 +412,7 @@ if __name__ == '__main__':
             except Exception as e:
                 task = future_to_task[future]
                 print(
-                    f'Failure while processing "{task.key}" from: {str(task.first_benchmark_file)}')
+                    f'Failure while processing "{task.key}" from: {str(task.first_workload_file)}')
 
                 # cancel remaining tasks
                 executor.shutdown(cancel_futures=True)

@@ -14,11 +14,11 @@ DEFAULT_MAX_REPEAT_COUNT = 10
 DEFAULT_MAX_REPEAT_SECS = 600
 
 PARSER = argparse.ArgumentParser(
-    description='Build benchmark *.src.json into *.run.json.')
+    description='Build workload *.src.json into *.run.json.')
 PARSER.add_argument(
     'SRC_FILE', nargs='*',
-    help='Path to specific benchmark.src.json file. ' +
-    'If none specified, builds all benchmarks/*.src.json')
+    help='Path to specific workload.src.json file. ' +
+    'If none specified, builds all workloads/*.src.json')
 
 
 def size_from_str(size_str: str) -> int:
@@ -41,13 +41,13 @@ def size_from_str(size_str: str) -> int:
             f'Illegal size "{size_str}". Expected something like "1KiB"')
 
 
-def build_benchmark(src_file: Path):
+def build_workload(src_file: Path):
     """
-    Read benchmark src JSON, which describes the benchmark at a high level.
+    Read workload src JSON, which describes the workload at a high level.
     These files are meant for humans to author.
     Fields are omitted if defaults are being used.
 
-    Write out benchmark dst JSON, which fully describes the benchmark
+    Write out workload dst JSON, which fully describes the workload
     and has every field filled in so the runners can use as little code
     as possible to read and interpret them.
     """
@@ -71,11 +71,11 @@ def build_benchmark(src_file: Path):
     assert action in ('download', 'upload')
     assert checksum in (None, 'CRC32', 'CRC32C', 'SHA1', 'SHA256')
 
-    # Come up with "expected" name for the benchmark and the dir it uses.
-    # Benchmark name will be like: upload-256KiB-10_000x
+    # Come up with "expected" name for the workload and the dir it uses.
+    # Workload name will be like: upload-256KiB-10_000x
     # Filepaths will be like:      upload/256KiB-10_000x/00001
     #
-    # All files for a given benchmark are in their own folder because
+    # All files for a given workload are in their own folder because
     # AWS CLI has a bad time unless it's operating on ALL files in a directory.
     # See: https://github.com/awslabs/aws-crt-s3-benchmarks/pull/24
     #
@@ -89,19 +89,19 @@ def build_benchmark(src_file: Path):
         dirname += f'-{checksum.lower()}'
 
     # suffix is anything that shouldn't go into dir name
-    # (i.e. "-ram" because a download benchmark could use the same files in S3
+    # (i.e. "-ram" because a download workload could use the same files in S3
     # whether or not it's downloading to ram or disk)
     suffix = ''
     if not files_on_disk:
         suffix += '-ram'
 
-    # warn if benchmark name doesn't match expected
+    # warn if workload name doesn't match expected
     # people might just be messing around locally, so this isn't a fatal error
     expected_name = f'{action}-{dirname}{suffix}.src.json'
     if expected_name != src_file.name:
         print(f'WARNING: "{src_file.name}" should be named "{expected_name}"')
 
-    # build dst benchmark.run.json
+    # build dst workload.run.json
     dst_json = {
         'version': VERSION,
         'comment': comment,
@@ -112,7 +112,7 @@ def build_benchmark(src_file: Path):
         'tasks': [],
     }
 
-    # format filenames like "00001" -> "10000" for a benchmark with 1000 files,
+    # format filenames like "00001" -> "10000" for a workload with 1000 files,
     # so the names sort nicely, but aren't wider than they need to be
     int_width = int(math.log10(num_files)) + 1
     int_fmt = f"{{:0{int_width}}}"
@@ -145,16 +145,16 @@ if __name__ == '__main__':
             if not src_file.exists():
                 exit(f'file not found: {src_file}')
             if not src_file.name.endswith('.src.json'):
-                exit(f'benchmark src files must end with ".src.json"')
+                exit(f'workload src files must end with ".src.json"')
     else:
-        benchmarks_dir = Path(__file__).parent.parent.joinpath('benchmarks')
-        src_files = sorted(benchmarks_dir.glob('*.src.json'))
+        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
+        src_files = sorted(workloads_dir.glob('*.src.json'))
         if not src_files:
-            exit('no benchmark src files found !?!')
+            exit('no workload src files found !?!')
 
     for src_file in src_files:
         try:
-            build_benchmark(src_file)
+            build_workload(src_file)
         except Exception as e:
             print(f'Failed building: {(str(src_file))}')
             raise e

@@ -16,7 +16,7 @@ PARSER = argparse.ArgumentParser(
     description='Python benchmark runner. Pick which S3 library to use.')
 PARSER.add_argument('LIB', choices=(
     'crt', 'boto3-python', 'boto3-crt', 'cli-python', 'cli-crt'))
-PARSER.add_argument('BENCHMARK')
+PARSER.add_argument('WORKLOAD')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
 PARSER.add_argument('TARGET_THROUGHPUT', type=float)
@@ -45,7 +45,7 @@ def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> BenchmarkRunner:
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
-    config = BenchmarkConfig(args.BENCHMARK, args.BUCKET, args.REGION,
+    config = BenchmarkConfig(args.WORKLOAD, args.BUCKET, args.REGION,
                              args.TARGET_THROUGHPUT, args.verbose)
 
     # create appropriate benchmark runner for given library

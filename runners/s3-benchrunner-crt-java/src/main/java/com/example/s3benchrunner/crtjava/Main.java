@@ -38,7 +38,7 @@ public class Main {
 
     public static void main(String[] args) {
         if (args.length != 4) {
-            throw new RuntimeException("expected args: BENCHMARK BUCKET REGION TARGET_THROUGHPUT");
+            throw new RuntimeException("expected args: WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
         }
         String configJsonFilepath = args[0];
         String bucket = args[1];

@@ -198,7 +198,7 @@ BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
 
     int version = json["version"];
     if (version != 2)
-        skip("config version not supported");
+        skip("workload version not supported");
 
     config.maxRepeatCount = json["maxRepeatCount"];
     config.maxRepeatSecs = json["maxRepeatSecs"];
@@ -540,7 +540,7 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
 int main(int argc, char *argv[])
 {
     if (argc != 5)
-        fail("usage: s3-benchrunner-c BENCHMARK BUCKET REGION TARGET_THROUGHPUT");
+        fail("usage: s3-benchrunner-c WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
 
     auto config = BenchmarkConfig::fromJson(argv[1]);
     string bucket = argv[2];

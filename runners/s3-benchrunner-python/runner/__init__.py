@@ -43,7 +43,7 @@ def gigabit_to_bytes(gigabit: float) -> int:
 
 @dataclass
 class TaskConfig:
-    """A task in the benchmark config's JSON"""
+    """A task in the workload's JSON file"""
     action: str
     key: str
     size: int
@@ -52,7 +52,7 @@ class TaskConfig:
 @dataclass
 class BenchmarkConfig:
     """Benchmark config"""
-    # loaded from json...
+    # loaded from workload json...
     files_on_disk: bool
     checksum: str
     max_repeat_count: int
@@ -63,21 +63,21 @@ class BenchmarkConfig:
     region: str
     target_throughput_Gbps: float
 
-    def __init__(self, benchmark_path: str, bucket: str, region: str,
+    def __init__(self, workload_path: str, bucket: str, region: str,
                  target_throughput_Gbps: float, verbose: bool):
-        with open(benchmark_path) as f:
-            benchmark = json.load(f)
+        with open(workload_path) as f:
+            workload = json.load(f)
 
-        version = benchmark['version']
+        version = workload['version']
         if version != 2:
-            exit_with_skip_code(f'benchmark version not supported: {version}')
+            exit_with_skip_code(f'workload version not supported: {version}')
 
-        self.files_on_disk = benchmark['filesOnDisk']
-        self.checksum = benchmark['checksum']
-        self.max_repeat_count = benchmark['maxRepeatCount']
-        self.max_repeat_secs = benchmark['maxRepeatSecs']
+        self.files_on_disk = workload['filesOnDisk']
+        self.checksum = workload['checksum']
+        self.max_repeat_count = workload['maxRepeatCount']
+        self.max_repeat_secs = workload['maxRepeatSecs']
         self.tasks = [TaskConfig(task['action'], task['key'], task['size'])
-                      for task in benchmark['tasks']]
+                      for task in workload['tasks']]
 
         self.bucket = bucket
         self.region = region

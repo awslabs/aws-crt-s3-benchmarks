@@ -27,10 +27,10 @@ jobs:
     - name: Lint s3-benchrunner-crt-java
       run: python runners/s3-benchrunner-crt-java/scripts/lint.py
 
-    - name: Check that benchmark.run.json files are up to date
-      # build benchmarks and see if any files change
+    - name: Check that workload.run.json files are up to date
+      # build workloads and see if any files change
       run: |
-        python scripts/build-benchmarks.py
+        python scripts/build-workloads.py
         git diff --exit-code
 
   Build:

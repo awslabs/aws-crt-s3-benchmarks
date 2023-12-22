@@ -28,7 +28,7 @@ class BenchmarkConfig {
         BenchmarkConfig config = new Gson().fromJson(jsonString, BenchmarkConfig.class);
 
         if (config.version != 2) {
-            Util.exitWithSkipCode("config version not supported");
+            Util.exitWithSkipCode("workload version not supported");
         }
 
         return config;

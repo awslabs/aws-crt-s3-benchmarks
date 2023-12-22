@@ -1,11 +1,11 @@
-## Benchmarks
+## Workloads
 
 ### Overview
 
-We use JSON files to detail each benchmark's workload.
+We use JSON files to detail the workload we want to benchmark.
 
-For example, `download-256KiB-10_000x.run.json` is a benchmark for
-downloading 10,000 files, each of which is 256KiB. It looks like:
+For example, `download-256KiB-10_000x.run.json` is a workload that
+downloads 10,000 files, each of which is 256KiB. It looks like:
 ```
 {
     "version": 2,
@@ -28,7 +28,7 @@ downloading 10,000 files, each of which is 256KiB. It looks like:
 
 A runner will read a `.run.json` file, perform all tasks, and report how long they all took.
 
-Most benchmarks also have a `.src.json` file that is much more human readable.
+Most workloads also have a `.src.json` file that is much more human readable.
 
 For example, `download-256KiB-10_000x.src.json`:
 ```
@@ -42,10 +42,10 @@ For example, `download-256KiB-10_000x.src.json`:
 
 You build the `.src.json` files into `.run.json` by running:
 ```sh
-./aws-crt-s3-benchmarks/scripts/build-benchmarks.py [SRC_FILE ...]
+./aws-crt-s3-benchmarks/scripts/build-workloads.py [SRC_FILE ...]
 ```
 
-You can pass multiple `.src.json` files, or pass none to build everything in `benchmarks/`.
+You can pass multiple `.src.json` files, or pass none to build everything in `workloads/`.
 
 ### Design
 
@@ -57,9 +57,9 @@ value or naming convention.
 They're so annoying to author, we came up the idea of separate src files
 and a build script.
 
-But you can still write a `.run.json` benchmark without a src file,
+But you can still write a `.run.json` workload without a src file,
 if you want to do weird things that aren't officially supported by the build script.
-But once we have a bunch of benchmarks doing that weird thing,
+But once we have a bunch of workloads doing that weird thing,
 consider adding support in the build script.
 
 ### Specification: .src.json
@@ -67,21 +67,21 @@ consider adding support in the build script.
 `.src.json` files have the following fields. You can omit fields with default values.
 
 *   `comment`: str (default is "").
-       A good comment would be the use case that motivated the benchmark.
+       A good comment would be the use case that motivated the workload.
         Omit if you'd just be repeating the file name.
 *   `action`: str (required). {"upload", "download"}.
-       Whether files are uploaded or downloaded in this benchmark.
+       Whether files are uploaded or downloaded in this workload.
 *   `fileSize`: str (required). Examples: "5GiB", "8MiB"", "256KiB", "1byte", "0bytes".
        Human readable file size.
 *   `numFiles`: int (default is 1).
-       Number of files to benchmark. Each file is the same size: `fileSize`.
+       Number of files in workload. Each file is the same size: `fileSize`.
 *   `filesOnDisk`: bool (default is true).
         If true, files are uploaded from disk or downloaded to disk.
         If false, data is just in RAM and never touches the disk.
 *   `checksum`: str (default is null). {null, "CRC32", "CRC32C", "SHA1", "SHA256"}.
        If non-null uploads must include this checksum, and downloads must validate the checksum.
 *   `maxRepeatCount`: int (default is 10).
-       The runner will repeat a benchmark until it reaches `maxRepeatCount`
+       The runner will repeat a workload until it reaches `maxRepeatCount`
         or `maxRepeatSecs` seconds elapses.
 *   `maxRepeatSecs`: int (default is 600 (10 minutes)).
 
@@ -91,7 +91,7 @@ All fields are required in a `.run.json` file. Most were described above.
 
 *   `version`: int. {2}.
        This must be incremented any time a new field or value is added.
-       Runners must skip benchmarks whose version != expected.
+       Runners must skip workloads whose version != expected.
        If we don't do all this, someone will add a new field and forget to
        update a runner. Then the forgotten runner will ignore the new field
        and report misleading benchmark times because it's not actually doing

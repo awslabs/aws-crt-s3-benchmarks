@@ -52,8 +52,8 @@ class CliBenchmarkRunner(BenchmarkRunner):
 
     def _derive_cli_cmd(self) -> Tuple[list[str], Optional[bytes]]:
         """
-        Figures out single CLI command that will do everything in the benchmark.
-        Exits with skip code if we can't do this benchmark in one CLI command.
+        Figures out single CLI command that will do everything in the workload.
+        Exits with skip code if we can't do this workload in one CLI command.
 
         Returns (list_of_cli_args, optional_stdin_for_cli)
         """
@@ -95,24 +95,24 @@ class CliBenchmarkRunner(BenchmarkRunner):
             root_dir = Path(first_task.key).parent
             if root_dir.name == '':
                 exit_with_skip_code(
-                    'CLI cannot run benchmark unless all keys are in a directory')
+                    'CLI cannot run workload unless all keys are in a directory')
             for task_i in self.config.tasks:
                 task_path = Path(task_i.key)
                 while not task_path.is_relative_to(root_dir):
                     root_dir = root_dir.parent
                     if root_dir.name == '':
                         exit_with_skip_code(
-                            'CLI cannot run benchmark unless all keys are under the same directory')
+                            'CLI cannot run workload unless all keys are under the same directory')
 
                 if first_task.action != task_i.action:
                     exit_with_skip_code(
-                        'CLI cannot run benchmark unless all actions are the same')
+                        'CLI cannot run workload unless all actions are the same')
 
             if not self.config.files_on_disk:
                 exit_with_skip_code(
-                    "CLI cannot run benchmark with multiple files unless they're on disk")
+                    "CLI cannot run workload with multiple files unless they're on disk")
 
-            # Assert that root dir contains ONLY the files from the benchmark.
+            # Assert that root dir contains ONLY the files from the workload.
             # Once upon a time we tried to using --exclude and --include
             # to cherry-pick specific files, but as of Oct 2023 this led to bad performance.
             self._assert_using_all_files_in_dir(
@@ -143,21 +143,21 @@ class CliBenchmarkRunner(BenchmarkRunner):
         # As of Sept 2023, can't pick checksum for: aws s3 cp
         if self.config.checksum:
             exit_with_skip_code(
-                "CLI cannot run benchmark with specific checksum algorithm")
+                "CLI cannot run workload with specific checksum algorithm")
 
         return cmd, stdin
 
     def _assert_using_all_files_in_dir(self, action: str, prefix: str):
         """
-        Exit if dir is missing files from benchmark,
-        or if dir has extra files not listed in the benchmark,
-        or if the benchmark uses the same file multiple times.
+        Exit if dir is missing files from workload,
+        or if dir has extra files not listed in the workload,
+        or if the workload uses the same file multiple times.
         """
         remaining_task_keys = set()
         for task in self.config.tasks:
             if task.key in remaining_task_keys:
                 exit_with_skip_code(
-                    f"CLI cannot run benchmark that uses same key multiple times: {task.key}")
+                    f"CLI cannot run workload that uses same key multiple times: {task.key}")
             remaining_task_keys.add(task.key)
 
         if action == 'download':
@@ -176,8 +176,8 @@ class CliBenchmarkRunner(BenchmarkRunner):
                         remaining_task_keys.remove(key)
                     except KeyError:
                         exit_with_skip_code(
-                            f"Found file not listed in benchmark: s3://{self.config.bucket}/{key}\n" +
-                            "CLI cannot run multi-file benchmark unless it downloads the whole directory.")
+                            f"Found file not listed in workload: s3://{self.config.bucket}/{key}\n" +
+                            "CLI cannot run multi-file workload unless it downloads the whole directory.")
 
             if any(remaining_task_keys):
                 exit_with_error(
@@ -192,8 +192,8 @@ class CliBenchmarkRunner(BenchmarkRunner):
                         remaining_task_keys.remove(key)
                     except KeyError:
                         exit_with_skip_code(
-                            f"Found file not listed in benchmark: {os.getcwd()}/{key}\n" +
-                            "CLI cannot run multi-file benchmark unless it uploads the whole directory.")
+                            f"Found file not listed in workload: {os.getcwd()}/{key}\n" +
+                            "CLI cannot run multi-file workload unless it uploads the whole directory.")
 
             if any(remaining_task_keys):
                 exit_with_error(

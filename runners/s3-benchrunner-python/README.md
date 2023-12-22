@@ -1,13 +1,13 @@
 # s3-benchrunner-python
 
 ```
-usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} BENCHMARK BUCKET REGION TARGET_THROUGHPUT
+usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 
 Python benchmark runner. Pick which S3 library to use.
 
 positional arguments:
   {crt,boto3-python,boto3-crt,cli-python,cli-crt}
-  BENCHMARK
+  WORKLOAD
   BUCKET
   REGION
   TARGET_THROUGHPUT
@@ -41,24 +41,24 @@ would naturally do things, but it's simple enough to recommend given the huge pa
 
 ### How this works with AWS CLI
 
-When using AWS CLI, this runner skips benchmarks unless it can do them in a single command.
+When using AWS CLI, this runner skips workloads unless it can do them in a single command.
 If we used multiple commands, one after another, performance would look bad
 compared to other libraries that run multiple commands in parallel.
-That's not a fair comparison (no one runs CLI commands in parallel) so we skip those benchmarks.
+That's not a fair comparison (no one runs CLI commands in parallel) so we skip those workloads.
 
-Here are examples, showing how a given benchmark is run in a single CLI command:
+Here are examples, showing how a given workload is run in a single CLI command:
 
 1) Uploading or downloading a single file is simple:
-    * benchmark: `upload-5GiB`
+    * workload: `upload-5GiB`
     * cmd: `aws s3 cp upload/5GiB/1 s3://my-s3-benchmarks/upload/5GiB/1`
 
-2) A benchmark with multiple files only works if they're in the same directory
+2) A workload with multiple files only works if they're in the same directory
    (and no other files exist in that directory):
-    * benchmark: `upload-5GiB-20x`
+    * workload: `upload-5GiB-20x`
     * cmd: `aws s3 cp upload/5GiB s3://my-s3-benchmarks/upload/5GiB --recursive`
 
-3) If the benchmark has `"filesOnDisk": false` then we upload from stdin, or download to stdout. This only works if the benchmark has 1 file.
-    * benchmark: `upload-5GiB-ram`
+3) If the workload has `"filesOnDisk": false` then we upload from stdin, or download to stdout. This only works if the workload has 1 file.
+    * workload: `upload-5GiB-ram`
     * cmd: `<5GiB_random_data> | aws s3 cp - s3://my-s3-benchmarks/upload/5GiB/1`
 
 # Installation

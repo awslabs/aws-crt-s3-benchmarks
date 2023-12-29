@@ -1093,3 +1093,9 @@ FodyWeavers.xsd
 
 # temporary file created by maven-shade-plugin
 dependency-reduced-pom.xml
+
+# suggested by CDK init
+*.swp
+package-lock.json
+.cdk.staging
+cdk.out

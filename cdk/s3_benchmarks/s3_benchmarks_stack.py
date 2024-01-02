@@ -25,8 +25,6 @@ class S3BenchmarksStack(Stack):
         self._define_orchestrator_batch_job()
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
-        ec2_instance_type = ec2.InstanceType(instance_type.id)
-
         # "c5n.18xlarge" -> "c5n-18xlarge"
         id_with_hyphens = instance_type.id.replace('.', '-')
 

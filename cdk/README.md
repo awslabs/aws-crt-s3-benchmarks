@@ -7,16 +7,18 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
 
 1) Install CDK and bootstrap your account if you haven't already done so. See [AWS CDK Prerequisites](https://docs.aws.amazon.com/cdk/v2/guide/work-with.html#work-with-prerequisites)
 
-2) Create and activate a Python virtual environment, if you haven't already done so.
+1) Ensure the Docker daemon is running.
 
-3) `cd` into this directory.
+1) Create and activate a Python virtual environment, if you haven't already done so.
 
-4) Install the CDK's python requirements:
+1) `cd` into this directory.
+
+1) Install the CDK's python requirements:
     ```sh
     python3 -m pip install -r requirements.txt
     ```
 
-5) Deploy this CDK app:
+1) Deploy this CDK app:
     ```sh
     cdk deploy
     ```

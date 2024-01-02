@@ -1,5 +1,6 @@
 import aws_cdk as cdk
 from aws_cdk import (
+    CfnOutput,
     Stack,
     aws_batch as batch,
     aws_ec2 as ec2,
@@ -8,6 +9,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 from math import floor
+import subprocess
 
 import s3_benchmarks
 
@@ -23,6 +25,8 @@ class S3BenchmarksStack(Stack):
             self._define_per_instance_batch_job(instance_type)
 
         self._define_orchestrator_batch_job()
+
+        self._add_git_commit_cfn_output()
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
         # "c5n.18xlarge" -> "c5n-18xlarge"
@@ -126,6 +130,22 @@ class S3BenchmarksStack(Stack):
             timeout=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
         )
+
+    def _add_git_commit_cfn_output(self):
+        """
+        Output the git commit this stack was generated from.
+        """
+        run_result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            capture_output=True,
+            check=True,
+            text=True)
+        git_commit = run_result.stdout.strip()
+
+        CfnOutput(
+            self, "GitCommit",
+            value=git_commit,
+            description="Git commit this stack was generated from")
 
 
 def _max_container_memory(instance_type_memory: cdk.Size) -> cdk.Size:

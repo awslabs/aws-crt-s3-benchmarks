@@ -17,17 +17,26 @@ parser.add_argument(
     'If omitted, CWD is used.')
 
 parser.add_argument(
-    '--workloads', default="*",
-    help='pattern search from every \'.run.json\' in workloads/. ' +
-    'If omitted, \'*\' will be used')
+    '--workload', action='append',
+    help='Path to specific workload JSON file. ' +
+    'May be specified multiple times. ' +
+    'If omitted, everything in workloads/ is run.')
 
 parser.add_argument(
-    '--bucket', default="test-bucket-dengket",
+    '--bucket', required=True,
     help='S3 bucket (will be created if necessary)')
 
 parser.add_argument(
-    '--region', default="us-west-2",
+    '--region', required=True,
     help='AWS region (e.g. us-west-2)')
+
+parser.add_argument(
+    '--throughput', required=True, type=float,
+    help='Target network throughput in gigabit/s (e.g. 100.0)')
+
+parser.add_argument(
+    '--branch', default='main',
+    help='Git branch/commit/tag to use when pulling dependencies.')
 
 benchmarks_root_dir = Path(__file__).parent.parent
 runners_dir_dic = {
@@ -68,36 +77,58 @@ def run(cmd_args: list[str]):
     return output
 
 
-def resolve_workload_list(user_regex_string):
-    # Resolve the benchmark list from the specific regex string
-    pattern = "{}.run.json".format(user_regex_string)
-    return sorted(benchmarks_root_dir.joinpath('benchmarks').glob(pattern))
-
-
 if __name__ == '__main__':
     args = parser.parse_args()
     working_dir = Path(args.working_dir) if args.working_dir else Path.cwd()
+    files_dir = working_dir.joinpath('files_dir')
 
-    workloads_dir = resolve_workload_list(args.workloads)
+    if args.workload:
+        workloads = [Path(x) for x in args.workload]
+        for workload in workloads:
+            if not workload.exists():
+                exit(f'workload not found: {str(workload)}')
+    else:
+        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
+        workloads = sorted(workloads_dir.glob('*.run.json'))
+        if not workloads:
+            exit(f'no workload files found !?!')
+
+    # Convert to absulte path.
     workloads_args_list = list(itertools.chain.from_iterable(
-        ('--workload', str(i)) for i in workloads_dir))
+        ('--workload', str(i.resolve())) for i in workloads))
 
     # Step 1: Prepare files
     prepare_args = [str(benchmarks_root_dir.joinpath(
-     "scripts/prep-s3-files.py")), '--bucket', args.bucket, '--region', args.region, '--files-dir', str(working_dir.joinpath('files_dir'))]
+                    "scripts/prep-s3-files.py")),
+                    '--bucket', args.bucket,
+                    '--region', args.region,
+                    '--files-dir', str(files_dir)]
     prepare_args += workloads_args_list
     run(prepare_args)
 
-    # runner_cmds = {}
-    runner_cmds = {'python': '/home/ec2-user/fast_ebs/aws-crt-s3-benchmarks/build/python_runner_building_dir/venv/bin/python3 /home/ec2-user/fast_ebs/aws-crt-s3-benchmarks/runners/s3-benchrunner-python/main.py', 'c': '/home/ec2-user/fast_ebs/aws-crt-s3-benchmarks/build/c_runner_building_dir/install/bin/s3-benchrunner-c', 'java': 'java -jar /home/ec2-user/fast_ebs/aws-crt-s3-benchmarks/runners/s3-benchrunner-crt-java/target/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar'}
     # Step 2: Build runner
-    # for i in args.runner:
-    #     runner_build_args = [runners_dir_dic[i]['build_scripts'],
-    #                          '--build-dir', str(working_dir.joinpath(f'{i}_runner_building_dir'))]
-    #     output = run(runner_build_args)
-    #     # the last line of the out is the runner cmd
-    #     runner_cmds[i] = output[-1].splitlines()[0]
-
-    # Step 3: run benchmark
+    runner_cmds = {}
     for i in args.runner:
-        print(runner_cmds)
+        runner_build_args = [runners_dir_dic[i]['build_scripts'],
+                                '--build-dir', str(working_dir.joinpath(f'{i}_runner_building_dir')),
+                                '--branch', args.branch]
+        output = run(runner_build_args)
+        # the last line of the out is the runner cmd (remove the `\n` at the eol)
+        runner_cmds[i] = output[-1].splitlines()[0]
+
+    # Step 3: run benchmarks
+    for i in args.runner:
+        # TODO: python runner cmd has different pattern. Design something to deal with python.
+        run_benchmarks_args =  [str(benchmarks_root_dir.joinpath(
+                "scripts/run-benchmarks.py")),
+                '--runner-cmd', runner_cmds[i],
+                '--bucket', args.bucket,
+                '--region', args.region,
+                '--throughput', str(args.throughput),
+                '--files-dir', str(files_dir)]
+        run_benchmarks_args += workloads_args_list
+        output = run(run_benchmarks_args)
+        # TODO: Parse the output to gather result
+
+    # Step 4: report result
+    # TODO

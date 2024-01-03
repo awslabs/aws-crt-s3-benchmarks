@@ -64,13 +64,17 @@ def run(cmd_args: list[str]):
     process = subprocess.Popen(
         subprocess.list2cmdline(cmd_args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=0)
     output = []
-    line = process.stdout.readline()
+    if process.stdout is not None:
+        line = process.stdout.readline()
     while (line):
         if not isinstance(line, str):
-            line = line.decode('ascii', 'ignore')
-        print(line, end='', flush=True)
-        output.append(line)
-        line = process.stdout.readline()
+            line_str = line.decode('ascii', 'ignore')
+        else:
+            line_str = line
+        print(line_str, end='', flush=True)
+        output.append(line_str)
+        if process.stdout is not None:
+            line = process.stdout.readline()
 
     process.wait()
     if process.returncode != 0:
@@ -79,9 +83,9 @@ def run(cmd_args: list[str]):
     return output
 
 
-def benchmarks_output_parsing(output: str, runner_cmd: str):
+def benchmarks_output_parsing(output: str, runner_cmd: str) -> dict:
     # lines = output.split("\n")[1:-1]
-    mbps_values = {}
+    mbps_values: dict = {}
     workload = ''
     for line in output:
         if runner_cmd in line:

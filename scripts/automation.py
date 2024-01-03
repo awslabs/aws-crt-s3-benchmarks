@@ -4,6 +4,8 @@ import argparse
 from pathlib import Path
 import subprocess
 import itertools
+import re
+import shlex
 
 parser = argparse.ArgumentParser(
     description='Automated script to prepare, build, run and report the benchmarks as configured.')
@@ -77,6 +79,23 @@ def run(cmd_args: list[str]):
     return output
 
 
+def benchmarks_output_parsing(output:str, runner_cmd: str):
+    # lines = output.split("\n")[1:-1]
+    mbps_values = {}
+    workload = ''
+    for line in output:
+        if runner_cmd in line:
+            # All the runner follows the same pattern to run a workload. The workload is the -4 args in the args list, unless run-benchmarks.py changed.
+            workload = shlex.split(line)[-4]
+            mbps_values[workload] = []
+
+        match = re.search("Mb\/s:(\d+.\d+)", line)  # search for the pattern "Mb\s:" followed by a number
+        if match:
+            # if the pattern is found, extract the number and add it to the result
+            mbps_values[workload].append(float(match.group(1)))
+    return mbps_values
+
+
 if __name__ == '__main__':
     args = parser.parse_args()
     working_dir = Path(args.working_dir) if args.working_dir else Path.cwd()
@@ -106,29 +125,33 @@ if __name__ == '__main__':
     prepare_args += workloads_args_list
     run(prepare_args)
 
+
     # Step 2: Build runner
     runner_cmds = {}
-    for i in args.runner:
-        runner_build_args = [runners_dir_dic[i]['build_scripts'],
-                                '--build-dir', str(working_dir.joinpath(f'{i}_runner_building_dir')),
+    for runner in args.runner:
+        runner_build_args = [runners_dir_dic[runner]['build_scripts'],
+                                '--build-dir', str(working_dir.joinpath(f'{runner}_runner_building_dir')),
                                 '--branch', args.branch]
         output = run(runner_build_args)
         # the last line of the out is the runner cmd (remove the `\n` at the eol)
-        runner_cmds[i] = output[-1].splitlines()[0]
+        runner_cmds[runner] = output[-1].splitlines()[0]
+
 
     # Step 3: run benchmarks
-    for i in args.runner:
+    benchmarks_results = {}
+    for runner in args.runner:
         # TODO: python runner cmd has different pattern. Design something to deal with python.
         run_benchmarks_args =  [str(benchmarks_root_dir.joinpath(
                 "scripts/run-benchmarks.py")),
-                '--runner-cmd', runner_cmds[i],
+                '--runner-cmd', runner_cmds[runner],
                 '--bucket', args.bucket,
                 '--region', args.region,
                 '--throughput', str(args.throughput),
                 '--files-dir', str(files_dir)]
         run_benchmarks_args += workloads_args_list
         output = run(run_benchmarks_args)
-        # TODO: Parse the output to gather result
+        benchmarks_results[runner] = benchmarks_output_parsing(output, runner_cmds[runner])
+        print(benchmarks_results)
 
     # Step 4: report result
     # TODO

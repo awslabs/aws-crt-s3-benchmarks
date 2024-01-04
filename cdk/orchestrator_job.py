@@ -1,7 +1,155 @@
-print("HELLO FROM ORCHESTRATOR_JOB.PY")
+#!/usr/bin/env python3
+"""
+The orchestrator job iterates over each per-instance benchmarking job,
+kicking it off and waiting until it completes before kicking off the next.
+"""
+
+import argparse
+import boto3
+import datetime
+import pprint
+import re
+import subprocess
+import sys
+import time
 
 import s3_benchmarks
-print(f"s3_benchmarks.ALL_INSTANCE_TYPES: {s3_benchmarks.ALL_INSTANCE_TYPES}")
 
-import boto3
-print("cool I imported boto")
+pp = pprint.PrettyPrinter(sort_dicts=False)
+
+
+# Use comma separated lists (instead of normal argparse lists)
+# so that it's easy to pass via Batch's job definition parameters:
+# https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html?icmpid=docs_console_unmapped#parameters
+def comma_separated_list(arg):
+    items = arg.split(',')  # comma separated
+    items = [x.strip() for x in items]  # strip whitespace
+    items = [x for x in items if x]  # remove empty strings
+    if len(items) == 0:
+        raise argparse.ArgumentTypeError("List is empty")
+    return items
+
+
+PARSER = argparse.ArgumentParser(
+    description="Run S3 benchmarks on each EC2 instance type")
+PARSER.add_argument(
+    '--branch',
+    # default to "main" (instead of None or "") to work better with Batch parameters.
+    # (Batch seems to omit parameters with empty string values)
+    default="main",
+    help="If specified, try to use this branch/commit/tag of various Git repos.")
+PARSER.add_argument(
+    '--instance-types', required=True, type=comma_separated_list,
+    help="EC2 instance types, comma separated (e.g. c5n.18xlarge,p4d.24xlarge)")
+PARSER.add_argument(
+    '--runners', required=True, type=comma_separated_list,
+    help="Library runners, comma separated (e.g. c,python-crt)")
+PARSER.add_argument(
+    '--workloads', required=True, type=comma_separated_list,
+    help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
+
+
+def wait_for_completed_job_description(batch, job_id) -> dict:
+    """
+    Waits until job is complete, and returns description of finished job.
+    Returns first item in response['jobs'], described here:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/describe_jobs.html
+    """
+    CHECK_EVERY_N_SECS = 30
+    PRINT_EVERY_N_SECS = 60 * 10
+
+    start_time = time.time()
+
+    # track what we've already printed
+    prev_print_time = start_time
+    prev_status = None
+
+    # loop until job completes
+    while True:
+        response = batch.describe_jobs(jobs=[job_id])
+        description = response['jobs'][0]
+        status = description['status']
+
+        # print any status changes
+        if status != prev_status:
+            prev_status = status
+            print(f"Job status -> {status}")
+
+        # if job complete, return description
+        if status in ['SUCCEEDED', 'FAILED']:
+            return description
+
+        # every once in a while, print that we're still waiting
+        now = time.time()
+        if now > prev_print_time + PRINT_EVERY_N_SECS:
+            prev_print_time = now
+            waiting_timedelta = datetime.timedelta(seconds=(now - start_time))
+            print(f"Been waiting {waiting_timedelta}...")
+
+        # sleep before querying again
+        time.sleep(CHECK_EVERY_N_SECS)
+
+        # Should we kill the job if it's taking too long?
+        # The job definition already has a default timeout, but that only
+        # applies to the RUNNING state. Jobs can get stuck in the RUNNABLE state
+        # forever if something is subtly misconfigured (This happened many
+        # times when learning how to set up Batch, but not something
+        # that will happen randomly). Not sure what will happen if we're
+        # trying to use some "rare" instance type that is often unavailable.
+
+
+if __name__ == '__main__':
+    # show in logs exactly how this Batch job was invoked
+    print(f"> {sys.executable} {subprocess.list2cmdline(sys.argv)}")
+
+    args = PARSER.parse_args()
+
+    # ensure all --instance-types are valid
+    instance_types = []
+    for instance_type_id in args.instance_types:
+        try:
+            instance_type = next(
+                x for x in s3_benchmarks.ALL_INSTANCE_TYPES if x.id == instance_type_id)
+            instance_types.append(instance_type)
+        except StopIteration:
+            exit(f'No known instance type "{instance_type_id}"')
+
+    # create Batch client
+    batch = boto3.client('batch')
+
+    # run each per-instance job
+    for i, instance_type in enumerate(instance_types):
+        print(
+            f"--- Benchmarking instance type {i+1}/{len(instance_types)}: {instance_type.id} ---")
+
+        # name doesn't really matter, but it's helpful to indicate what's going on
+        # looks like: "c5n-18xlarge_runners-1_workloads-12_branch-myexperiment"
+        job_name = f"{instance_type.id.replace('.', '-')}_runners-{len(args.runners)}_workloads-{len(args.workloads)}"
+        if args.branch:
+            safe_branch_name = re.sub(r'[^-_a-zA-Z0-9]', '', args.branch)
+            job_name += f"_branch-{safe_branch_name}"
+
+        submit_job_kwargs = {
+            'jobName': job_name,
+            # currently, job queues and definitions have hard-coded names
+            'jobQueue': instance_type.resource_name(),
+            'jobDefinition': instance_type.resource_name(),
+            # pass select args along to per-instance job
+            'parameters': {
+                'branch': args.branch,
+                'workloads': ','.join(args.workloads),
+                'runners': ','.join(args.runners),
+            },
+        }
+
+        print("Submitting job:")
+        pp.pprint(submit_job_kwargs)
+        submit_job_response = batch.submit_job(**submit_job_kwargs)
+        job_id = submit_job_response['jobId']
+        print(f"Job ID: {job_id}")
+
+        description = wait_for_completed_job_description(batch, job_id)
+        print("Job complete:")
+        pp.pprint(description)
+
+    print("ORCHESTRATOR DONE!")

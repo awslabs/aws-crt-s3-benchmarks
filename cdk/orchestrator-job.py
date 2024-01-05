@@ -5,7 +5,7 @@ kicking it off and waiting until it completes before kicking off the next.
 """
 
 import argparse
-import boto3
+import boto3  # type: ignore
 import datetime
 import pprint
 import re

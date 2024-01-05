@@ -6,4 +6,4 @@ RUN dnf install -y python3-pip \
 # s3_benchmarks/__init__.py is shared by CDK Stack and Batch jobs
 COPY s3_benchmarks/__init__.py /s3_benchmarks/
 
-COPY orchestrator_job.py /
+COPY orchestrator-job.py /

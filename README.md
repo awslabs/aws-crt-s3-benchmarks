@@ -2,6 +2,8 @@
 
 This project is for benchmarking different S3 workloads using various languages and libraries.
 
+This project is under active development and subject to change.
+
 ## Running Benchmarks
 
 ### Requirements

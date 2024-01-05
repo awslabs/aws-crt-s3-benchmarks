@@ -23,7 +23,7 @@ DEFAULT_INSTANCE_TYPES = [
 # The "default" set of runners to benchmark
 # TODO: put more thought into this
 DEFAULT_RUNNERS = [
-    'c'
+    'crt-c'
 ]
 
 # The "default" set of workloads to benchmark

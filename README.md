@@ -30,7 +30,7 @@ First, clone this repo.
 Then install the [requirements](#requirements) listed above.
 On Amazon Linux 2023, you can simply run this script:
 ```sh
-./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
+sudo ./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
 ```
 
 Then, install packages needed by the python scripts:

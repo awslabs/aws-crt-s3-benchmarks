@@ -91,13 +91,13 @@ class S3BenchmarksStack(Stack):
             self, f"PerInstanceContainerDefn-{id_with_hyphens}",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
-                file='per_instance_job.Dockerfile',
+                file='per-instance-job.Dockerfile',
                 platform=_ec2_instance_type_to_ecr_platform(ec2_instance_type)),
             cpu=instance_type.vcpu,
             memory=_max_container_memory(
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
             command=[
-                "python3", "/per_instance_job.py",
+                "python3", "/per-instance-job.py",
                 "--bucket", "TODO-pass-this-in",
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,
@@ -159,7 +159,7 @@ class S3BenchmarksStack(Stack):
                 compute_environment=compute_env, order=0)],
         )
 
-        # Set up role for the orchestrator_job.py script.
+        # Set up role for the orchestrator-job.py script.
         # Every AWS call you add to this script will fail until you add a policy that allows it.
         job_role = iam.Role(
             self, "OrchestratorJobRole",
@@ -169,7 +169,7 @@ class S3BenchmarksStack(Stack):
         )
         job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:SubmitJob"],
-            # "*" at the end necessary so orchestrator_job.py can submit job
+            # "*" at the end necessary so orchestrator-job.py can submit job
             # by its hard-coded name, like "S3Benchmarks-PerInstance-c5n.18xlarge".
             # The resolved names have an incrementing version like ":16" at the end.
             # So we can't remove the "*" unless we add complexity to pass all
@@ -189,12 +189,12 @@ class S3BenchmarksStack(Stack):
             self, "OrchestratorContainerDefn",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
-                file='orchestrator_job.Dockerfile',
+                file='orchestrator-job.Dockerfile',
                 platform=_ec2_instance_type_to_ecr_platform(instance_type)),
             cpu=1,  # cheap and puny
             memory=cdk.Size.mebibytes(256),  # cheap and puny
             command=[
-                "python3", "/orchestrator_job.py",
+                "python3", "/orchestrator-job.py",
                 "--branch", "Ref::branch",
                 "--instance-types", "Ref::instanceTypes",
                 "--runners", "Ref::runners",

@@ -84,7 +84,7 @@ if __name__ == '__main__':
         run(['git', 'checkout', args.branch])
         os.chdir(tmp_dir)
 
-    # install tools (unless told to skip this)
+    # install tools
     if not args.skip_installs:
         run([sys.executable,
             str(benchmarks_dir/'scripts/install-tools-AL2023.py')])
@@ -100,8 +100,9 @@ if __name__ == '__main__':
         workloads.append(str(workload_path))
 
     #
-    # Run the script that does everything else...
+    # Run script in aws-crt-s3-benchmarks that does the rest...
     #
+
     cmd_args = [sys.executable,
                 str(benchmarks_dir/'scripts/prep-build-run-benchmarks.py')]
     cmd_args.extend(['--bucket', args.bucket])

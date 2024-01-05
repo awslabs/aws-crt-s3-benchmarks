@@ -128,7 +128,7 @@ if __name__ == '__main__':
         # name doesn't really matter, but it's helpful to indicate what's going on
         # looks like: "c5n-18xlarge_runners-1_workloads-12_branch-myexperiment"
         job_name = f"{instance_type.id.replace('.', '-')}_runners-{len(args.runners)}_workloads-{len(args.workloads)}"
-        if args.branch:
+        if args.branch != "main":
             safe_branch_name = re.sub(r'[^-_a-zA-Z0-9]', '', args.branch)
             job_name += f"_branch-{safe_branch_name}"
 

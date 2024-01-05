@@ -169,6 +169,11 @@ class S3BenchmarksStack(Stack):
         )
         job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:SubmitJob"],
+            # "*" at the end necessary so orchestrator_job.py can submit job
+            # by its hard-coded name, like "S3Benchmarks-PerInstance-c5n.18xlarge".
+            # The resolved names have an incrementing version like ":16" at the end.
+            # So we can't remove the "*" unless we add complexity to pass all
+            # fully resolved names over to the job script.
             resources=[f"arn:{self.partition}:batch:{self.region}:{self.account}:job-queue/S3Benchmarks-PerInstance-*",
                        f"arn:{self.partition}:batch:{self.region}:{self.account}:job-definition/S3Benchmarks-PerInstance-*"],
             effect=iam.Effect.ALLOW,

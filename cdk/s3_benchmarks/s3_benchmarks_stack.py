@@ -99,14 +99,12 @@ class S3BenchmarksStack(Stack):
             command=[
                 "python3", "/per-instance-job.py",
                 "--bucket", "TODO-pass-this-in",
+                "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,
                 "--runners", "Ref::runners",
                 "--workloads", "Ref::workloads",
             ],
-            environment={
-                'AWS_DEFAULT_REGION': self.region,
-            },
             job_role=self.per_instance_job_role,
         )
 
@@ -195,14 +193,12 @@ class S3BenchmarksStack(Stack):
             memory=cdk.Size.mebibytes(256),  # cheap and puny
             command=[
                 "python3", "/orchestrator-job.py",
+                "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-types", "Ref::instanceTypes",
                 "--runners", "Ref::runners",
                 "--workloads", "Ref::workloads",
             ],
-            environment={
-                'AWS_DEFAULT_REGION': self.region,
-            },
             job_role=job_role,
         )
 

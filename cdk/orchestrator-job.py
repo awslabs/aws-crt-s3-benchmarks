@@ -33,6 +33,9 @@ def comma_separated_list(arg):
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
 PARSER.add_argument(
+    '--region', required=True,
+    help="AWS region (e.g. us-west-2)")
+PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
     # (Batch seems to omit parameters with empty string values)
@@ -115,7 +118,7 @@ if __name__ == '__main__':
             exit(f'No known instance type "{instance_type_id}"')
 
     # create Batch client
-    batch = boto3.client('batch')
+    batch = boto3.client('batch', region_name=args.region)
 
     # run each per-instance job
     for i, instance_type in enumerate(instance_types):

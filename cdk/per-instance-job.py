@@ -32,6 +32,9 @@ PARSER.add_argument(
     '--bucket', required=True,
     help="S3 bucket name")
 PARSER.add_argument(
+    '--region', required=True,
+    help="AWS region (e.g. us-west-2)")
+PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
     # (Batch seems to omit parameters with empty string values)
@@ -82,12 +85,12 @@ if __name__ == '__main__':
         os.chdir(tmp_dir)
 
     # install tools (unless told to skip this)
-    if not args.installs:
+    if not args.skip_installs:
         run([sys.executable,
             str(benchmarks_dir/'scripts/install-tools-AL2023.py')])
 
         # install python packages
-        run([sys.executable, '-m', 'pip', '-r',
+        run([sys.executable, '-m', 'pip', 'install', '-r',
             str(benchmarks_dir/'scripts/requirements.txt')])
 
     # get full paths to workload files
@@ -102,8 +105,12 @@ if __name__ == '__main__':
     cmd_args = [sys.executable,
                 str(benchmarks_dir/'scripts/prep-build-run-benchmarks.py')]
     cmd_args.extend(['--bucket', args.bucket])
-    cmd_args.extend(['--region', args.bucket])
+    cmd_args.extend(['--region', args.region])
     cmd_args.extend(['--throughput', str(instance_type.bandwidth_Gbps)])
+
+    if args.branch != 'main':
+        # don't pass along --branch if it's the default "main" value
+        cmd_args.extend(['--branch', args.branch])
 
     build_dir = tmp_dir/'build'
     build_dir.mkdir()
@@ -112,10 +119,6 @@ if __name__ == '__main__':
     files_dir = tmp_dir/'files'
     files_dir.mkdir()
     cmd_args.extend(['--files-dir', str(files_dir)])
-
-    if args.branch != 'main':
-        # don't pass along --branch if it's the default "main" value
-        cmd_args.extend(['--branch', args.branch])
 
     cmd_args.extend(['--runners', *args.runners])
     cmd_args.extend(['--workloads', *workloads])

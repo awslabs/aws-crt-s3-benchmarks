@@ -30,8 +30,9 @@ PARSER.add_argument(
     help="S3 bucket name")
 PARSER.add_argument(
     '--branch',
-    # default to empty string (instead of None) so it's easier to pass via Batch parameters
-    default="",
+    # default to "main" (instead of None or "") to work better with Batch parameters.
+    # (Batch seems to omit parameters with empty string values)
+    default="main",
     help="If specified, try to use this branch/commit/tag of various Git repos.")
 PARSER.add_argument(
     '--instance-type', required=True,
@@ -39,7 +40,7 @@ PARSER.add_argument(
     help="EC2 instance type this is running on")
 PARSER.add_argument(
     '--runners', required=True, type=comma_separated_list,
-    help="Library runners, comma separated (e.g. c,python-crt)")
+    help="Library runners, comma separated (e.g. crt-c,crt-python)")
 PARSER.add_argument(
     '--workloads', required=True, type=comma_separated_list,
     help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")

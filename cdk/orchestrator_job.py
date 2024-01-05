@@ -43,7 +43,7 @@ PARSER.add_argument(
     help="EC2 instance types, comma separated (e.g. c5n.18xlarge,p4d.24xlarge)")
 PARSER.add_argument(
     '--runners', required=True, type=comma_separated_list,
-    help="Library runners, comma separated (e.g. c,python-crt)")
+    help="Library runners, comma separated (e.g. crt-c,crt-python)")
 PARSER.add_argument(
     '--workloads', required=True, type=comma_separated_list,
     help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")

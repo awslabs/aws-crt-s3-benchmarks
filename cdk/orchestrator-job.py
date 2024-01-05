@@ -56,7 +56,7 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
     https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch/client/describe_jobs.html
     """
     CHECK_EVERY_N_SECS = 30
-    PRINT_EVERY_N_SECS = 60 * 10
+    PRINT_EVERY_N_SECS = 10 * 60
 
     start_time = time.time()
 

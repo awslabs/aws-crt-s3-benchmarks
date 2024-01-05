@@ -6,12 +6,32 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_ecr_assets as ecr_assets,
     aws_ecs as ecs,
+    aws_iam as iam,
 )
 from constructs import Construct
 from math import floor
 import subprocess
 
 import s3_benchmarks
+
+# The "default" set of instance types to benchmark
+# TODO: put more thought into this
+DEFAULT_INSTANCE_TYPES = [
+    'c5n.18xlarge',
+]
+
+# The "default" set of runners to benchmark
+# TODO: put more thought into this
+DEFAULT_RUNNERS = [
+    'c'
+]
+
+# The "default" set of workloads to benchmark
+# TODO: put more thought into this
+DEFAULT_WORKLOADS = [
+    'download-Caltech256Sharded',
+    'upload-Caltech256Sharded',
+]
 
 
 class S3BenchmarksStack(Stack):
@@ -56,16 +76,38 @@ class S3BenchmarksStack(Stack):
                 compute_environment=compute_env, order=0)],
         )
 
+        # Set up role for the per-instance job scripts that actually run the benchmarks.
+        # Every AWS call you add to these scripts will fail until you add a policy that allows it.
+        # Create role once, it can be used by all per-instance jobs.
+        if not hasattr(self, 'per_instance_job_role'):
+            self.per_instance_job_role = iam.Role(
+                self, "PerInstanceJobRole",
+                assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                max_session_duration=cdk.Duration.hours(
+                    s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
+            )
+
         container_defn = batch.EcsEc2ContainerDefinition(
             self, f"PerInstanceContainerDefn-{id_with_hyphens}",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
-                file='per_instance_job.Dockerfile',
+                file='per-instance-job.Dockerfile',
                 platform=_ec2_instance_type_to_ecr_platform(ec2_instance_type)),
             cpu=instance_type.vcpu,
             memory=_max_container_memory(
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
-            command=["python3", "/per_instance_job.py"],
+            command=[
+                "python3", "/per-instance-job.py",
+                "--bucket", "TODO-pass-this-in",
+                "--branch", "Ref::branch",
+                "--instance-type", instance_type.id,
+                "--runners", "Ref::runners",
+                "--workloads", "Ref::workloads",
+            ],
+            environment={
+                'AWS_DEFAULT_REGION': self.region,
+            },
+            job_role=self.per_instance_job_role,
         )
 
         job_defn = batch.EcsJobDefinition(
@@ -75,7 +117,11 @@ class S3BenchmarksStack(Stack):
             container=container_defn,
             timeout=cdk.Duration.hours(
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
-            # TODO: parameters=some default values
+            parameters={
+                "branch": "main",
+                "runners": ','.join(DEFAULT_RUNNERS),
+                "workloads": ','.join(DEFAULT_WORKLOADS),
+            },
         )
 
     def _define_orchestrator_batch_job(self):
@@ -113,15 +159,51 @@ class S3BenchmarksStack(Stack):
                 compute_environment=compute_env, order=0)],
         )
 
+        # Set up role for the orchestrator-job.py script.
+        # Every AWS call you add to this script will fail until you add a policy that allows it.
+        job_role = iam.Role(
+            self, "OrchestratorJobRole",
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            max_session_duration=cdk.Duration.hours(
+                s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
+        )
+        job_role.add_to_policy(iam.PolicyStatement(
+            actions=["batch:SubmitJob"],
+            # "*" at the end necessary so orchestrator-job.py can submit job
+            # by its hard-coded name, like "S3Benchmarks-PerInstance-c5n.18xlarge".
+            # The resolved names have an incrementing version like ":16" at the end.
+            # So we can't remove the "*" unless we add complexity to pass all
+            # fully resolved names over to the job script.
+            resources=[f"arn:{self.partition}:batch:{self.region}:{self.account}:job-queue/S3Benchmarks-PerInstance-*",
+                       f"arn:{self.partition}:batch:{self.region}:{self.account}:job-definition/S3Benchmarks-PerInstance-*"],
+            effect=iam.Effect.ALLOW,
+        ))
+        # policy for actions that don't support resource-level permissions
+        job_role.add_to_policy(iam.PolicyStatement(
+            actions=["batch:DescribeJobs"],
+            resources=["*"],
+            effect=iam.Effect.ALLOW,
+        ))
+
         container_defn = batch.EcsEc2ContainerDefinition(
             self, "OrchestratorContainerDefn",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
-                file='orchestrator_job.Dockerfile',
+                file='orchestrator-job.Dockerfile',
                 platform=_ec2_instance_type_to_ecr_platform(instance_type)),
             cpu=1,  # cheap and puny
             memory=cdk.Size.mebibytes(256),  # cheap and puny
-            command=["python3", "/orchestrator_job.py"],
+            command=[
+                "python3", "/orchestrator-job.py",
+                "--branch", "Ref::branch",
+                "--instance-types", "Ref::instanceTypes",
+                "--runners", "Ref::runners",
+                "--workloads", "Ref::workloads",
+            ],
+            environment={
+                'AWS_DEFAULT_REGION': self.region,
+            },
+            job_role=job_role,
         )
 
         job_defn = batch.EcsJobDefinition(
@@ -129,6 +211,12 @@ class S3BenchmarksStack(Stack):
             container=container_defn,
             timeout=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
+            parameters={
+                "branch": "main",
+                "instanceTypes": ','.join(DEFAULT_INSTANCE_TYPES),
+                "runners": ','.join(DEFAULT_RUNNERS),
+                "workloads": ','.join(DEFAULT_WORKLOADS),
+            },
         )
 
     def _add_git_commit_cfn_output(self):

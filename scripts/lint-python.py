@@ -1,29 +1,22 @@
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
-import subprocess
 import sys
+
+from utils import run, SCRIPTS_DIR, RUNNERS_DIR
 
 PARSER = argparse.ArgumentParser(
     description="Check formatting and type hints in python scripts")
 
 
-def run(cmd_args: list[str]):
-    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
-    result = subprocess.run(cmd_args)
-    if result.returncode != 0:
-        exit('FAILED')
-
-
 def get_script_dirs() -> list[str]:
     dirs = []
-    root = Path(__file__).parent.parent
 
     # add this scripts/ dir
-    dirs.append(root.joinpath('scripts'))
+    dirs.append(SCRIPTS_DIR)
 
     # add each runner dir
-    for runner_child in root.joinpath('runners').iterdir():
+    for runner_child in RUNNERS_DIR.iterdir():
         if runner_child.is_dir():
             dirs.append(runner_child)
 

@@ -24,8 +24,8 @@ jobs:
     - name: Lint s3-benchrunner-c
       run: python runners/s3-benchrunner-c/scripts/lint.py
 
-    - name: Lint s3-benchrunner-crt-java
-      run: python runners/s3-benchrunner-crt-java/scripts/lint.py
+    - name: Lint s3-benchrunner-java
+      run: python runners/s3-benchrunner-java/scripts/lint.py
 
     - name: Check that workload.run.json files are up to date
       # build workloads and see if any files change
@@ -39,7 +39,7 @@ jobs:
       matrix:
         runner:
           - s3-benchrunner-c
-          - s3-benchrunner-crt-java
+          - s3-benchrunner-java
           - s3-benchrunner-python
     steps:
     - uses: actions/checkout@v4

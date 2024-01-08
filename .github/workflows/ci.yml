@@ -56,4 +56,4 @@ jobs:
     - run: python -m pip install -r scripts/requirements.txt
 
     - name: Build
-      run: python scripts/build-runner.py --lang /${{ matrix.runner }} --build-dir ${{runner.temp}}/build
+      run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

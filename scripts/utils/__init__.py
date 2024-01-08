@@ -39,9 +39,10 @@ def run(cmd_args: list[str], check=True) -> subprocess.CompletedProcess:
     completed = subprocess.run(cmd_args)
     if check and completed.returncode != 0:
         exit(f"FAILED running: {subprocess.list2cmdline(cmd_args)}")
+    return completed
 
 
-def fetch_git_repo(url: str, dir: Path, main_branch: str = 'main', preferred_branch: str = None):
+def fetch_git_repo(url: str, dir: Path, main_branch: str = 'main', preferred_branch: Optional[str] = None):
     """
     Ensure repo is cloned, up to date, and on the right branch.
 

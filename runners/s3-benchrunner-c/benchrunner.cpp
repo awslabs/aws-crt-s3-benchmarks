@@ -515,11 +515,9 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
     double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
 
     double durationVariance = std::accumulate(
-        durations.begin(),
-        durations.end(),
-        0.0,
-        [&durationMean, &n](double accumulator, const double &val)
-        { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
+        durations.begin(), durations.end(), 0.0, [&durationMean, &n](double accumulator, const double &val) {
+            return accumulator + ((val - durationMean) * (val - durationMean) / n);
+        });
 
     double mbsMean = bytesToMegabit(bytesPerRun) / durationMean;
     double mbsVariance = bytesToMegabit(bytesPerRun) / durationVariance;

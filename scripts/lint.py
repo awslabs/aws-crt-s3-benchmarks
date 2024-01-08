@@ -1,62 +1,69 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
+import os
 import sys
 
-from utils import run, SCRIPTS_DIR, RUNNERS_DIR
+from utils import get_runner_dir, run, REPO_DIR, RUNNER_LANGS, SCRIPTS_DIR
 
 PARSER = argparse.ArgumentParser(
-    description="Check formatting and type hints in python scripts")
+    description="Run linters (e.g. code formatting) for a given language.")
+PARSER.add_argument(
+    'lang', choices=RUNNER_LANGS)
 
 
-def get_script_dirs() -> list[str]:
-    dirs = []
+def lint_c():
+    runner_dir = get_runner_dir('c')
+    files: list[str] = []
+    for pattern in ['*.cpp', '*.c', '*.h']:
+        for i in runner_dir.glob(pattern):
+            files.append(str(i))
 
-    # add this scripts/ dir
-    dirs.append(SCRIPTS_DIR)
+    failed = False
+    for file in files:
+        # using shell commands because it's way shorter than proper python
+        if os.system(f'clang-format {file} | diff -u {file} -') != 0:
+            failed = True
 
-    # add each runner dir
-    for runner_child in RUNNERS_DIR.iterdir():
-        if runner_child.is_dir():
-            dirs.append(runner_child)
-
-    # add cdk/ dir
-    dirs.append(root.joinpath('cdk'))
-
-    return [str(i) for i in dirs]
-
-
-def get_exclude_dirs() -> list[str]:
-    return ['cdk.out']
+    if failed:
+        # display clang format version
+        os.system('clang-format --version')
+        exit('FAILED')
 
 
-def check_formatting(dirs: list[str], exclude_dirs: list[str]):
-    cmd_args = [sys.executable, '-m', 'autopep8',
+def lint_python():
+    dirs = [
+        SCRIPTS_DIR,
+        get_runner_dir('python'),
+        REPO_DIR/'cdk',
+    ]
+    exclude_dirs = ['cdk.out']
+
+    # check formatting
+    fmt_args = [sys.executable, '-m', 'autopep8',
                 '--recursive', '--diff', '--exit-code']
 
     for x in exclude_dirs:
-        cmd_args.extend(['--exclude', x])
+        fmt_args.extend(['--exclude', x])
 
-    cmd_args.extend(dirs)
-    run(cmd_args)
+    fmt_args.extend(dirs)
+    run(fmt_args)
+
+    # check typing
+    mypy_args = [sys.executable, '-m', 'mypy',
+                 '--exclude', ','.join(exclude_dirs)]
+    mypy_args.extend(dirs)
+    run(mypy_args)
 
 
-def check_typing(dirs: list[str], exclude_dirs: list[str]):
-    # run mypy on each script dir separately,
-    # so it doesn't complain about there being multiple build.py files
-    for dir in dirs:
-        cmd_args = [sys.executable, '-m', 'mypy']
-
-        if exclude_dirs:
-            cmd_args.extend(['--exclude', ','.join(exclude_dirs)])
-
-        cmd_args.append(dir)
-        run(cmd_args)
+def lint_java():
+    runner_dir = get_runner_dir('java')
+    os.chdir(runner_dir)
+    run(['mvn', 'formatter:validate'])
 
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
-    script_dirs = get_script_dirs()
-    exclude_dirs = get_exclude_dirs()
-    check_formatting(script_dirs, exclude_dirs)
-    check_typing(script_dirs, exclude_dirs)
+
+    # get lint  function by name, and call it
+    lint_fn = globals()[f"lint_{args.lang}"]
+    lint_fn()

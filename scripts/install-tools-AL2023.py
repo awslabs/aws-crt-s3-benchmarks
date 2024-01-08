@@ -12,8 +12,9 @@ def run(cmd_args: list[str]):
     subprocess.run(cmd_args, check=True)
 
 
-run(['sudo', 'dnf', 'install', '-y',
+run(['dnf', 'install', '-y',
      'git',
+     'python3-pip',  # for installing python packages
      'cmake',  # for building aws-c-***
      'gcc',  # for building aws-c-***
      'gcc-c++',  # for building s3-benchrunner-c

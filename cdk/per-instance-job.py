@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
 The per-instance job is running on a specific EC2 instance type.
-It pulls down the aws-crt-s3-benchmarks repo and runs the bechmarks.
+It pulls down the aws-crt-s3-benchmarks repo and runs the benchmarks.
 """
 
 import argparse
+import os
+from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import s3_benchmarks
 
@@ -29,6 +32,9 @@ PARSER.add_argument(
     '--bucket', required=True,
     help="S3 bucket name")
 PARSER.add_argument(
+    '--region', required=True,
+    help="AWS region (e.g. us-west-2)")
+PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
     # (Batch seems to omit parameters with empty string values)
@@ -44,6 +50,15 @@ PARSER.add_argument(
 PARSER.add_argument(
     '--workloads', required=True, type=comma_separated_list,
     help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
+PARSER.add_argument(
+    '--skip-installs', action='store_true',
+    help="Skip installing tools. Useful if running the script locally.")
+
+
+def run(cmd_args: list[str], check=True):
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
+    subprocess.run(cmd_args, check=check)
+
 
 if __name__ == '__main__':
     # show in logs exactly how this Batch job was invoked
@@ -54,8 +69,62 @@ if __name__ == '__main__':
     instance_type = next(
         x for x in s3_benchmarks.ALL_INSTANCE_TYPES if x.id == args.instance_type)
 
-    # TODO: git clone aws-crt-s3-benchmarks
+    # cd into tmp working dir
+    tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-')).absolute()
+    os.chdir(tmp_dir)
+    print(f"Using tmp dir: {tmp_dir}")
 
-    # TODO: kick off scripts that build runners and run benchmarks
+    # git clone aws-crt-s3-benchmarks
+    run(['git', 'clone', 'https://github.com/awslabs/aws-crt-s3-benchmarks.git'])
+    benchmarks_dir = Path('aws-crt-s3-benchmarks')
+
+    # if branch specified, try to check it out
+    if args.branch:
+        os.chdir(benchmarks_dir)
+        run(['git', 'checkout', args.branch])
+        os.chdir(tmp_dir)
+
+    # install tools
+    if not args.skip_installs:
+        run([sys.executable,
+            str(benchmarks_dir/'scripts/install-tools-AL2023.py')])
+
+        # install python packages
+        run([sys.executable, '-m', 'pip', 'install', '-r',
+            str(benchmarks_dir/'scripts/requirements.txt')])
+
+    # get full paths to workload files
+    workloads = []
+    for workload_name in args.workloads:
+        workload_path = benchmarks_dir/f'workloads/{workload_name}.run.json'
+        workloads.append(str(workload_path))
+
+    #
+    # Run script in aws-crt-s3-benchmarks that does the rest...
+    #
+
+    cmd_args = [sys.executable,
+                str(benchmarks_dir/'scripts/prep-build-run-benchmarks.py')]
+    cmd_args.extend(['--bucket', args.bucket])
+    cmd_args.extend(['--region', args.region])
+    cmd_args.extend(['--throughput', str(instance_type.bandwidth_Gbps)])
+
+    if args.branch != 'main':
+        # don't pass along --branch if it's the default "main" value
+        cmd_args.extend(['--branch', args.branch])
+
+    build_dir = tmp_dir/'build'
+    build_dir.mkdir()
+    cmd_args.extend(['--build-dir', str(build_dir)])
+
+    files_dir = tmp_dir/'files'
+    files_dir.mkdir()
+    cmd_args.extend(['--files-dir', str(files_dir)])
+
+    cmd_args.extend(['--runners', *args.runners])
+    cmd_args.extend(['--workloads', *workloads])
+
+    # TODO: actually run this script
+    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
 
     print("PER-INSTANCE JOB DONE!")

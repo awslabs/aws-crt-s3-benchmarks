@@ -11,7 +11,7 @@ PARSER.add_argument(
     'lang', choices=RUNNER_LANGS)
 
 
-def lint_c():
+def _lint_c():
     runner_dir = get_runner_dir('c')
     files: list[str] = []
     for pattern in ['*.cpp', '*.c', '*.h']:
@@ -30,7 +30,7 @@ def lint_c():
         exit('FAILED')
 
 
-def lint_python():
+def _lint_python():
     dirs = [
         SCRIPTS_DIR,
         get_runner_dir('python'),
@@ -55,7 +55,7 @@ def lint_python():
     run(mypy_args)
 
 
-def lint_java():
+def _lint_java():
     runner_dir = get_runner_dir('java')
     os.chdir(runner_dir)
     run(['mvn', 'formatter:validate'])
@@ -64,6 +64,11 @@ def lint_java():
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
-    # get lint  function by name, and call it
-    lint_fn = globals()[f"lint_{args.lang}"]
+    # get lint function by name, and call it
+    lint_functions = {
+        'c': _lint_c,
+        'python': _lint_python,
+        'java': _lint_java,
+    }
+    lint_fn = lint_functions[args.lang]
     lint_fn()

@@ -51,7 +51,7 @@ def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
     run(build_cmd)
 
 
-def build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-c"""
 
     install_dir = work_dir/'install'
@@ -105,7 +105,7 @@ def _fetch_and_install_python_repo(
     run([venv_python, '-m', 'pip', 'install', '--editable', str(dir)])
 
 
-def build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-python"""
 
     # create virtual environment (if necessary) awscli from Github
@@ -160,7 +160,7 @@ def build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [venv_python, str(get_runner_dir('python')/'main.py')]
 
 
-def build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
 
     # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
@@ -199,7 +199,12 @@ if __name__ == '__main__':
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # get build function by name, and call it
-    build_fn = globals()[f"build_{args.lang}"]
+    build_functions = {
+        'c': _build_c,
+        'python': _build_python,
+        'java': _build_java,
+    }
+    build_fn = build_functions[args.lang]
     runner_cmd = build_fn(work_dir, args.branch)
 
     print("------ RUNNER_CMD ------")

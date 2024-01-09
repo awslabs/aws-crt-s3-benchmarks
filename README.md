@@ -30,7 +30,7 @@ First, clone this repo.
 Then install the [requirements](#requirements) listed above.
 On Amazon Linux 2023, you can simply run this script:
 ```sh
-./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
+sudo ./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
 ```
 
 Then, install packages needed by the python scripts:
@@ -40,20 +40,27 @@ python3 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
 
 ### Prepare S3 Files
 
-Next, run `prep-s3-files.py`. This script creates and configures
+Next, run `scripts/prep-s3-files.py`. This script creates and configures
 an S3 bucket, put files in S3 for benchmarks to download,
 and create files on disk for benchmarks to upload:
 
 ```sh
-./aws-crt-s3-benchmarks/scripts/prep-s3-files.py --bucket BUCKET --region REGION --files-dir FILES_DIR [--workload WORKLOAD]
+usage: prep-s3-files.py [-h] --bucket BUCKET --region REGION --files-dir FILES_DIR
+                        [--workloads WORKLOADS [WORKLOADS ...]]
+
+Create files (on disk, and in S3 bucket) needed to run the benchmarks
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --bucket BUCKET       S3 bucket (will be created if necessary)
+  --region REGION       AWS region (e.g. us-west-2)
+  --files-dir FILES_DIR
+                        Root directory for files to upload and download (e.g. ~/files)
+  --workloads WORKLOADS [WORKLOADS ...]
+                        Path to specific workload.run.json file. If not specified,
+                        everything in workloads/ is prepared (uploading
+                        100+ GiB to S3 and creating 100+ GiB on disk).
 ```
-*   `--bucket BUCKET`: S3 Bucket (created if necessary)
-*   `--region REGION`: AWS region (e.g. us-west-2)
-*   `--files-dir FILES_DIR`: Root directory for files to upload and download (e.g. ~/files) (created if necessary)
-*   `--workload WORKLOAD`: Path to specific workload.run.json file.
-        May be specified multiple times.
-        If not specified, everything in [workloads/](workloads/) is prepared
-        (uploading 100+ GiB to S3 and creating 100+ GiB on disk).
 
 This script can be run repeatedly. It skips unnecessary work
 (e.g. won't upload a file that already exists).
@@ -65,18 +72,26 @@ For example, [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) tests the
 [aws-c-s3](https://github.com/awslabs/aws-c-s3/) library.
 See [runners/](runners/#readme) for more info.
 
-Every runner comes a `build.py` script:
+Run `scripts/build-runner.py`:
 ```sh
-./aws-crt-s3-benchmarks/runners/RUNNER_X/scripts/build.py --build-dir BUILD_DIR
-```
-*   `--build-dir BUILD_DIR`: Root directory for build artifacts and git clones of dependencies
-        (e.g. ~/build/RUNNER_X)
+usage: build-runner.py [-h] --lang {c,python,java} --build-dir BUILD_DIR [--branch BRANCH]
 
-The last line of output from `build.py` displays the `RUNNER_CMD`
+Build a runner and its dependencies
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --lang {c,python,java}
+                        Build s3-benchrunner-<lang>
+  --build-dir BUILD_DIR
+                        Root dir for build artifacts
+  --branch BRANCH       Git branch/commit/tag to use when pulling dependencies
+```
+
+The last line of output from `build-runner.py` displays the `RUNNER_CMD`
 you'll need in the next step.
 
 NOTE: Each runner has a `README.md` with more advanced instructions.
-`build.py` isn't meant to handle advanced use cases like tweaking dependencies,
+`build-runner.py` isn't meant to handle advanced use cases like tweaking dependencies,
 iterating locally, DEBUG builds, etc.
 
 ### Run a Benchmark
@@ -91,7 +106,7 @@ RUNNER_CMD WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 ```
 
 *   `RUNNER_CMD`: Command to launch runner (e.g. java -jar path/to/runner.jar)
-        This is the last line printed by `build.py` in the [previous step](#build-a-runner).
+        This is the last line printed by `build-runner.py` in the [previous step](#build-a-runner).
 *   `WORKLOAD`: Path to workload `.run.json` file (see: [workloads/](../workloads))
 *   `BUCKET`: S3 bucket name (e.g. my-test-bucket)
 *   `REGION`: AWS Region (e.g. us-west-2)

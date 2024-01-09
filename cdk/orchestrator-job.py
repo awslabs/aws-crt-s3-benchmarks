@@ -5,7 +5,7 @@ kicking it off and waiting until it completes before kicking off the next.
 """
 
 import argparse
-import boto3
+import boto3  # type: ignore
 import datetime
 import pprint
 import re
@@ -32,6 +32,9 @@ def comma_separated_list(arg):
 
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
+PARSER.add_argument(
+    '--region', required=True,
+    help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
@@ -115,7 +118,7 @@ if __name__ == '__main__':
             exit(f'No known instance type "{instance_type_id}"')
 
     # create Batch client
-    batch = boto3.client('batch')
+    batch = boto3.client('batch', region_name=args.region)
 
     # run each per-instance job
     for i, instance_type in enumerate(instance_types):
@@ -125,7 +128,7 @@ if __name__ == '__main__':
         # name doesn't really matter, but it's helpful to indicate what's going on
         # looks like: "c5n-18xlarge_runners-1_workloads-12_branch-myexperiment"
         job_name = f"{instance_type.id.replace('.', '-')}_runners-{len(args.runners)}_workloads-{len(args.workloads)}"
-        if args.branch:
+        if args.branch != "main":
             safe_branch_name = re.sub(r'[^-_a-zA-Z0-9]', '', args.branch)
             job_name += f"_branch-{safe_branch_name}"
 

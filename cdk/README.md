@@ -11,12 +11,12 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
 
 1) Create and activate a Python virtual environment, if you haven't already done so.
 
-1) `cd` into this directory.
-
-1) Install the CDK's python requirements:
+1) Install python requirements:
     ```sh
-    python3 -m pip install -r requirements.txt
+    python3 -m pip install -r aws-crt-s3-benchmarks/scripts/requirements.txt
     ```
+
+1) `cd` into this `cdk/` directory.
 
 1) Deploy this CDK app:
     ```sh

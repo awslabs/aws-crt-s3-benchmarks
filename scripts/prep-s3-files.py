@@ -13,6 +13,8 @@ import subprocess
 import time
 from typing import Optional
 
+from utils import workload_paths_from_args
+
 PARSER = argparse.ArgumentParser(
     description='Create files (on disk, and in S3 bucket) needed to run the benchmarks')
 PARSER.add_argument(
@@ -25,9 +27,8 @@ PARSER.add_argument(
     '--files-dir', required=True,
     help='Root directory for files to upload and download (e.g. ~/files)')
 PARSER.add_argument(
-    '--workload', action='append',
+    '--workloads', nargs='+',
     help='Path to specific workload.run.json file. ' +
-    'May be specified multiple times. ' +
     'If not specified, everything in workloads/ is prepared ' +
     '(uploading 100+ GiB to S3 and creating 100+ GiB on disk).')
 
@@ -364,17 +365,7 @@ def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects:
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
-    # validate workloads
-    if args.workload:
-        workloads = [Path(x) for x in args.workload]
-        for workload in workloads:
-            if not workload.exists():
-                exit(f'workload not found: {str(workload)}')
-    else:
-        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
-        workloads = sorted(workloads_dir.glob('*.run.json'))
-        if not workloads:
-            exit(f'no workload files found !?!')
+    workloads = workload_paths_from_args(args.workloads)
 
     s3 = boto3.client('s3', region_name=args.region)
 

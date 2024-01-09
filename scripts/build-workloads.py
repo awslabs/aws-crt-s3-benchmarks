@@ -6,6 +6,8 @@ import json
 import re
 from typing import Optional
 
+from utils import WORKLOADS_DIR
+
 VERSION = 2
 DEFAULT_NUM_FILES = 1
 DEFAULT_FILES_ON_DISK = True
@@ -147,8 +149,7 @@ if __name__ == '__main__':
             if not src_file.name.endswith('.src.json'):
                 exit(f'workload src files must end with ".src.json"')
     else:
-        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
-        src_files = sorted(workloads_dir.glob('*.src.json'))
+        src_files = sorted(WORKLOADS_DIR.glob('*.src.json'))
         if not src_files:
             exit('no workload src files found !?!')
 

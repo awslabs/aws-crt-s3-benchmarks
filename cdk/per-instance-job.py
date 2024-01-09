@@ -124,7 +124,7 @@ if __name__ == '__main__':
     cmd_args.extend(['--runners', *args.runners])
     cmd_args.extend(['--workloads', *workloads])
 
+    # TODO: actually run this script
     print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
-    subprocess.run(cmd_args, check=True)
 
     print("PER-INSTANCE JOB DONE!")

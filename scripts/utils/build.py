@@ -2,7 +2,6 @@
 This code is in utils/ so multiple scripts can call it like a function.
 But scripts/build-runner.py is the main one you'd call from the terminal.
 """
-import functools
 import os
 from pathlib import Path
 import sys
@@ -177,8 +176,6 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     return ['java', '-jar', str(jar_path)]
 
 
-# lru_cache so that scripts looping through runners won't repeat work
-@functools.lru_cache
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
     """
     Build s3-benchrunner-<lang> and its dependencies.

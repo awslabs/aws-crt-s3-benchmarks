@@ -1,162 +1,112 @@
 #!/usr/bin/env python3
-
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 import subprocess
-import itertools
-import re
-import shlex
+import sys
+from typing import Optional
 
-parser = argparse.ArgumentParser(
-    description='Automated script to prepare, build, run and report the benchmarks as configured.')
+from utils import print_banner, run, workload_paths_from_args, SCRIPTS_DIR
+import utils.build
 
-parser.add_argument('--runner', default=[], action='append',
-                    choices=('python', 'java', 'c'))
 
-parser.add_argument(
-    '--working-dir',
-    help='Working directory. ' +
-    'If omitted, CWD is used.')
+@dataclass
+class Runner:
+    # language of runner codebase
+    # e.g. "python" for "runners/s3-benchrunner-python"
+    lang: str
 
-parser.add_argument(
-    '--workload', action='append',
-    help='Path to specific workload JSON file. ' +
-    'May be specified multiple times. ' +
-    'If omitted, everything in workloads/ is run.')
+    # for runners that can benchmark multiple libraries,
+    # this is the extra LIB arg.
+    # e.g. "crt" for "runners/s3-benchrunner-python/main.py crt"
+    lib_arg: Optional[str] = None
 
-parser.add_argument(
-    '--bucket', required=True,
-    help='S3 bucket (will be created if necessary)')
 
-parser.add_argument(
-    '--region', required=True,
-    help='AWS region (e.g. us-west-2)')
-
-parser.add_argument(
-    '--throughput', required=True, type=float,
-    help='Target network throughput in gigabit/s (e.g. 100.0)')
-
-parser.add_argument(
-    '--branch', default='main',
-    help='Git branch/commit/tag to use when pulling dependencies.')
-
-benchmarks_root_dir = Path(__file__).parent.parent
-runners_dir_dic = {
-    'c': {
-        'build_scripts': benchmarks_root_dir.joinpath('./runners/s3-benchrunner-c/scripts/build.py')
-    },
-    'java': {
-        'build_scripts': benchmarks_root_dir.joinpath('./runners/s3-benchrunner-crt-java/scripts/build.py')
-    },
-    'python': {
-        'build_scripts': benchmarks_root_dir.joinpath('./runners/s3-benchrunner-python/scripts/build.py')
-    },
+RUNNERS = {
+    'crt-c': Runner(lang='c'),
+    'crt-python': Runner(lang='python', lib_arg='crt'),
+    'cli-crt': Runner(lang='python', lib_arg='cli-crt'),
+    'cli-classic': Runner(lang='python', lib_arg='cli-python'),
+    'boto3-crt': Runner(lang='python', lib_arg='boto3-crt'),
+    'boto3-classic': Runner(lang='python', lib_arg='boto3-python'),
+    'crt-java': Runner(lang='java'),
 }
 
-
-def error_handling():
-    # TODO: To handle error from different stage
-    exit(-1)
-
-
-def run(cmd_args: list[str]):
-    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
-    process = subprocess.Popen(
-        subprocess.list2cmdline(cmd_args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=0)
-    output = []
-    if process.stdout is not None:
-        line = process.stdout.readline()
-    while (line):
-        if not isinstance(line, str):
-            line_str = line.decode('ascii', 'ignore')
-        else:
-            line_str = line
-        print(line_str, end='', flush=True)
-        output.append(line_str)
-        if process.stdout is not None:
-            line = process.stdout.readline()
-
-    process.wait()
-    if process.returncode != 0:
-        raise Exception(
-            f'Command exited with code {process.returncode}')
-    return output
-
-
-def benchmarks_output_parsing(output: str, runner_cmd: str) -> dict:
-    # lines = output.split("\n")[1:-1]
-    mbps_values: dict = {}
-    workload = ''
-    for line in output:
-        if runner_cmd in line:
-            # All the runner follows the same pattern to run a workload. The workload is the -4 args in the args list, unless run-benchmarks.py changed.
-            workload = shlex.split(line)[-4]
-            mbps_values[workload] = []
-
-        # search for the pattern "Mb\s:" followed by a number
-        match = re.search("Mb\/s:(\d+.\d+)", line)
-        if match:
-            # if the pattern is found, extract the number and add it to the result
-            mbps_values[workload].append(float(match.group(1)))
-    return mbps_values
+PARSER = argparse.ArgumentParser(
+    description='Do-it-all script that prepares S3 files, builds runners, ' +
+    'runs benchmarks, and reports results.')
+PARSER.add_argument(
+    '--bucket', required=True,
+    help='S3 bucket (will be created if necessary)')
+PARSER.add_argument(
+    '--region', required=True,
+    help='AWS region (e.g. us-west-2)')
+PARSER.add_argument(
+    '--throughput', required=True, type=float,
+    help='Target network throughput in gigabit/s (e.g. 100.0)')
+PARSER.add_argument(
+    '--branch',
+    help='If specified, try to use this branch/commit/tag of various Git repos.')
+PARSER.add_argument(
+    '--build-dir', required=True,
+    help='Root dir for build artifacts')
+PARSER.add_argument(
+    '--files-dir', required=True,
+    help='Root dir for uploading and downloading files. ' +
+    'Runners are launched in this directory.')
+PARSER.add_argument(
+    '--runners', nargs='+', required=True, choices=RUNNERS.keys(),
+    help='Library runners (e.g. crt-c,crt-python)')
+PARSER.add_argument(
+    '--workloads', nargs='+',
+    help='Paths to specific workload JSON files. ' +
+    'If not specified, everything in workloads/ is run.')
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
-    working_dir = Path(args.working_dir) if args.working_dir else Path.cwd()
-    files_dir = working_dir.joinpath('files_dir')
+    args = PARSER.parse_args()
+    build_dir = Path(args.build_dir).resolve()
+    files_dir = Path(args.files_dir).resolve()
+    workloads = workload_paths_from_args(args.workloads)
 
-    if args.workload:
-        workloads = [Path(x) for x in args.workload]
-        for workload in workloads:
-            if not workload.exists():
-                exit(f'workload not found: {str(workload)}')
-    else:
-        workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
-        workloads = sorted(workloads_dir.glob('*.run.json'))
-        if not workloads:
-            exit(f'no workload files found !?!')
+    # prepare S3 files
+    print_banner('PREPARE S3 FILES')
+    run([
+        sys.executable, str(SCRIPTS_DIR/'prep-s3-files.py'),
+        '--bucket', args.bucket,
+        '--region', args.region,
+        '--files-dir', str(files_dir),
+        '--workloads', *[str(x) for x in workloads]
+    ])
 
-    # Convert to absulte path.
-    workloads_args_list = list(itertools.chain.from_iterable(
-        ('--workload', str(i.resolve())) for i in workloads))
+    # track which language runners we've already built
+    lang_to_runner_cmd = {}
 
-    # Step 1: Prepare files
-    prepare_args = [str(benchmarks_root_dir.joinpath(
-                    "scripts/prep-s3-files.py")),
-                    '--bucket', args.bucket,
-                    '--region', args.region,
-                    '--files-dir', str(files_dir)]
-    prepare_args += workloads_args_list
-    run(prepare_args)
+    for runner_name in args.runners:
+        runner = RUNNERS[runner_name]
 
-    # Step 2: Build runner
-    runner_cmds = {}
-    for runner in args.runner:
-        runner_build_args = [runners_dir_dic[runner]['build_scripts'],
-                             '--build-dir', str(working_dir.joinpath(
-                                 f'{runner}_runner_building_dir')),
-                             '--branch', args.branch]
-        output = run(runner_build_args)
-        # the last line of the out is the runner cmd (remove the `\n` at the eol)
-        runner_cmds[runner] = output[-1].splitlines()[0]
+        # build runner for this language (if necessary)
+        # and get cmd to run it
+        if not runner.lang in lang_to_runner_cmd:
+            print_banner(f'BUILD RUNNER: {runner.lang}')
+            runner_cmd = utils.build.build_runner(
+                runner.lang, build_dir, args.branch)
+            lang_to_runner_cmd[runner.lang] = runner_cmd
 
-    # Step 3: run benchmarks
-    benchmarks_results = {}
-    for runner in args.runner:
-        # TODO: python runner cmd has different pattern. Design something to deal with python.
-        run_benchmarks_args = [str(benchmarks_root_dir.joinpath(
-            "scripts/run-benchmarks.py")),
-            '--runner-cmd', runner_cmds[runner],
+        runner_cmd_str = subprocess.list2cmdline(
+            lang_to_runner_cmd[runner.lang])
+
+        # add extra arg for library (if necessary)
+        if runner.lib_arg:
+            runner_cmd_str += f' {runner.lib_arg}'
+
+        print_banner(f'RUN BENCHMARKS: {runner_name}')
+        run([
+            sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
+            '--runner-cmd', runner_cmd_str,
             '--bucket', args.bucket,
             '--region', args.region,
             '--throughput', str(args.throughput),
-            '--files-dir', str(files_dir)]
-        run_benchmarks_args += workloads_args_list
-        output = run(run_benchmarks_args)
-        benchmarks_results[runner] = benchmarks_output_parsing(
-            output, runner_cmds[runner])
-        print(benchmarks_results)
-
-    # Step 4: report result
-    # TODO
+            '--files-dir', str(files_dir),
+            '--workloads', *[str(x) for x in workloads],
+        ])

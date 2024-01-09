@@ -21,14 +21,13 @@ parser.add_argument(
     '--throughput', required=True, type=float,
     help='Target network throughput in gigabit/s (e.g. 100.0)')
 parser.add_argument(
-    '--workload', action='append',
-    help='Path to specific workload JSON file. ' +
-    'May be specified multiple times. ' +
+    '--workloads', nargs='+',
+    help='Paths to specific workload JSON files. ' +
     'If omitted, everything in workloads/ is run.')
 parser.add_argument(
     '--files-dir',
     help='Launch runner in this directory. ' +
-    'Files are uploaded from and downloaded to here' +
+    'Files are uploaded from and downloaded to here. ' +
     'If omitted, CWD is used.')
 
 args = parser.parse_args()

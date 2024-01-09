@@ -1,15 +1,15 @@
-# s3-benchrunner-crt-java
+# s3-benchrunner-java
 
 s3-benchrunner for [aws-crt-java](https://github.com/awslabs/aws-crt-java).
 
 ## Building
 
 ```sh
-cd aws-crt-s3-benchmarks/runners/s3-benchrunner-crt-java
+cd aws-crt-s3-benchmarks/runners/s3-benchrunner-java
 mvn package
 ```
 
-This produces the uber-jar: `target/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar`.
+This produces the uber-jar: `target/s3-benchrunner-java-1.0-SNAPSHOT.jar`.
 
 ### Using a local build of aws-crt-java
 
@@ -28,7 +28,7 @@ This installs version 1.0.0-SNAPSHOT.
 
 Now get the runner to use it by building with the "snapshot" profile active:
 ```sh
-cd /path/to/s3-benchrunner-crt-java
+cd /path/to/s3-benchrunner-java
 mvn -P snapshot package
 ```
 
@@ -44,6 +44,6 @@ Submissions welcome, I'm bad at Java.
 
 If you built the uber-jar via `mvn package`, the `RUNNER_CMD` is:
 
-`java -jar path/to/s3-benchrunner-crt-java-1.0-SNAPSHOT.jar [args...]`
+`java -jar path/to/s3-benchrunner-java-1.0-SNAPSHOT.jar [args...]`
 
 and the args you pass are described [here](../README.md#running).

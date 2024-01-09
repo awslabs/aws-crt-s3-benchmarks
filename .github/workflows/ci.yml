@@ -19,13 +19,13 @@ jobs:
     - run: python -m pip install -r scripts/requirements.txt
 
     - name: Lint Python scripts
-      run: python scripts/lint-python.py
+      run: python scripts/lint.py python
 
     - name: Lint s3-benchrunner-c
-      run: python runners/s3-benchrunner-c/scripts/lint.py
+      run: python scripts/lint.py c
 
-    - name: Lint s3-benchrunner-crt-java
-      run: python runners/s3-benchrunner-crt-java/scripts/lint.py
+    - name: Lint s3-benchrunner-java
+      run: python scripts/lint.py java
 
     - name: Check that workload.run.json files are up to date
       # build workloads and see if any files change
@@ -38,9 +38,9 @@ jobs:
     strategy:
       matrix:
         runner:
-          - s3-benchrunner-c
-          - s3-benchrunner-crt-java
-          - s3-benchrunner-python
+          - c
+          - java
+          - python
     steps:
     - uses: actions/checkout@v4
 
@@ -56,4 +56,4 @@ jobs:
     - run: python -m pip install -r scripts/requirements.txt
 
     - name: Build
-      run: python runners/${{ matrix.runner }}/scripts/build.py --build-dir ${{runner.temp}}/build
+      run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

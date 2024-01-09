@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import os
 from pathlib import Path
 import shlex
-import subprocess
+
+from utils import run, workload_paths_from_args
 
 parser = argparse.ArgumentParser(
     description='Benchmark workloads with a specific runner')
@@ -31,38 +33,28 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if args.workload:
-    workloads = [Path(x) for x in args.workload]
-    for workload in workloads:
-        if not workload.exists():
-            exit(f'workload not found: {str(workload)}')
-else:
-    workloads_dir = Path(__file__).parent.parent.joinpath('workloads')
-    workloads = sorted(workloads_dir.glob('*.run.json'))
-    if not workloads:
-        exit(f'no workload files found !?!')
-
+workloads = workload_paths_from_args(args.workloads)
 for workload in workloads:
     if not workload.exists():
         exit(f'workload not found: {str(workload)}')
 
     files_dir = args.files_dir if args.files_dir else str(Path.cwd())
+    os.chdir(files_dir)
 
     # split using shell-like syntax,
     # in case runner-cmd has weird stuff like quotes, spaces, etc
     cmd = shlex.split(args.runner_cmd)
 
     cmd += [str(workload), args.bucket, args.region, str(args.throughput)]
-    print(f'> {subprocess.list2cmdline(cmd)}', flush=True)
-    run = subprocess.run(cmd, text=True, cwd=files_dir)
+    result = run(cmd, check=False)
 
     # if runner skipped the workload, keep going
-    if run.returncode == 123:
+    if result.returncode == 123:
         continue
 
     # if runner failed and we're only running 1 workload, exit with failure
     # but if we're running multiple workloads, keep going
-    if run.returncode != 0:
+    if result.returncode != 0:
         print('benchmark failed')
         if len(workloads) == 1:
             exit(1)

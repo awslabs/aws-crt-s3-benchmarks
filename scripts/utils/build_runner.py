@@ -1,24 +1,14 @@
-#!/usr/bin/env python3
-import argparse
+"""
+This code is in utils/ so multiple scripts can call it like a function.
+But scripts/build-runner.py is the main one you'd call from the terminal.
+"""
+import functools
 import os
 from pathlib import Path
-import subprocess
 import sys
 from typing import Optional
 
 from utils import fetch_git_repo, run, get_runner_dir, RUNNER_LANGS
-
-PARSER = argparse.ArgumentParser(
-    description='Build a runner and its dependencies')
-PARSER.add_argument(
-    '--lang', choices=RUNNER_LANGS, required=True,
-    help='Build s3-benchrunner-<lang>')
-PARSER.add_argument(
-    '--build-dir', required=True,
-    help='Root dir for build artifacts')
-PARSER.add_argument(
-    '--branch',
-    help='Git branch/commit/tag to use when pulling dependencies')
 
 
 def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
@@ -51,7 +41,7 @@ def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
     run(build_cmd)
 
 
-def build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-c"""
 
     install_dir = work_dir/'install'
@@ -105,7 +95,7 @@ def _fetch_and_install_python_repo(
     run([venv_python, '-m', 'pip', 'install', '--editable', str(dir)])
 
 
-def build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-python"""
 
     # create virtual environment (if necessary) awscli from Github
@@ -160,7 +150,7 @@ def build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [venv_python, str(get_runner_dir('python')/'main.py')]
 
 
-def build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
+def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
 
     # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
@@ -187,20 +177,26 @@ def build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     return ['java', '-jar', str(jar_path)]
 
 
-if __name__ == '__main__':
-    args = PARSER.parse_args()
+# lru_cache so that scripts looping through runners won't repeat work
+@functools.lru_cache
+def build_lang(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
+    """
+    Build s3-benchrunner-<lang> and its dependencies.
+    Returns command for executing the runner.
+    """
 
     # for faster C compilation
     os.environ['CMAKE_BUILD_PARALLEL_LEVEL'] = str(os.cpu_count())
 
     # if --build is "/tmp/build" and --lang is "c" then work_dir is "/tmp/build/c"
-    build_root_dir = Path(args.build_dir).resolve()
-    work_dir = build_root_dir/args.lang
+    work_dir = build_root_dir/lang
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # get build function by name, and call it
-    build_fn = globals()[f"build_{args.lang}"]
-    runner_cmd = build_fn(work_dir, args.branch)
-
-    print("------ RUNNER_CMD ------")
-    print(subprocess.list2cmdline(runner_cmd))
+    build_functions = {
+        'c': _build_c,
+        'python': _build_python,
+        'java': _build_java,
+    }
+    build_fn = build_functions[lang]
+    return build_fn(work_dir, branch)

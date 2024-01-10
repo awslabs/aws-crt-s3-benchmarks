@@ -37,6 +37,6 @@ S3BenchmarksStack(
     description="Stack for running S3 benchmarks on specific EC2 instance types",
     env=cdk.Environment(
         account=settings.account, region=settings.region),
-    bucket=settings.bucket,
+    existing_bucket_name=settings.bucket,
 )
 app.synth()

@@ -139,21 +139,21 @@ def prep_bucket(s3, bucket: str, region: str):
     try:
         s3.head_bucket(Bucket=bucket)
         _print_status('✓ bucket already exists')
-        return
 
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] != '404':
             raise e
 
-    _print_status('creating bucket...')
+        _print_status('creating bucket...')
 
-    s3.create_bucket(
-        Bucket=bucket,
-        CreateBucketConfiguration={'LocationConstraint': region})
+        s3.create_bucket(
+            Bucket=bucket,
+            CreateBucketConfiguration={'LocationConstraint': region})
 
-    # note: no versioning on this bucket, so we don't waste money
+        # note: no versioning on this bucket, so we don't waste money
 
-    # set lifecycles on bucket, so we don't waste money
+    # Set lifecycle rules on this bucket, so we don't waste money.
+    # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
     s3.put_bucket_lifecycle_configuration(
         Bucket=bucket,
         LifecycleConfiguration={

@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_ecr_assets as ecr_assets,
     aws_ecs as ecs,
     aws_iam as iam,
+    aws_s3 as s3,
 )
 from constructs import Construct
 from math import floor
@@ -37,13 +38,22 @@ DEFAULT_WORKLOADS = [
 
 class S3BenchmarksStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, bucket: Optional[str], **kwargs):
+    def __init__(self, scope: Construct, construct_id: str, existing_bucket_name: Optional[str], **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
-        # TODO: create bucket if one isn't passed in
-        if not bucket:
-            raise ValueError("bucket is required")
-        self.bucket = bucket
+        # If existing bucket specified, use it.
+        # Otherwise, create one that will be destroyed when stack is destroyed.
+        if existing_bucket_name:
+            self.bucket = s3.Bucket.from_bucket_name(
+                self, "Bucket", existing_bucket_name)
+        else:
+            self.bucket = s3.Bucket(
+                self, "Bucket",
+                auto_delete_objects=True,
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+            )
+            # note: lifecycle rules for this bucket will be set later,
+            # by prep-s3-files.py, which runs as part of the per-instance job
 
         self.vpc = ec2.Vpc(self, "Vpc")
 
@@ -95,8 +105,8 @@ class S3BenchmarksStack(Stack):
             # per-instance-job can do whatever it wants to the bucket
             self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
                 actions=["s3:*"],
-                resources=[f"arn:{self.partition}:s3:::{self.bucket}",
-                           f"arn:{self.partition}:s3:::{self.bucket}/*"],
+                resources=[self.bucket.bucket_arn,
+                           f"{self.bucket.bucket_arn}/*"],
                 effect=iam.Effect.ALLOW,
             ))
 
@@ -111,7 +121,7 @@ class S3BenchmarksStack(Stack):
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
             command=[
                 "python3", "/per-instance-job.py",
-                "--bucket", self.bucket,
+                "--bucket", self.bucket.bucket_name,
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,

@@ -1,12 +1,12 @@
 # s3-benchrunner-python
 
 ```
-usage: main.py [-h] [--verbose] {crt,boto3-python,cli-python,cli-crt} WORKLOAD BUCKET REGION TARGET_THROUGHPUT
+usage: main.py [-h] [--verbose] {crt-python,boto3-classic,boto3-crt,cli-classic,cli-crt} WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 
 Python benchmark runner. Pick which S3 library to use.
 
 positional arguments:
-  {crt,boto3-python,boto3-crt,cli-python,cli-crt}
+  {crt-python,boto3-classic,boto3-crt,cli-classic,cli-crt}
   WORKLOAD
   BUCKET
   REGION
@@ -18,10 +18,10 @@ optional arguments:
 ```
 
 This is the runner for python libraries. Pass which library you want to benchmark:
-* `crt`: Uses the [aws-crt-python](https://github.com/awslabs/aws-crt-python/) (the CRT bindings for python) directly.
-* `boto3-python`: Uses [boto3](https://github.com/boto/boto3), with pure-python transfer manager.
+* `crt-python`: Uses the [aws-crt-python](https://github.com/awslabs/aws-crt-python/) (the CRT bindings for python) directly.
+* `boto3-classic`: Uses [boto3](https://github.com/boto/boto3), with pure-python transfer manager.
 * `boto3-crt`: Uses boto3, with CRT transfer manager.
-* `cli-python`: Uses [AWS CLI](https://github.com/aws/aws-cli/), with pure-python transfer manager.
+* `cli-classic`: Uses [AWS CLI](https://github.com/aws/aws-cli/), with pure-python transfer manager.
 * `cli-crt`: Uses AWS CLI, with CRT transfer manager.
 
 See [installation instructions](#installation) before running.

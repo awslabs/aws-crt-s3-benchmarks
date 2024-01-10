@@ -54,7 +54,7 @@ Possible Alternatives:
 
 ### Per-Instance Job
 
-This is what we call a Batch job that uses a specific EC2 instance type to build and run all desired [runners](../runners/#readme), on all desired [workloads](../workloads/#readme).
+This is what we call a Batch job that uses a specific EC2 instance type, builds [runners](../runners/#readme), and benchmarks all desired [workloads](../workloads/#readme), using all desired S3 clients.
 
 ### Orchestrator
 

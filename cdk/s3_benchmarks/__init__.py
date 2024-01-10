@@ -23,7 +23,7 @@ ALL_INSTANCE_TYPES = [
 ]
 
 # Timeout for job running on our slowest EC2 instance type,
-# running ALL benchmarking workloads, using ALL language runners.
+# running ALL benchmarking workloads, using ALL S3 clients.
 PER_INSTANCE_JOB_TIMEOUT_HOURS = 6.0
 
 # Timeout for orchestrator to run each per-instance benchmarking job,

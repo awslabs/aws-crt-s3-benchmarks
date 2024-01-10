@@ -14,8 +14,8 @@ from runner import (
 
 PARSER = argparse.ArgumentParser(
     description='Python benchmark runner. Pick which S3 library to use.')
-PARSER.add_argument('LIB', choices=(
-    'crt', 'boto3-python', 'boto3-crt', 'cli-python', 'cli-crt'))
+PARSER.add_argument('S3_CLIENT', choices=(
+    'crt-python', 'boto3-classic', 'boto3-crt', 'cli-classic', 'cli-crt'))
 PARSER.add_argument('WORKLOAD')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
@@ -23,24 +23,22 @@ PARSER.add_argument('TARGET_THROUGHPUT', type=float)
 PARSER.add_argument('--verbose', action='store_true')
 
 
-def create_runner_for_lib(lib: str, config: BenchmarkConfig) -> BenchmarkRunner:
-    """Factory function. Create appropriate subclass, given the lib."""
-    use_crt = lib.endswith('crt')
-
-    if lib == 'crt':
+def create_runner_given_s3_client_name(name: str, config: BenchmarkConfig) -> BenchmarkRunner:
+    """Factory function. Create appropriate subclass, given the S3 client nickname."""
+    if name == 'crt-python':
         from runner.crt import CrtBenchmarkRunner
         return CrtBenchmarkRunner(config)
 
-    if lib.startswith('boto3'):
+    if name.startswith('boto3'):
         from runner.boto3 import Boto3BenchmarkRunner
-        return Boto3BenchmarkRunner(config, use_crt)
+        return Boto3BenchmarkRunner(config, use_crt=name.endswith('crt'))
 
-    if lib.startswith('cli'):
+    if name.startswith('cli'):
         from runner.cli import CliBenchmarkRunner
-        return CliBenchmarkRunner(config, use_crt)
+        return CliBenchmarkRunner(config, use_crt=name.endswith('crt'))
 
     else:
-        raise ValueError(f'Unknown lib: {lib}')
+        raise ValueError(f'Unknown S3 client: {name}')
 
 
 if __name__ == '__main__':
@@ -48,8 +46,8 @@ if __name__ == '__main__':
     config = BenchmarkConfig(args.WORKLOAD, args.BUCKET, args.REGION,
                              args.TARGET_THROUGHPUT, args.verbose)
 
-    # create appropriate benchmark runner for given library
-    runner = create_runner_for_lib(args.LIB, config)
+    # create appropriate benchmark runner
+    runner = create_runner_given_s3_client_name(args.S3_CLIENT, config)
 
     bytes_per_run = config.bytes_per_run()
 

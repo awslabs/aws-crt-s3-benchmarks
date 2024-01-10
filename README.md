@@ -69,7 +69,7 @@ This script can be run repeatedly. It skips unnecessary work
 
 You must build a "runner" for the library you'll be benchmarking.
 For example, [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) tests the
-[aws-c-s3](https://github.com/awslabs/aws-c-s3/) library.
+[aws-c-s3](https://github.com/awslabs/aws-c-s3/) S3 client.
 See [runners/](runners/#readme) for more info.
 
 Run `scripts/build-runner.py`:

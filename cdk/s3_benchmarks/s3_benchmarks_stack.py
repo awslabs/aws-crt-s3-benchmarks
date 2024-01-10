@@ -20,9 +20,9 @@ DEFAULT_INSTANCE_TYPES = [
     'c5n.18xlarge',
 ]
 
-# The "default" set of runners to benchmark
+# The "default" set of S3 clients to benchmark
 # TODO: put more thought into this
-DEFAULT_RUNNERS = [
+DEFAULT_S3_CLIENTS = [
     'crt-c'
 ]
 
@@ -102,7 +102,7 @@ class S3BenchmarksStack(Stack):
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,
-                "--runners", "Ref::runners",
+                "--s3-clients", "Ref::s3Clients",
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
@@ -117,7 +117,7 @@ class S3BenchmarksStack(Stack):
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
             parameters={
                 "branch": "main",
-                "runners": ','.join(DEFAULT_RUNNERS),
+                "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },
         )
@@ -196,7 +196,7 @@ class S3BenchmarksStack(Stack):
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-types", "Ref::instanceTypes",
-                "--runners", "Ref::runners",
+                "--s3-clients", "Ref::s3Clients",
                 "--workloads", "Ref::workloads",
             ],
             job_role=job_role,
@@ -210,7 +210,7 @@ class S3BenchmarksStack(Stack):
             parameters={
                 "branch": "main",
                 "instanceTypes": ','.join(DEFAULT_INSTANCE_TYPES),
-                "runners": ','.join(DEFAULT_RUNNERS),
+                "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },
         )

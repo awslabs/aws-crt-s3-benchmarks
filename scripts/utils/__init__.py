@@ -83,3 +83,22 @@ def fetch_git_repo(url: str, dir: Path, main_branch: str = 'main', preferred_bra
     run(['git', 'submodule', 'update', '--init'])
 
     os.chdir(cwd_prev)
+
+
+def print_banner(msg, *, border=5, char='*'):
+    """
+    print a banner message.
+    e.g. print_banner('hello', border=3, char='*') results in:
+
+    *************
+    *** hello ***
+    *************
+
+    """
+    left_side = (char * border) + ' '
+    right_side = ' ' + (char * border)
+    middle_row = f'{left_side}{msg}{right_side}'
+    top_bottom_row = char * len(middle_row)
+    print(top_bottom_row)
+    print(middle_row)
+    print(top_bottom_row)

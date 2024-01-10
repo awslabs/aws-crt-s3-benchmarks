@@ -35,21 +35,21 @@ PARSER.add_argument(
     '--region', required=True,
     help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
+    '--instance-type', required=True,
+    choices=[x.id for x in s3_benchmarks.ALL_INSTANCE_TYPES],
+    help="EC2 instance type this is running on")
+PARSER.add_argument(
+    '--s3-clients', required=True, type=comma_separated_list,
+    help="S3 clients to benchmark, comma separated (e.g. crt-c,crt-python)")
+PARSER.add_argument(
+    '--workloads', required=True, type=comma_separated_list,
+    help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
+PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
     # (Batch seems to omit parameters with empty string values)
     default="main",
     help="If specified, try to use this branch/commit/tag of various Git repos.")
-PARSER.add_argument(
-    '--instance-type', required=True,
-    choices=[x.id for x in s3_benchmarks.ALL_INSTANCE_TYPES],
-    help="EC2 instance type this is running on")
-PARSER.add_argument(
-    '--runners', required=True, type=comma_separated_list,
-    help="Library runners, comma separated (e.g. crt-c,crt-python)")
-PARSER.add_argument(
-    '--workloads', required=True, type=comma_separated_list,
-    help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
 PARSER.add_argument(
     '--skip-installs', action='store_true',
     help="Skip installing tools. Useful if running the script locally.")
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     files_dir.mkdir()
     cmd_args.extend(['--files-dir', str(files_dir)])
 
-    cmd_args.extend(['--runners', *args.runners])
+    cmd_args.extend(['--s3-clients', *args.s3_clients])
     cmd_args.extend(['--workloads', *workloads])
 
     # TODO: actually run this script

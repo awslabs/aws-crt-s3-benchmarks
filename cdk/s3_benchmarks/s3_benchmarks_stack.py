@@ -92,6 +92,13 @@ class S3BenchmarksStack(Stack):
                 max_session_duration=cdk.Duration.hours(
                     s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
             )
+            # per-instance-job can do whatever it wants to the bucket
+            self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
+                actions=["s3:*"],
+                resources=[f"arn:{self.partition}:s3:::{self.bucket}",
+                           f"arn:{self.partition}:s3:::{self.bucket}/*"],
+                effect=iam.Effect.ALLOW,
+            ))
 
         container_defn = batch.EcsEc2ContainerDefinition(
             self, f"PerInstanceContainerDefn-{id_with_hyphens}",

@@ -79,9 +79,10 @@ if __name__ == '__main__':
     benchmarks_dir = Path('aws-crt-s3-benchmarks')
 
     # if branch specified, try to check it out
-    if args.branch:
+    preferred_branch = args.branch if args.branch != 'main' else None
+    if preferred_branch:
         os.chdir(benchmarks_dir)
-        run(['git', 'checkout', args.branch], check=False)
+        run(['git', 'checkout', preferred_branch], check=False)
         os.chdir(tmp_dir)
 
     # install tools
@@ -106,9 +107,8 @@ if __name__ == '__main__':
     cmd_args.extend(['--region', args.region])
     cmd_args.extend(['--throughput', str(instance_type.bandwidth_Gbps)])
 
-    if args.branch != 'main':
-        # don't pass along --branch if it's the default "main" value
-        cmd_args.extend(['--branch', args.branch])
+    if preferred_branch:
+        cmd_args.extend(['--branch', preferred_branch])
 
     build_dir = tmp_dir/'build'
     build_dir.mkdir()

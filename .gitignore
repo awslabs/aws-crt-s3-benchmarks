@@ -1099,3 +1099,6 @@ dependency-reduced-pom.xml
 package-lock.json
 .cdk.staging
 cdk.out
+
+# ignore personal CDK settings files
+cdk/*.settings.json

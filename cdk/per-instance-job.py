@@ -56,7 +56,7 @@ PARSER.add_argument(
 
 
 def run(cmd_args: list[str], check=True):
-    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
+    print(f'{Path.cwd()}> {subprocess.list2cmdline(cmd_args)}', flush=True)
     subprocess.run(cmd_args, check=check)
 
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # if branch specified, try to check it out
     if args.branch:
         os.chdir(benchmarks_dir)
-        run(['git', 'checkout', args.branch])
+        run(['git', 'checkout', args.branch], check=False)
         os.chdir(tmp_dir)
 
     # install tools
@@ -99,10 +99,7 @@ if __name__ == '__main__':
         workload_path = benchmarks_dir/f'workloads/{workload_name}.run.json'
         workloads.append(str(workload_path))
 
-    #
-    # Run script in aws-crt-s3-benchmarks that does the rest...
-    #
-
+    # run script in aws-crt-s3-benchmarks that does the rest
     cmd_args = [sys.executable,
                 str(benchmarks_dir/'scripts/prep-build-run-benchmarks.py')]
     cmd_args.extend(['--bucket', args.bucket])
@@ -124,7 +121,6 @@ if __name__ == '__main__':
     cmd_args.extend(['--s3-clients', *args.s3_clients])
     cmd_args.extend(['--workloads', *workloads])
 
-    # TODO: actually run this script
-    print(f'> {subprocess.list2cmdline(cmd_args)}', flush=True)
+    run(cmd_args)
 
     print("PER-INSTANCE JOB DONE!")

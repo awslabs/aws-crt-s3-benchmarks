@@ -11,6 +11,7 @@ from aws_cdk import (
 from constructs import Construct
 from math import floor
 import subprocess
+from typing import Optional
 
 import s3_benchmarks
 
@@ -36,8 +37,13 @@ DEFAULT_WORKLOADS = [
 
 class S3BenchmarksStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs):
+    def __init__(self, scope: Construct, construct_id: str, bucket: Optional[str], **kwargs):
         super().__init__(scope, construct_id, **kwargs)
+
+        # TODO: create bucket if one isn't passed in
+        if not bucket:
+            raise ValueError("bucket is required")
+        self.bucket = bucket
 
         self.vpc = ec2.Vpc(self, "Vpc")
 
@@ -98,7 +104,7 @@ class S3BenchmarksStack(Stack):
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
             command=[
                 "python3", "/per-instance-job.py",
-                "--bucket", "TODO-pass-this-in",
+                "--bucket", self.bucket,
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,

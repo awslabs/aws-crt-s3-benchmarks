@@ -17,12 +17,11 @@ class Settings:
 
 
 def load_settings(app: cdk.App) -> Settings:
-    settings_name = app.node.try_get_context("settings")
-    if settings_name is None:
-        exit('S3BenchmarksStack requires you to pick settings. ' +
-             'Pass -c settings=<name> for <name>.settings.json')
+    settings_path = app.node.try_get_context("settings")
+    if settings_path is None:
+        exit('S3BenchmarksStack requires you to to pass settings ' +
+             'via: -c settings=<path>. See README.md for more details.')
 
-    settings_path = Path(__file__).parent/f"{settings_name}.settings.json"
     with open(settings_path) as f:
         settings_json = json.load(f)
 

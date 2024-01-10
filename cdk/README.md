@@ -18,9 +18,22 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
 
 1) `cd` into this `cdk/` directory.
 
-1) Deploy this CDK app:
+1) Create a settings file for the account you'll be deploying to. Name it something like "myname.settings.json". It should look like:
+    ```json
+    {
+        "account": "012345678901",
+        "region": "us-west-2",
+        "bucket": "my-benchmarking-bucket"
+    }
+    ```
+    Fields are:
+    * `account`: AWS account ID
+    * `region`: AWS region
+    * `bucket`: (Optional) If you want to use a pre-existing bucket, or you want the bucket to persist when stack is destroyed, pass its name here. If you omit this field, or set the value `""` or `null`, a bucket will be created that gets destroyed when the stack is destroyed.
+
+1) Deploy this CDK app, passing in your settings file:
     ```sh
-    cdk deploy
+    cdk deploy -c settings=<myname.settings.json>
     ```
 
 ## Architecture
@@ -55,6 +68,8 @@ Possible Alternatives:
 ### Per-Instance Job
 
 This is what we call a Batch job that uses a specific EC2 instance type, builds [runners](../runners/#readme), and benchmarks all desired [workloads](../workloads/#readme), using all desired S3 clients.
+
+This job runs [per-instance-job.py](per-instance-job.py), which git clones the `aws-crt-s3-benchmarks` repo, then runs the [prep-build-run-benchmarks.py](../scripts/prep-build-run-benchmarks.py) script within that repo, which handles the rest. The reason that the per-instance-job clones the repo at runtime, instead of embedding at CDK deploy time, is to let us test different branches of `aws-crt-s3-benchmarks` without redeploying the CDK stack.
 
 ### Orchestrator
 

@@ -36,20 +36,20 @@ PARSER.add_argument(
     '--region', required=True,
     help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
+    '--instance-types', required=True, type=comma_separated_list,
+    help="EC2 instance types, comma separated (e.g. c5n.18xlarge,p4d.24xlarge)")
+PARSER.add_argument(
+    '--s3-clients', required=True, type=comma_separated_list,
+    help="S3 clients to benchmark, comma separated (e.g. crt-c,crt-python)")
+PARSER.add_argument(
+    '--workloads', required=True, type=comma_separated_list,
+    help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
+PARSER.add_argument(
     '--branch',
     # default to "main" (instead of None or "") to work better with Batch parameters.
     # (Batch seems to omit parameters with empty string values)
     default="main",
     help="If specified, try to use this branch/commit/tag of various Git repos.")
-PARSER.add_argument(
-    '--instance-types', required=True, type=comma_separated_list,
-    help="EC2 instance types, comma separated (e.g. c5n.18xlarge,p4d.24xlarge)")
-PARSER.add_argument(
-    '--runners', required=True, type=comma_separated_list,
-    help="Library runners, comma separated (e.g. crt-c,crt-python)")
-PARSER.add_argument(
-    '--workloads', required=True, type=comma_separated_list,
-    help="Workloads, comma separated (e.g. upload-Caltech256Sharded,download-Caltech256Sharded)")
 
 
 def wait_for_completed_job_description(batch, job_id) -> dict:
@@ -126,8 +126,8 @@ if __name__ == '__main__':
             f"--- Benchmarking instance type {i+1}/{len(instance_types)}: {instance_type.id} ---")
 
         # name doesn't really matter, but it's helpful to indicate what's going on
-        # looks like: "c5n-18xlarge_runners-1_workloads-12_branch-myexperiment"
-        job_name = f"{instance_type.id.replace('.', '-')}_runners-{len(args.runners)}_workloads-{len(args.workloads)}"
+        # looks like: "c5n-18xlarge_s3clients-1_workloads-12_branch-myexperiment"
+        job_name = f"{instance_type.id.replace('.', '-')}_s3clients-{len(args.s3_clients)}_workloads-{len(args.workloads)}"
         if args.branch != "main":
             safe_branch_name = re.sub(r'[^-_a-zA-Z0-9]', '', args.branch)
             job_name += f"_branch-{safe_branch_name}"
@@ -141,7 +141,7 @@ if __name__ == '__main__':
             'parameters': {
                 'branch': args.branch,
                 'workloads': ','.join(args.workloads),
-                'runners': ','.join(args.runners),
+                's3Clients': ','.join(args.s3_clients),
             },
         }
 

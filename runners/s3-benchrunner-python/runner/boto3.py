@@ -23,7 +23,7 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
         if (use_crt):
             self._verbose('--- boto3-crt ---')
         else:
-            self._verbose('--- boto3-python ---')
+            self._verbose('--- boto3-classic ---')
 
         self._s3_client = boto3.client('s3', region_name=config.region)
 

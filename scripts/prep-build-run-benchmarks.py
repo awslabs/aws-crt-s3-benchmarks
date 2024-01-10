@@ -12,23 +12,25 @@ import utils.build
 
 @dataclass
 class Runner:
-    # language of runner codebase
+    # language of benchmark runner codebase
     # e.g. "python" for "runners/s3-benchrunner-python"
     lang: str
 
-    # for runners that can benchmark multiple libraries,
-    # this is the extra LIB arg.
+    # for runners that can benchmark different S3 clients,
+    # this extra arg picks which client to use
     # e.g. "crt" for "runners/s3-benchrunner-python/main.py crt"
-    lib_arg: Optional[str] = None
+    has_s3_client_arg: bool = False
 
 
-RUNNERS = {
+# map from the S3 client name,
+# to the benchmark runner that can run it
+S3_CLIENT_TO_RUNNER = {
     'crt-c': Runner(lang='c'),
-    'crt-python': Runner(lang='python', lib_arg='crt'),
-    'cli-crt': Runner(lang='python', lib_arg='cli-crt'),
-    'cli-classic': Runner(lang='python', lib_arg='cli-python'),
-    'boto3-crt': Runner(lang='python', lib_arg='boto3-crt'),
-    'boto3-classic': Runner(lang='python', lib_arg='boto3-python'),
+    'crt-python': Runner(lang='python', has_s3_client_arg=True),
+    'cli-crt': Runner(lang='python', has_s3_client_arg=True),
+    'cli-classic': Runner(lang='python', has_s3_client_arg=True),
+    'boto3-crt': Runner(lang='python', has_s3_client_arg=True),
+    'boto3-classic': Runner(lang='python', has_s3_client_arg=True),
     'crt-java': Runner(lang='java'),
 }
 
@@ -45,9 +47,6 @@ PARSER.add_argument(
     '--throughput', required=True, type=float,
     help='Target network throughput in gigabit/s (e.g. 100.0)')
 PARSER.add_argument(
-    '--branch',
-    help='If specified, try to use this branch/commit/tag of various Git repos.')
-PARSER.add_argument(
     '--build-dir', required=True,
     help='Root dir for build artifacts')
 PARSER.add_argument(
@@ -55,12 +54,16 @@ PARSER.add_argument(
     help='Root dir for uploading and downloading files. ' +
     'Runners are launched in this directory.')
 PARSER.add_argument(
-    '--runners', nargs='+', required=True, choices=RUNNERS.keys(),
-    help='Library runners (e.g. crt-c,crt-python)')
+    '--s3-clients', nargs='+', required=True,
+    choices=S3_CLIENT_TO_RUNNER.keys(),
+    help='S3 clients to benchmark.')
 PARSER.add_argument(
     '--workloads', nargs='+',
     help='Paths to specific workload JSON files. ' +
     'If not specified, everything in workloads/ is run.')
+PARSER.add_argument(
+    '--branch',
+    help='If specified, try to use this branch/commit/tag of various Git repos.')
 
 
 if __name__ == '__main__':
@@ -79,14 +82,14 @@ if __name__ == '__main__':
         '--workloads', *[str(x) for x in workloads]
     ])
 
-    # track which language runners we've already built
+    # track which runners we've already built
     lang_to_runner_cmd = {}
 
-    for runner_name in args.runners:
-        runner = RUNNERS[runner_name]
+    for s3_client_name in args.s3_clients:
+        runner = S3_CLIENT_TO_RUNNER[s3_client_name]
 
         # build runner for this language (if necessary)
-        # and get cmd to run it
+        # and get cmd args to run it
         if not runner.lang in lang_to_runner_cmd:
             print_banner(f'BUILD RUNNER: {runner.lang}')
             runner_cmd = utils.build.build_runner(
@@ -96,11 +99,11 @@ if __name__ == '__main__':
         runner_cmd_str = subprocess.list2cmdline(
             lang_to_runner_cmd[runner.lang])
 
-        # add extra arg for library (if necessary)
-        if runner.lib_arg:
-            runner_cmd_str += f' {runner.lib_arg}'
+        # if runner takes extra S3_CLIENT arg, add it
+        if runner.has_s3_client_arg:
+            runner_cmd_str += f' {s3_client_name}'
 
-        print_banner(f'RUN BENCHMARKS: {runner_name}')
+        print_banner(f'RUN BENCHMARKS: {s3_client_name}')
         run([
             sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
             '--runner-cmd', runner_cmd_str,

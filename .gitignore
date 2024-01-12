@@ -1099,3 +1099,9 @@ dependency-reduced-pom.xml
 package-lock.json
 .cdk.staging
 cdk.out
+
+# don't commit CDK context file, we want this stack to be deployable to any account
+cdk/cdk.context.json
+# don't commit personal CDK settings files
+cdk/*.settings.json
+

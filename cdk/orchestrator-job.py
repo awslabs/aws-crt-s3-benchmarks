@@ -76,7 +76,7 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
         # print any status changes
         if status != prev_status:
             prev_status = status
-            print(f"Job status -> {status}")
+            print(f"Job status -> {status}", flush=True)
 
         # if job complete, return description
         if status in ['SUCCEEDED', 'FAILED']:
@@ -87,7 +87,7 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
         if now > prev_print_time + PRINT_EVERY_N_SECS:
             prev_print_time = now
             waiting_timedelta = datetime.timedelta(seconds=(now - start_time))
-            print(f"Been waiting {waiting_timedelta}...")
+            print(f"Been waiting {waiting_timedelta}...", flush=True)
 
         # sleep before querying again
         time.sleep(CHECK_EVERY_N_SECS)

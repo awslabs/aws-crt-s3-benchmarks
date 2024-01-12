@@ -3,13 +3,13 @@ import argparse
 from pathlib import Path
 import subprocess
 
-from utils import RUNNER_LANGS
+from utils import RUNNERS
 import utils.build
 
 PARSER = argparse.ArgumentParser(
     description='Build a runner and its dependencies')
 PARSER.add_argument(
-    '--lang', choices=RUNNER_LANGS, required=True,
+    '--lang', choices=RUNNERS.keys(), required=True,
     help='Build s3-benchrunner-<lang>')
 PARSER.add_argument(
     '--build-dir', required=True,

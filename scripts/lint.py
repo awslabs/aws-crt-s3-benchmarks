@@ -3,16 +3,16 @@ import argparse
 import os
 import sys
 
-from utils import get_runner_dir, run, REPO_DIR, RUNNER_LANGS, SCRIPTS_DIR
+from utils import run, REPO_DIR, RUNNERS, SCRIPTS_DIR
 
 PARSER = argparse.ArgumentParser(
     description="Run linters (e.g. code formatting) for a given language.")
 PARSER.add_argument(
-    'lang', choices=RUNNER_LANGS)
+    'lang', choices=RUNNERS.keys())
 
 
 def _lint_c():
-    runner_dir = get_runner_dir('c')
+    runner_dir = RUNNERS['c'].dir
     files: list[str] = []
     for pattern in ['*.cpp', '*.c', '*.h']:
         for i in runner_dir.glob(pattern):
@@ -33,7 +33,7 @@ def _lint_c():
 def _lint_python():
     dirs = [
         SCRIPTS_DIR,
-        get_runner_dir('python'),
+        RUNNERS['python'].dir,
         REPO_DIR/'cdk',
     ]
     exclude_dirs = ['cdk.out']
@@ -56,7 +56,7 @@ def _lint_python():
 
 
 def _lint_java():
-    runner_dir = get_runner_dir('java')
+    runner_dir = RUNNERS['java'].dir
     os.chdir(runner_dir)
     run(['mvn', 'formatter:validate'])
 

@@ -539,13 +539,18 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 5)
-        fail("usage: s3-benchrunner-c WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
+    if (argc != 6)
+        fail("usage: s3-benchrunner-c S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
 
-    auto config = BenchmarkConfig::fromJson(argv[1]);
-    string bucket = argv[2];
-    string region = argv[3];
-    double targetThroughputGbps = stod(argv[4]);
+    int argI = 1;
+    string s3ClientId = argv[argI++];
+    auto config = BenchmarkConfig::fromJson(argv[argI++]);
+    string bucket = argv[argI++];
+    string region = argv[argI++];
+    double targetThroughputGbps = stod(argv[argI++]);
+
+    if (s3ClientId != "crt-c")
+        fail("Unsupported S3_CLIENT. Options are: crt-c");
 
     auto benchmark = Benchmark(config, bucket, region, targetThroughputGbps);
     uint64_t bytesPerRun = config.bytesPerRun();

@@ -1,6 +1,6 @@
 ## aws-crt-s3-benchmarks
 
-This project is for benchmarking different S3 workloads using various languages and libraries.
+This project is for benchmarking different S3 workloads using various languages and S3 clients.
 
 This project is under active development and subject to change.
 
@@ -65,12 +65,24 @@ optional arguments:
 This script can be run repeatedly. It skips unnecessary work
 (e.g. won't upload a file that already exists).
 
+### S3 Clients
+
+Here are the IDs used for various S3 Clients, and the runner you must build to benchmark them:
+
+| S3_CLIENT | Actual S3 Client Used | LANG | Benchmark Runner |
+|-----------|-----------------------|------|------------------|
+| `crt-c` | [aws-c-s3](https://github.com/awslabs/aws-c-s3) | `c` | [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) |
+| `crt-python` | [aws-crt-python](https://github.com/awslabs/aws-crt-python/) | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
+| `boto3-crt` | [boto3](https://github.com/boto/boto3/) using CRT | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
+| `boto3-classic` | [boto3](https://github.com/boto/boto3/) with pure-python transfer manager | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
+| `cli-crt` | [AWS CLI v2](https://github.com/aws/aws-cli/tree/v2) using CRT | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
+| `cli-classic` | [AWS CLI v2](https://github.com/boto/boto3/) with pure-python transfer manager | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
+| `crt-java` | [aws-crt-java](https://github.com/awslabs/aws-crt-java/) | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
+
+
 ### Build a Runner
 
-You must build a "runner" for the library you'll be benchmarking.
-For example, [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) tests the
-[aws-c-s3](https://github.com/awslabs/aws-c-s3/) S3 client.
-See [runners/](runners/#readme) for more info.
+You must build a "runner" for the S3 client you'll be benchmarking. For example, build [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) to benchmark aws-crt-python, boto3, or AWS CLI.
 
 Run `scripts/build-runner.py`:
 ```sh
@@ -102,9 +114,10 @@ All runners have the same command line interface, and expect to be run from the
 ```sh
 cd FILES_DIR
 
-RUNNER_CMD WORKLOAD BUCKET REGION TARGET_THROUGHPUT
+RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 ```
 
+*   `S3_CLIENT`: ID of S3 client to use (See [table](#s3-clients) above)
 *   `RUNNER_CMD`: Command to launch runner (e.g. java -jar path/to/runner.jar)
         This is the last line printed by `build-runner.py` in the [previous step](#build-a-runner).
 *   `WORKLOAD`: Path to workload `.run.json` file (see: [workloads/](../workloads))

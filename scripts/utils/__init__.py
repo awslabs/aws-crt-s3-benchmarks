@@ -83,15 +83,16 @@ def run(cmd_args: list[str], check=True, capture_output=False) -> subprocess.Com
                 lines.append(line)
                 print(line, end='', flush=True)
 
-            p.wait()
+            p.wait()  # ensure process is 100% finished
 
-            return subprocess.CompletedProcess(
+            completed = subprocess.CompletedProcess(
                 args=cmd_args,
                 returncode=p.returncode,
                 stdout="".join(lines),
             )
     else:
-        completed = subprocess.run(cmd_args)
+        # simpler case: just run the command
+        completed = subprocess.run(cmd_args, text=True)
 
     if check and completed.returncode != 0:
         exit(f"FAILED running: {subprocess.list2cmdline(cmd_args)}")

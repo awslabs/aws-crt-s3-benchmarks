@@ -38,6 +38,12 @@ PARSER.add_argument(
 PARSER.add_argument(
     '--branch',
     help='If specified, try to use this branch/commit/tag of various Git repos.')
+PARSER.add_argument(
+    '--report-metrics', action='store_true',
+    help='Report metrics to CloudWatch')
+PARSER.add_argument(
+    '--metrics-instance-type',
+    help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
 
 
 if __name__ == '__main__':
@@ -59,8 +65,8 @@ if __name__ == '__main__':
     # track which runners we've already built
     runner_lang_to_cmd = {}
 
-    for s3_client_name in args.s3_clients:
-        runner = S3_CLIENTS[s3_client_name].runner
+    for s3_client_id in args.s3_clients:
+        runner = S3_CLIENTS[s3_client_id].runner
 
         # build runner for this language (if necessary)
         # and get cmd args to run it
@@ -71,14 +77,25 @@ if __name__ == '__main__':
             runner_cmd_str = subprocess.list2cmdline(runner_cmd_list)
             runner_lang_to_cmd[runner.lang] = runner_cmd_str
 
-        print_banner(f'RUN BENCHMARKS: {s3_client_name}')
-        run([
+        print_banner(f'RUN BENCHMARKS: {s3_client_id}')
+        run_cmd = [
             sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
             '--runner-cmd', runner_lang_to_cmd[runner.lang],
-            '--s3-client', s3_client_name,
+            '--s3-client', s3_client_id,
             '--bucket', args.bucket,
             '--region', args.region,
             '--throughput', str(args.throughput),
             '--files-dir', str(files_dir),
             '--workloads', *[str(x) for x in workloads],
-        ])
+        ]
+        if args.report_metrics:
+            run_cmd += ['--report-metrics']
+
+            if args.metrics_instance_type:
+                run_cmd += ['--metrics-instance-type',
+                            args.metrics_instance_type]
+
+            # if default branch was used, report "main"
+            run_cmd += ['--metrics-branch', args.branch or "main"]
+
+        run(run_cmd)

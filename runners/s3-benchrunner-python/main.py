@@ -23,22 +23,22 @@ PARSER.add_argument('TARGET_THROUGHPUT', type=float)
 PARSER.add_argument('--verbose', action='store_true')
 
 
-def create_runner_given_s3_client_name(name: str, config: BenchmarkConfig) -> BenchmarkRunner:
-    """Factory function. Create appropriate subclass, given the S3 client nickname."""
-    if name == 'crt-python':
+def create_runner_given_s3_client_id(id: str, config: BenchmarkConfig) -> BenchmarkRunner:
+    """Factory function. Create appropriate subclass, given the S3 client ID."""
+    if id == 'crt-python':
         from runner.crt import CrtBenchmarkRunner
         return CrtBenchmarkRunner(config)
 
-    if name.startswith('boto3'):
+    if id.startswith('boto3'):
         from runner.boto3 import Boto3BenchmarkRunner
-        return Boto3BenchmarkRunner(config, use_crt=name.endswith('crt'))
+        return Boto3BenchmarkRunner(config, use_crt=id.endswith('crt'))
 
-    if name.startswith('cli'):
+    if id.startswith('cli'):
         from runner.cli import CliBenchmarkRunner
-        return CliBenchmarkRunner(config, use_crt=name.endswith('crt'))
+        return CliBenchmarkRunner(config, use_crt=id.endswith('crt'))
 
     else:
-        raise ValueError(f'Unknown S3 client: {name}')
+        raise ValueError(f'Unknown S3 client: {id}')
 
 
 if __name__ == '__main__':
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                              args.TARGET_THROUGHPUT, args.verbose)
 
     # create appropriate benchmark runner
-    runner = create_runner_given_s3_client_name(args.S3_CLIENT, config)
+    runner = create_runner_given_s3_client_id(args.S3_CLIENT, config)
 
     bytes_per_run = config.bytes_per_run()
 

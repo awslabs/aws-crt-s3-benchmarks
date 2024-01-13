@@ -109,6 +109,17 @@ class S3BenchmarksStack(Stack):
                            f"{self.bucket.bucket_arn}/*"],
                 effect=iam.Effect.ALLOW,
             ))
+            # job reports metrics to CloudWatch
+            self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
+                actions=["cloudwatch:PutMetricData"],
+                # CloudWatch requires "*" for resources, but you can add conditions
+                # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatch.html
+                resources=["*"],
+                conditions={
+                    "StringEquals": {"cloudwatch:namespace": "S3Benchmarks"},
+                },
+                effect=iam.Effect.ALLOW,
+            ))
 
         container_defn = batch.EcsEc2ContainerDefinition(
             self, f"PerInstanceContainerDefn-{id_with_hyphens}",

@@ -567,6 +567,7 @@ int main(int argc, char *argv[])
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
+        fflush(stderr);
         printf(
             "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
             runI + 1,

@@ -12,6 +12,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.parse
 
 import s3_benchmarks
 
@@ -63,9 +64,15 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
 
     start_time = time.time()
 
+    # print URL for viewing job in the Console
+    region = batch.meta.region_name
+    job_url = f"Job URL: https://{region}.console.aws.amazon.com/batch/home?region={region}#jobs/ec2/detail/{job_id}"
+    print(job_url)
+
     # track what we've already printed
     prev_print_time = start_time
     prev_status = None
+    printed_log_url = False
 
     # loop until job completes
     while True:
@@ -77,6 +84,19 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
         if status != prev_status:
             prev_status = status
             print(f"Job status -> {status}", flush=True)
+
+        # print URL for viewing logs in the Console
+        if not printed_log_url:
+            container = description.get('container')
+            if container:
+                log_name = container.get('logStreamName')
+                if log_name:
+                    # Transform name from: S3Benchmarks-PerInstance-c5n-18xlarge/default/9a9668ebf40e49e6890019eb83d1062e
+                    # To: https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logEventViewer:group=%2Faws%2Fbatch%2Fjob;stream=S3Benchmarks-PerInstance-c5n-18xlarge%2Fdefault%2F9a9668ebf40e49e6890019eb83d1062e
+                    log_url = f"https://{region}.console.aws.amazon.com/cloudwatch/home?region={region}#logEventViewer:group=%2Faws%2Fbatch%2Fjob;stream="
+                    log_url += urllib.parse.quote(log_name, safe='')
+                    print(f"Job logs URL: {log_url}")
+                    printed_log_url = True
 
         # if job complete, return description
         if status in ['SUCCEEDED', 'FAILED']:
@@ -149,7 +169,6 @@ if __name__ == '__main__':
         pp.pprint(submit_job_kwargs)
         submit_job_response = batch.submit_job(**submit_job_kwargs)
         job_id = submit_job_response['jobId']
-        print(f"Job ID: {job_id}")
 
         description = wait_for_completed_job_description(batch, job_id)
         print("Job complete:")

@@ -575,6 +575,7 @@ int main(int argc, char *argv[])
             bytesToMegabit(bytesPerRun) / runSecs,
             bytesToGiB(bytesPerRun) / runSecs,
             bytesToMiB(bytesPerRun) / runSecs);
+        fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;

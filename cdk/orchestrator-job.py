@@ -83,7 +83,7 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
         # print any status changes
         if status != prev_status:
             prev_status = status
-            print(f"Job status -> {status}", flush=True)
+            print(f"Job status -> {status}")
 
         # print URL for viewing logs in the Console
         if not printed_log_url:
@@ -107,9 +107,10 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
         if now > prev_print_time + PRINT_EVERY_N_SECS:
             prev_print_time = now
             waiting_timedelta = datetime.timedelta(seconds=(now - start_time))
-            print(f"Been waiting {waiting_timedelta}...", flush=True)
+            print(f"Been waiting {waiting_timedelta}...")
 
         # sleep before querying again
+        sys.stdout.flush()  # ensure logs are showing latest status updates
         time.sleep(CHECK_EVERY_N_SECS)
 
         # Should we kill the job if it's taking too long?

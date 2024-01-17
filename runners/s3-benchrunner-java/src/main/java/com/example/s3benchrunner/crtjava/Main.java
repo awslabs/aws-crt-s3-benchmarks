@@ -40,16 +40,14 @@ public class Main {
         if (args.length != 5) {
             throw new RuntimeException("expected args: S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
         }
-        int argI = 0;
-        String s3ClientId = args[argI++];
-        String configJsonFilepath = args[argI++];
-        String bucket = args[argI++];
-        String region = args[argI++];
-        double targetThroughputGbps = Double.parseDouble(args[argI++]);
-
+        String s3ClientId = args[0];
         if (!s3ClientId.equals("crt-java")) {
             throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java");
         }
+        String configJsonFilepath = args[1];
+        String bucket = args[2];
+        String region = args[3];
+        double targetThroughputGbps = Double.parseDouble(args[4]);
 
         BenchmarkConfig config = BenchmarkConfig.fromJson(configJsonFilepath);
         var benchmark = new Benchmark(config, bucket, region, targetThroughputGbps);

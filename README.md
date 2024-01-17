@@ -69,7 +69,7 @@ This script can be run repeatedly. It skips unnecessary work
 
 Here are the IDs used for various S3 Clients, and the runner you must build to benchmark them:
 
-| S3_CLIENT | Actual S3 Client Used | LANG | Benchmark Runner |
+| S3_CLIENT | Actual S3 Client Used | Language | Benchmark Runner |
 |-----------|-----------------------|------|------------------|
 | `crt-c` | [aws-c-s3](https://github.com/awslabs/aws-c-s3) | `c` | [runners/s3-benchrunner-c](runners/s3-benchrunner-c/) |
 | `crt-python` | [aws-crt-python](https://github.com/awslabs/aws-crt-python/) | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |

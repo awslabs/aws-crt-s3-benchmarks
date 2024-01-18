@@ -282,6 +282,7 @@ def _max_container_memory(instance_type_memory: cdk.Size) -> cdk.Size:
     # -> Memory Available
     # But I don't know how to get numbers before the instance is running.
     # So this "ratio" and "min" are guesses, based on observing a few instance types:
+    # - p4d.24xlarge with 96 vCPU & 1152GiB memory, needs 30931MiB (2.6%) memory reserved
     # - c5n.18xlarge with 72 vCPU & 192GiB memory, needs 7502MiB (3.8%) memory reserved
     # - c5.large with 2 vCPU & 4GiB memory, needs 418MiB (10.2%) memory reserved
     # - c6g.medium with 1 vCPU & 2GiB memory, needs 158MiB (7.7%) memory reserved

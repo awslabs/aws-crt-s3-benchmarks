@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 from typing import Optional
@@ -8,11 +9,39 @@ REPO_DIR = Path(__file__).parent.parent.parent
 RUNNERS_DIR = REPO_DIR/'runners'
 SCRIPTS_DIR = REPO_DIR/'scripts'
 WORKLOADS_DIR = REPO_DIR/'workloads'
-RUNNER_LANGS = ['c', 'python', 'java']
+
+RUNNERS: dict[str, 'Runner'] = {}  # filled in below
+S3_CLIENTS: dict[str, 'S3Client'] = {}  # filled in below
 
 
-def get_runner_dir(lang: str) -> Path:
-    return RUNNERS_DIR/f's3-benchrunner-{lang}'
+@dataclass
+class Runner:
+    lang: str
+    s3_clients: list[str]
+
+    @property
+    def dir(self) -> Path:
+        return RUNNERS_DIR/f's3-benchrunner-{self.lang}'
+
+
+@dataclass
+class S3Client:
+    name: str
+    runner: Runner
+
+
+def _add_runner(runner: Runner):
+    RUNNERS[runner.lang] = runner
+
+
+_add_runner(Runner('c', s3_clients=['crt-c']))
+_add_runner(Runner('java', s3_clients=['crt-java']))
+_add_runner(Runner('python',
+                   s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))
+
+for runner in RUNNERS.values():
+    for s3_client in runner.s3_clients:
+        S3_CLIENTS[s3_client] = S3Client(name=s3_client, runner=runner)
 
 
 def workload_paths_from_args(workloads: Optional[list[str]]) -> list[Path]:
@@ -33,10 +62,38 @@ def workload_paths_from_args(workloads: Optional[list[str]]) -> list[Path]:
     return workload_paths
 
 
-def run(cmd_args: list[str], check=True) -> subprocess.CompletedProcess:
+def run(cmd_args: list[str], check=True, capture_output=False) -> subprocess.CompletedProcess:
     """Run a subprocess"""
     print(f'{Path.cwd()}> {subprocess.list2cmdline(cmd_args)}', flush=True)
-    completed = subprocess.run(cmd_args)
+
+    if capture_output:
+        # Subprocess doesn't have built-in support for capturing output
+        # AND printing while it comes in, so we have to do it ourselves.
+        # We're combining stderr with stdout, for simplicity.
+        with subprocess.Popen(
+            cmd_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # line-buffered
+        ) as p:
+            lines = []
+            assert p.stdout is not None  # satisfy type checker
+            for line in p.stdout:
+                lines.append(line)
+                print(line, end='', flush=True)
+
+            p.wait()  # ensure process is 100% finished
+
+            completed = subprocess.CompletedProcess(
+                args=cmd_args,
+                returncode=p.returncode,
+                stdout="".join(lines),
+            )
+    else:
+        # simpler case: just run the command
+        completed = subprocess.run(cmd_args, text=True)
+
     if check and completed.returncode != 0:
         exit(f"FAILED running: {subprocess.list2cmdline(cmd_args)}")
     return completed

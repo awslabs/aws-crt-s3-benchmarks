@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from typing import Optional
 
-from utils import fetch_git_repo, run, get_runner_dir, RUNNER_LANGS
+from utils import fetch_git_repo, run, RUNNERS
 
 
 def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
@@ -73,7 +73,7 @@ def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
         _build_cmake_proj(src_dir, build_dir, install_dir)
 
     # build s3-benchrunner-c
-    _build_cmake_proj(src_dir=get_runner_dir('c'),
+    _build_cmake_proj(src_dir=RUNNERS['c'].dir,
                       build_dir=work_dir/'s3-benchrunner-c-build',
                       install_dir=install_dir)
 
@@ -146,7 +146,8 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
         venv_python=venv_python)
 
     # return command for executing the runner, using the virtual environment
-    return [venv_python, str(get_runner_dir('python')/'main.py')]
+    main_path = RUNNERS['python'].dir/'main.py'
+    return [venv_python, str(main_path)]
 
 
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
@@ -161,7 +162,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     run(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
 
     # Build runner
-    runner_src = get_runner_dir('java')
+    runner_src = RUNNERS['java'].dir
     os.chdir(str(runner_src))
     run(['mvn',
          'clean',

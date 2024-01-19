@@ -539,13 +539,16 @@ void printStats(uint64_t bytesPerRun, const vector<double> &durations)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 5)
-        fail("usage: s3-benchrunner-c WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
+    if (argc != 6)
+        fail("usage: s3-benchrunner-c S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
 
-    auto config = BenchmarkConfig::fromJson(argv[1]);
-    string bucket = argv[2];
-    string region = argv[3];
-    double targetThroughputGbps = stod(argv[4]);
+    string s3ClientId = argv[1];
+    if (s3ClientId != "crt-c")
+        fail("Unsupported S3_CLIENT. Options are: crt-c");
+    auto config = BenchmarkConfig::fromJson(argv[2]);
+    string bucket = argv[3];
+    string region = argv[4];
+    double targetThroughputGbps = stod(argv[5]);
 
     auto benchmark = Benchmark(config, bucket, region, targetThroughputGbps);
     uint64_t bytesPerRun = config.bytesPerRun();
@@ -562,6 +565,7 @@ int main(int argc, char *argv[])
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
+        fflush(stderr);
         printf(
             "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
             runI + 1,
@@ -570,6 +574,7 @@ int main(int argc, char *argv[])
             bytesToMegabit(bytesPerRun) / runSecs,
             bytesToGiB(bytesPerRun) / runSecs,
             bytesToMiB(bytesPerRun) / runSecs);
+        fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;

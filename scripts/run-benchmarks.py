@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 import argparse
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import shlex
 
-from utils import run, workload_paths_from_args
+from utils import S3_CLIENTS, run, workload_paths_from_args
+from utils.metrics import report_metrics
 
 parser = argparse.ArgumentParser(
     description='Benchmark workloads with a specific runner')
 parser.add_argument(
     '--runner-cmd', required=True,
     help='Command to launch runner (e.g. "java -jar target/s3-benchrunner.java")')
+parser.add_argument(
+    '--s3-client', required=True, choices=S3_CLIENTS.keys(),
+    help='S3 client to benchmark (must be supported by runner)')
 parser.add_argument(
     '--bucket', required=True,
     help='S3 bucket name')
@@ -29,9 +34,20 @@ parser.add_argument(
     help='Launch runner in this directory. ' +
     'Files are uploaded from and downloaded to here. ' +
     'If omitted, CWD is used.')
+parser.add_argument(
+    '--report-metrics', action='store_true',
+    help='Report metrics to CloudWatch')
+parser.add_argument(
+    '--metrics-instance-type',
+    help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
+parser.add_argument(
+    '--metrics-branch',
+    help='If reporting metrics: branch being benchmarked')
+
 
 args = parser.parse_args()
 
+# run each workload
 workloads = workload_paths_from_args(args.workloads)
 for workload in workloads:
     if not workload.exists():
@@ -44,8 +60,28 @@ for workload in workloads:
     # in case runner-cmd has weird stuff like quotes, spaces, etc
     cmd = shlex.split(args.runner_cmd)
 
-    cmd += [str(workload), args.bucket, args.region, str(args.throughput)]
-    result = run(cmd, check=False)
+    cmd += [args.s3_client, str(workload), args.bucket,
+            args.region, str(args.throughput)]
+
+    start_time = datetime.now(timezone.utc)
+    result = run(cmd, check=False, capture_output=True)
+    end_time = datetime.now(timezone.utc)
+
+    # reporting metrics before checking returncode
+    # in case it did a few runs before failing
+    if args.report_metrics:
+        report_metrics(
+            run_stdout=result.stdout,
+            run_start_time=start_time,
+            run_end_time=end_time,
+            s3_client_id=args.s3_client,
+            workload_path=workload,
+            bucket=args.bucket,
+            region=args.region,
+            target_throughput_Gbps=args.throughput,
+            instance_type=args.metrics_instance_type,
+            branch=args.metrics_branch,
+        )
 
     # if runner skipped the workload, keep going
     if result.returncode == 123:

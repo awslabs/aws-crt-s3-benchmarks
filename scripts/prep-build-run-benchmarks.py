@@ -1,38 +1,12 @@
 #!/usr/bin/env python3
 import argparse
-from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import sys
-from typing import Optional
 
-from utils import print_banner, run, workload_paths_from_args, SCRIPTS_DIR
+from utils import print_banner, run, workload_paths_from_args, S3_CLIENTS, SCRIPTS_DIR
 import utils.build
 
-
-@dataclass
-class Runner:
-    # language of benchmark runner codebase
-    # e.g. "python" for "runners/s3-benchrunner-python"
-    lang: str
-
-    # for runners that can benchmark different S3 clients,
-    # this extra arg picks which client to use
-    # e.g. "crt" for "runners/s3-benchrunner-python/main.py crt"
-    has_s3_client_arg: bool = False
-
-
-# map from the S3 client name,
-# to the benchmark runner that can run it
-S3_CLIENT_TO_RUNNER = {
-    'crt-c': Runner(lang='c'),
-    'crt-python': Runner(lang='python', has_s3_client_arg=True),
-    'cli-crt': Runner(lang='python', has_s3_client_arg=True),
-    'cli-classic': Runner(lang='python', has_s3_client_arg=True),
-    'boto3-crt': Runner(lang='python', has_s3_client_arg=True),
-    'boto3-classic': Runner(lang='python', has_s3_client_arg=True),
-    'crt-java': Runner(lang='java'),
-}
 
 PARSER = argparse.ArgumentParser(
     description='Do-it-all script that prepares S3 files, builds runners, ' +
@@ -55,7 +29,7 @@ PARSER.add_argument(
     'Runners are launched in this directory.')
 PARSER.add_argument(
     '--s3-clients', nargs='+', required=True,
-    choices=S3_CLIENT_TO_RUNNER.keys(),
+    choices=S3_CLIENTS.keys(),
     help='S3 clients to benchmark.')
 PARSER.add_argument(
     '--workloads', nargs='+',
@@ -64,6 +38,12 @@ PARSER.add_argument(
 PARSER.add_argument(
     '--branch',
     help='If specified, try to use this branch/commit/tag of various Git repos.')
+PARSER.add_argument(
+    '--report-metrics', action='store_true',
+    help='Report metrics to CloudWatch')
+PARSER.add_argument(
+    '--metrics-instance-type',
+    help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
 
 
 if __name__ == '__main__':
@@ -83,33 +63,39 @@ if __name__ == '__main__':
     ])
 
     # track which runners we've already built
-    lang_to_runner_cmd = {}
+    runner_lang_to_cmd = {}
 
-    for s3_client_name in args.s3_clients:
-        runner = S3_CLIENT_TO_RUNNER[s3_client_name]
+    for s3_client_id in args.s3_clients:
+        runner = S3_CLIENTS[s3_client_id].runner
 
         # build runner for this language (if necessary)
         # and get cmd args to run it
-        if not runner.lang in lang_to_runner_cmd:
+        if not runner.lang in runner_lang_to_cmd:
             print_banner(f'BUILD RUNNER: {runner.lang}')
-            runner_cmd = utils.build.build_runner(
+            runner_cmd_list = utils.build.build_runner(
                 runner.lang, build_dir, args.branch)
-            lang_to_runner_cmd[runner.lang] = runner_cmd
+            runner_cmd_str = subprocess.list2cmdline(runner_cmd_list)
+            runner_lang_to_cmd[runner.lang] = runner_cmd_str
 
-        runner_cmd_str = subprocess.list2cmdline(
-            lang_to_runner_cmd[runner.lang])
-
-        # if runner takes extra S3_CLIENT arg, add it
-        if runner.has_s3_client_arg:
-            runner_cmd_str += f' {s3_client_name}'
-
-        print_banner(f'RUN BENCHMARKS: {s3_client_name}')
-        run([
+        print_banner(f'RUN BENCHMARKS: {s3_client_id}')
+        run_cmd = [
             sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
-            '--runner-cmd', runner_cmd_str,
+            '--runner-cmd', runner_lang_to_cmd[runner.lang],
+            '--s3-client', s3_client_id,
             '--bucket', args.bucket,
             '--region', args.region,
             '--throughput', str(args.throughput),
             '--files-dir', str(files_dir),
             '--workloads', *[str(x) for x in workloads],
-        ])
+        ]
+        if args.report_metrics:
+            run_cmd += ['--report-metrics']
+
+            if args.metrics_instance_type:
+                run_cmd += ['--metrics-instance-type',
+                            args.metrics_instance_type]
+
+            # if default branch was used, report "main"
+            run_cmd += ['--metrics-branch', args.branch or "main"]
+
+        run(run_cmd)

@@ -118,6 +118,9 @@ if __name__ == '__main__':
     files_dir.mkdir()
     cmd_args.extend(['--files-dir', str(files_dir)])
 
+    cmd_args.extend(['--report-metrics'])
+    cmd_args.extend(['--metrics-instance-type', args.instance_type])
+
     cmd_args.extend(['--s3-clients', *args.s3_clients])
     cmd_args.extend(['--workloads', *workloads])
 

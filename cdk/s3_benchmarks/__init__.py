@@ -20,7 +20,7 @@ class InstanceType:
 
 ALL_INSTANCE_TYPES = [
     InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192, bandwidth_Gbps=100),
-    InstanceType("c7gn.16xlarge", vcpu=64, mem_GiB=128, bandwidth_Gbps=200),
+    InstanceType("c7i.16xlarge", vcpu=64, mem_GiB=128, bandwidth_Gbps=25),
 ]
 
 # Timeout for job running on our slowest EC2 instance type,

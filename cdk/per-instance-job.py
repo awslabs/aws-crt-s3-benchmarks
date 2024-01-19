@@ -64,6 +64,9 @@ if __name__ == '__main__':
     # show in logs exactly how this Batch job was invoked
     print(f"> {sys.executable} {subprocess.list2cmdline(sys.argv)}")
 
+    # show file system disk space usage
+    run(['df', '-h'])
+
     args = PARSER.parse_args()
 
     instance_type = next(

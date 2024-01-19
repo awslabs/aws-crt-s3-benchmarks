@@ -35,6 +35,8 @@ DEFAULT_WORKLOADS = [
     'upload-Caltech256Sharded',
 ]
 
+PER_INSTANCE_STORAGE_GiB = 500
+
 
 class S3BenchmarksStack(Stack):
 
@@ -70,6 +72,22 @@ class S3BenchmarksStack(Stack):
 
         ec2_instance_type = ec2.InstanceType(instance_type.id)
 
+        # The per-instance job needs more than the default 30GiB storage.
+        # Use launch template to customize this, see:
+        # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
+        # Create template once, it can be used by all per-instance jobs.
+        if not hasattr(self, 'per_instance_launch_template'):
+            self.per_instance_launch_template = ec2.LaunchTemplate(
+                self, f"PerInstanceLaunchTemplate",
+                block_devices=[ec2.BlockDevice(
+                    device_name='/dev/xvda',
+                    volume=ec2.BlockDeviceVolume.ebs(
+                        volume_size=PER_INSTANCE_STORAGE_GiB,
+                        volume_type=ec2.EbsDeviceVolumeType.GP3,
+                    ),
+                )],
+            )
+
         compute_env = batch.ManagedEc2EcsComputeEnvironment(
             self, f"PerInstanceComputeEnv-{id_with_hyphens}",
             # scale down to 0 when there's no work
@@ -79,6 +97,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
+            launch_template=self.per_instance_launch_template,
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),

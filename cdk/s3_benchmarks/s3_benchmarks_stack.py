@@ -183,22 +183,19 @@ class S3BenchmarksStack(Stack):
         on 1 or more EC2 instance types.
         """
 
-        # How we chose c6g.medium:
-        # - 2nd cheapest type supported by AWS Batch ($0.034/hr as of Dec 2023 in us-west-2)
-        # - a1.medium is cheaper ($0.0255/hr), but Amazon Linux 2023 doesn't support 1st gen Gravitons
-        # - just FYI, EC2 has cheaper types (t4g.nano for $0.0042/hr) that Batch doesn't support
         # - WARNING: instance type's vCPUs number..
         #       - MUST match compute environment's `maxv_cpus` (or jobs get stuck in RUNNABLE state).
         #       - MUST match job definition's `cpu` (to ensure 1 job runs at a time).
-        instance_type = ec2.InstanceType('c6g.medium')
+        instance_type = s3_benchmarks.ORCHESTRATOR_INSTANCE_TYPE
+        ec2_instance_type = ec2.InstanceType(instance_type.id)
 
         compute_env = batch.ManagedEc2EcsComputeEnvironment(
             self, "OrchestratorComputeEnv",
             # scale down to 0 when there's no work
             minv_cpus=0,
             # run 1 job at a time by limiting to num vcpus available on instance type
-            maxv_cpus=1,
-            instance_types=[instance_type],
+            maxv_cpus=instance_type.vcpu,
+            instance_types=[ec2_instance_type],
             # don't add 'optimal' instance type
             use_optimal_instance_classes=False,
             vpc=self.vpc,
@@ -243,8 +240,8 @@ class S3BenchmarksStack(Stack):
             image=ecs.ContainerImage.from_asset(
                 directory='.',
                 file='orchestrator-job.Dockerfile',
-                platform=_ec2_instance_type_to_ecr_platform(instance_type)),
-            cpu=1,  # cheap and puny
+                platform=_ec2_instance_type_to_ecr_platform(ec2_instance_type)),
+            cpu=instance_type.vcpu,
             memory=cdk.Size.mebibytes(256),  # cheap and puny
             command=[
                 "python3", "/orchestrator-job.py",

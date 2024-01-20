@@ -11,7 +11,7 @@ PARSER.add_argument("--region", required=True,
 
 args = PARSER.parse_args()
 
-# Find min quotas needed to run each instance type one at a time.
+# Find quotas needed to run each instance type one at a time.
 # (quota value is number of running vCPUs)
 quotas_needed: dict[str, int] = {}
 for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:

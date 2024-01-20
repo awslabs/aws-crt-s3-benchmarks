@@ -59,34 +59,65 @@ class S3BenchmarksStack(Stack):
 
         self.vpc = ec2.Vpc(self, "Vpc")
 
-        for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:
-            self._define_per_instance_batch_job(instance_type)
+        self._define_all_per_instance_batch_jobs()
 
         self._define_orchestrator_batch_job()
 
         self._add_git_commit_cfn_output()
+
+    def _define_all_per_instance_batch_jobs(self):
+        # First, create resources shared by all per-instance jobs...
+
+        # Create role for the per-instance job scripts that actually run the benchmarks.
+        # Every AWS call you add to these scripts will fail until you add a policy that allows it.
+        self.per_instance_job_role = iam.Role(
+            self, "PerInstanceJobRole",
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            max_session_duration=cdk.Duration.hours(
+                s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
+        )
+        # per-instance-job can do whatever it wants to the bucket
+        self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
+            actions=["s3:*"],
+            resources=[self.bucket.bucket_arn,
+                       f"{self.bucket.bucket_arn}/*"],
+            effect=iam.Effect.ALLOW,
+        ))
+        # job reports metrics to CloudWatch
+        self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
+            actions=["cloudwatch:PutMetricData"],
+            # CloudWatch requires "*" for resources, but you can add conditions
+            # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatch.html
+            resources=["*"],
+            conditions={
+                "StringEquals": {"cloudwatch:namespace": "S3Benchmarks"},
+            },
+            effect=iam.Effect.ALLOW,
+        ))
+
+        # Per-instance jobs needs more than the default 30GiB storage.
+        # Use a "launch template" to customize this, see:
+        # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
+        self.per_instance_launch_template = ec2.LaunchTemplate(
+            self, f"PerInstanceLaunchTemplate",
+            block_devices=[ec2.BlockDevice(
+                device_name='/dev/xvda',
+                volume=ec2.BlockDeviceVolume.ebs(
+                    volume_size=PER_INSTANCE_STORAGE_GiB,
+                    volume_type=ec2.EbsDeviceVolumeType.GP3,
+                ),
+            )],
+        )
+
+        # Now create the actual jobs...
+        for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:
+            self._define_per_instance_batch_job(instance_type)
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
         # "c5n.18xlarge" -> "c5n-18xlarge"
         id_with_hyphens = instance_type.id.replace('.', '-')
 
         ec2_instance_type = ec2.InstanceType(instance_type.id)
-
-        # The per-instance job needs more than the default 30GiB storage.
-        # Use launch template to customize this, see:
-        # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
-        # Create template once, it can be used by all per-instance jobs.
-        if not hasattr(self, 'per_instance_launch_template'):
-            self.per_instance_launch_template = ec2.LaunchTemplate(
-                self, f"PerInstanceLaunchTemplate",
-                block_devices=[ec2.BlockDevice(
-                    device_name='/dev/xvda',
-                    volume=ec2.BlockDeviceVolume.ebs(
-                        volume_size=PER_INSTANCE_STORAGE_GiB,
-                        volume_type=ec2.EbsDeviceVolumeType.GP3,
-                    ),
-                )],
-            )
 
         compute_env = batch.ManagedEc2EcsComputeEnvironment(
             self, f"PerInstanceComputeEnv-{id_with_hyphens}",
@@ -110,35 +141,6 @@ class S3BenchmarksStack(Stack):
             compute_environments=[batch.OrderedComputeEnvironment(
                 compute_environment=compute_env, order=0)],
         )
-
-        # Set up role for the per-instance job scripts that actually run the benchmarks.
-        # Every AWS call you add to these scripts will fail until you add a policy that allows it.
-        # Create role once, it can be used by all per-instance jobs.
-        if not hasattr(self, 'per_instance_job_role'):
-            self.per_instance_job_role = iam.Role(
-                self, "PerInstanceJobRole",
-                assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-                max_session_duration=cdk.Duration.hours(
-                    s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
-            )
-            # per-instance-job can do whatever it wants to the bucket
-            self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
-                actions=["s3:*"],
-                resources=[self.bucket.bucket_arn,
-                           f"{self.bucket.bucket_arn}/*"],
-                effect=iam.Effect.ALLOW,
-            ))
-            # job reports metrics to CloudWatch
-            self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
-                actions=["cloudwatch:PutMetricData"],
-                # CloudWatch requires "*" for resources, but you can add conditions
-                # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatch.html
-                resources=["*"],
-                conditions={
-                    "StringEquals": {"cloudwatch:namespace": "S3Benchmarks"},
-                },
-                effect=iam.Effect.ALLOW,
-            ))
 
         container_defn = batch.EcsEc2ContainerDefinition(
             self, f"PerInstanceContainerDefn-{id_with_hyphens}",

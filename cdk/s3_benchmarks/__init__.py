@@ -29,9 +29,9 @@ ALL_INSTANCE_TYPES = [
 ]
 
 # Orchestrator instance type
-# How we chose c6g.medium:
-# - 2nd cheapest type supported by AWS Batch ($0.034/hr as of Dec 2023 in us-west-2)
-# - a1.medium is cheaper ($0.0255/hr), but Amazon Linux 2023 doesn't support 1st gen Gravitons
+# How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):
+# - 2nd cheapest type ($0.034/hr) supported by AWS Batch
+# - a1.medium is cheaper ($0.0255/hr) but Amazon Linux 2023 doesn't support 1st gen Gravitons
 # - just FYI, EC2 has cheaper types (t4g.nano for $0.0042/hr) that Batch doesn't support
 ORCHESTRATOR_INSTANCE_TYPE = InstanceType(
     "c6g.medium", vcpu=1, mem_GiB=2,

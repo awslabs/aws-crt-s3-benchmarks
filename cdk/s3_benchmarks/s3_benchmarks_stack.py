@@ -57,7 +57,14 @@ class S3BenchmarksStack(Stack):
             # note: lifecycle rules for this bucket will be set later,
             # by prep-s3-files.py, which runs as part of the per-instance job
 
-        self.vpc = ec2.Vpc(self, "Vpc")
+        self.vpc = ec2.Vpc(
+            self, "Vpc",
+            # Add gateway endpoint for S3.
+            # Otherwise, it costs thousands of dollars to naively send terabytes
+            # of S3 traffic through the default NAT gateway (ask me how I know).
+            gateway_endpoints={"S3": ec2.GatewayVpcEndpointOptions(
+                service=ec2.GatewayVpcEndpointAwsService.S3)},
+        )
 
         self._define_all_per_instance_batch_jobs()
 

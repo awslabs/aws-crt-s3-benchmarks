@@ -18,6 +18,12 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
 
 1) `cd` into this `cdk/` directory.
 
+1) Check that your service quotas are high enough by running:
+    ```sh
+    ./check-service-quotas.py --region REGION
+    ```
+    These service quotas refer to the max running vCPU count, for categories of EC2 instance types, allowed for your account. If the script tells you to increase a quota, you probably should, unless you're certain you don't want to run benchmarks on instance types like that.
+
 1) Create a settings file for the account you'll be deploying to. Name it something like "myname.settings.json". It should look like:
     ```json
     {
@@ -35,6 +41,15 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
     ```sh
     cdk deploy -c settings=<myname.settings.json>
     ```
+
+## Troubleshooting
+
+If your Batch job is stuck in the RUNNABLE state forever, use the
+[AWSSupport-TroubleshootAWSBatchJob](https://console.aws.amazon.com/systems-manager/documents/AWSSupport-TroubleshootAWSBatchJob/description) to find out why. Some reasons we've encountered...
+* The Batch Compute Environment was created with 1 vCPU (it must be a multiple of the vCPU an Instance Type natively has)
+* The Batch Job was created with memory equal to what the Instance Type natively has (not all that memory is available to container jobs).
+* Insufficient service quotas for EC2 types (see `check-service-quotas.py`)
+* EC2 instance type unavailable (for rare EC2 types)
 
 ## Architecture
 

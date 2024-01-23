@@ -38,7 +38,7 @@ DEFAULT_S3_CLIENTS = [
 ]
 
 # The "default" set of workloads to benchmark.
-# This isn't everything in workloads/, it's a reasonable subset
+# This isn't everything in workloads/, it's a reasonable spread
 # of use cases that won't take TOO long to run.
 DEFAULT_WORKLOADS = [
     'download-max-throughput',  # how fast can we theoretically go?

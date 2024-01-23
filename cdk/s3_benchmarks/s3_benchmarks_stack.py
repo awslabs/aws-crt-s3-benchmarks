@@ -6,6 +6,8 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_ecr_assets as ecr_assets,
     aws_ecs as ecs,
+    aws_events as events,
+    aws_events_targets as events_targets,
     aws_iam as iam,
     aws_s3 as s3,
 )
@@ -16,23 +18,39 @@ from typing import Optional
 
 import s3_benchmarks
 
-# The "default" set of instance types to benchmark
-# TODO: put more thought into this
+# The "default" set of instance types to benchmark.
+# This, and the other defaults below, serve several purposes:
+# - When submitting a job via the console, these are the default values.
+# - These defaults are what the Canary runs.
+# - (TODO) A dashboard is set up to view these instance-type/s3-client/workload combinations.
 DEFAULT_INSTANCE_TYPES = [
     'c5n.18xlarge',
 ]
 
-# The "default" set of S3 clients to benchmark
-# TODO: put more thought into this
+# The "default" set of S3 clients to benchmark.
+# For now, only have the Canary test the CRT-based clients.
 DEFAULT_S3_CLIENTS = [
-    'crt-c'
+    'crt-c',
+    'crt-java',
+    'crt-python',
+    'cli-crt',
+    'boto3-crt',
 ]
 
-# The "default" set of workloads to benchmark
-# TODO: put more thought into this
+# The "default" set of workloads to benchmark.
+# This isn't everything in workloads/, it's a reasonable subset
+# of use cases that won't take TOO long to run.
 DEFAULT_WORKLOADS = [
-    'download-Caltech256Sharded',
-    'upload-Caltech256Sharded',
+    'download-max-throughput',  # how fast can we theoretically go?
+    'upload-max-throughput',
+    'download-30GiB-1x',  # very big file
+    'upload-30GiB-1x',
+    'download-5GiB-1x',  # moderately big file
+    'upload-5GiB-1x',
+    'download-5GiB-1x-ram',  # no disk access to slow us down
+    'upload-5GiB-1x-ram',
+    'download-256KiB-10_000x',  # lots of small files
+    'upload-256KiB-10_000x',
 ]
 
 PER_INSTANCE_STORAGE_GiB = 500
@@ -40,7 +58,10 @@ PER_INSTANCE_STORAGE_GiB = 500
 
 class S3BenchmarksStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, existing_bucket_name: Optional[str], **kwargs):
+    def __init__(self, scope: Construct, construct_id: str,
+                 existing_bucket_name: Optional[str],
+                 add_canary: bool,
+                 **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
         # If existing bucket specified, use it.
@@ -71,6 +92,9 @@ class S3BenchmarksStack(Stack):
         self._define_orchestrator_batch_job()
 
         self._add_git_commit_cfn_output()
+
+        if add_canary:
+            self._add_canary()
 
     def _define_all_per_instance_batch_jobs(self):
         # First, create resources shared by all per-instance jobs...
@@ -196,7 +220,7 @@ class S3BenchmarksStack(Stack):
         instance_type = s3_benchmarks.ORCHESTRATOR_INSTANCE_TYPE
         ec2_instance_type = ec2.InstanceType(instance_type.id)
 
-        compute_env = batch.ManagedEc2EcsComputeEnvironment(
+        self.orchestrator_compute_env = batch.ManagedEc2EcsComputeEnvironment(
             self, "OrchestratorComputeEnv",
             # scale down to 0 when there's no work
             minv_cpus=0,
@@ -210,21 +234,21 @@ class S3BenchmarksStack(Stack):
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
         )
 
-        job_queue = batch.JobQueue(
+        self.orchestrator_job_queue = batch.JobQueue(
             self, "OrchestratorJobQueue",
             compute_environments=[batch.OrderedComputeEnvironment(
-                compute_environment=compute_env, order=0)],
+                compute_environment=self.orchestrator_compute_env, order=0)],
         )
 
         # Set up role for the orchestrator-job.py script.
         # Every AWS call you add to this script will fail until you add a policy that allows it.
-        job_role = iam.Role(
+        self.orchestrator_job_role = iam.Role(
             self, "OrchestratorJobRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             max_session_duration=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
         )
-        job_role.add_to_policy(iam.PolicyStatement(
+        self.orchestrator_job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:SubmitJob"],
             # "*" at the end necessary so orchestrator-job.py can submit job
             # by its hard-coded name, like "S3Benchmarks-PerInstance-c5n.18xlarge".
@@ -236,13 +260,13 @@ class S3BenchmarksStack(Stack):
             effect=iam.Effect.ALLOW,
         ))
         # policy for actions that don't support resource-level permissions
-        job_role.add_to_policy(iam.PolicyStatement(
+        self.orchestrator_job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:DescribeJobs"],
             resources=["*"],
             effect=iam.Effect.ALLOW,
         ))
 
-        container_defn = batch.EcsEc2ContainerDefinition(
+        self.orchestrator_container_defn = batch.EcsEc2ContainerDefinition(
             self, "OrchestratorContainerDefn",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
@@ -258,12 +282,12 @@ class S3BenchmarksStack(Stack):
                 "--s3-clients", "Ref::s3Clients",
                 "--workloads", "Ref::workloads",
             ],
-            job_role=job_role,
+            job_role=self.orchestrator_job_role,
         )
 
-        job_defn = batch.EcsJobDefinition(
+        self.orchestrator_job_defn = batch.EcsJobDefinition(
             self, "OrchestratorJobDefn",
-            container=container_defn,
+            container=self.orchestrator_container_defn,
             timeout=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
             parameters={
@@ -289,6 +313,24 @@ class S3BenchmarksStack(Stack):
             self, "GitCommit",
             value=git_commit,
             description="Git commit this stack was generated from")
+
+    def _add_canary(self):
+        """
+        Add canary that regularly runs the benchmarks
+        via an AWS Event Bridge cron rule.
+        """
+        events.Rule(
+            self, "CanaryCronRule",
+            # run the night before each workday
+            # Note this is UTC so hour=8 means midnight PST
+            schedule=events.Schedule.cron(
+                minute='0', hour='8', week_day='MON-FRI'),
+            targets=[events_targets.BatchJob(
+                job_queue_arn=self.orchestrator_job_queue.job_queue_arn,
+                job_queue_scope=self.orchestrator_job_queue,
+                job_definition_arn=self.orchestrator_job_defn.job_definition_arn,
+                job_definition_scope=self.orchestrator_job_defn)],
+        )
 
 
 def _max_container_memory(instance_type_memory: cdk.Size) -> cdk.Size:

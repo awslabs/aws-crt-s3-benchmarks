@@ -119,7 +119,7 @@ class Task implements S3MetaRequestResponseHandler {
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
             // Task failed. Report error and kill program...
-            System.err.printf("Task[%d] failed. actions:%s key:%s error_code:%s",
+            System.err.println("Task[%d] failed. actions:%s key:%s error_code:%s",
                     taskI, config.action, config.key, CRT.awsErrorName(context.getErrorCode()));
 
             if (context.getResponseStatus() != 0) {

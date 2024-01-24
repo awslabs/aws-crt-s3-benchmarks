@@ -31,8 +31,8 @@ def report_metrics(*,
     dimensions = [
         {'Name': 'S3Client', 'Value': s3_client_id},
         {'Name': 'InstanceType', 'Value': instance_type or 'Unknown'},
-        {'Name': 'Branch', 'Value': branch or 'Unknown'},
-        {'Name': 'Workload', 'Value': 'main'}, # DO NOT COMMIT DO NOT COMMIT workload_path.name.split('.')[0]},
+        {'Name': 'Branch', 'Value': 'main'}, # DO NOT COMMIT branch or 'Unknown'},
+        {'Name': 'Workload', 'Value': workload_path.name.split('.')[0]},
     ]
 
     metric_data = []

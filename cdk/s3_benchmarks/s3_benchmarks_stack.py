@@ -3,6 +3,7 @@ from aws_cdk import (
     CfnOutput,
     Stack,
     aws_batch as batch,
+    aws_cloudwatch as cloudwatch,
     aws_ec2 as ec2,
     aws_ecr_assets as ecr_assets,
     aws_ecs as ecs,
@@ -93,6 +94,8 @@ class S3BenchmarksStack(Stack):
 
         self._add_git_commit_cfn_output()
 
+        self._define_all_dashboards()
+
         if add_canary:
             self._add_canary()
 
@@ -141,7 +144,7 @@ class S3BenchmarksStack(Stack):
         )
 
         # Now create the actual jobs...
-        for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:
+        for instance_type in s3_benchmarks.INSTANCE_TYPES.values():
             self._define_per_instance_batch_job(instance_type)
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
@@ -313,6 +316,51 @@ class S3BenchmarksStack(Stack):
             self, "GitCommit",
             value=git_commit,
             description="Git commit this stack was generated from")
+
+    def _define_all_dashboards(self):
+        """
+        Add CloudWatch Dashboards to show the results of the "default" benchmarks.
+        Each instance-type gets its own dashboard, then have a graph per workload,
+        and in that graph plot the results of each s3-client.
+        """
+        for instance_type_id in DEFAULT_INSTANCE_TYPES:
+            instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
+            self._define_per_instance_dashboard(instance_type)
+
+    def _define_per_instance_dashboard(self, instance_type: s3_benchmarks.InstanceType):
+        id_with_hyphens = instance_type.id.replace('.', '-')
+
+        dashboard = cloudwatch.Dashboard(
+            self, f"PerInstanceDashboard-{id_with_hyphens}",
+            dashboard_name=f"S3Benchmarks-{id_with_hyphens}",
+        )
+        dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+
+        widgets = []
+        for workload in DEFAULT_WORKLOADS:
+            # Give each workload its own graph.
+            # These metrics are created by <aws-crt-s3-benchmarks>/scripts/metrics.py
+            # They have a LOT of dimensions. Search only needs to match the ones we care about.
+            search = f"SEARCH('S3Benchmarks MetricName=Throughput InstanceType={instance_type.id} Workload={workload} Branch=main', 'Average', 5)"
+            widgets.append(cloudwatch.GraphWidget(
+                title=workload,
+                left=[cloudwatch.MathExpression(expression=search)],
+                left_y_axis=cloudwatch.YAxisProps(
+                    min=0,
+                    max=instance_type.bandwidth_Gbps,
+                    # Turn off automatic units and manually label them.
+                    # I don't know why automatic doesn't work, when metrics.py
+                    # is calling PutMetricData() with Unit="Gigabits/Second"
+                    show_units=False,
+                    label="Gigabits/s",
+                ),
+            ))
+
+        # let CDK format the widgets, with N per row
+        WIDGETS_PER_ROW = 4
+        for i in range(0, len(widgets), WIDGETS_PER_ROW):
+            row_widgets = widgets[i:i+WIDGETS_PER_ROW]
+            dashboard.add_widgets(*row_widgets)
 
     def _add_canary(self):
         """

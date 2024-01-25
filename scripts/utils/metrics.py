@@ -12,9 +12,7 @@ def report_metrics(*,
                    run_end_time: datetime,
                    s3_client_id: str,
                    workload_path: Path,
-                   bucket: str,
                    region: str,
-                   target_throughput_Gbps: float,
                    instance_type: Optional[str],
                    branch: Optional[str],
                    ):
@@ -31,7 +29,7 @@ def report_metrics(*,
     dimensions = [
         {'Name': 'S3Client', 'Value': s3_client_id},
         {'Name': 'InstanceType', 'Value': instance_type or 'Unknown'},
-        {'Name': 'Branch', 'Value': 'main'}, # DO NOT COMMIT branch or 'Unknown'},
+        {'Name': 'Branch', 'Value': branch or 'Unknown'},
         {'Name': 'Workload', 'Value': workload_path.name.split('.')[0]},
     ]
 

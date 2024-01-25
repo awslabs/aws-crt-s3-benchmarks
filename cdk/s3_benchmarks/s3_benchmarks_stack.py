@@ -13,11 +13,19 @@ from aws_cdk import (
     aws_s3 as s3,
 )
 from constructs import Construct
+from dataclasses import dataclass
 from math import floor
 import subprocess
 from typing import Optional
 
 import s3_benchmarks
+
+
+@dataclass
+class S3ClientProps:
+    # hex color code, prefixed with ‘#’ (e.g. ‘#00ff00’) used in dashboards
+    color: str
+
 
 # The "default" set of instance types to benchmark.
 # This, and the other defaults below, serve several purposes:
@@ -336,15 +344,30 @@ class S3BenchmarksStack(Stack):
         )
         dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
-        widgets = []
+        graph_per_workload = []
         for workload in DEFAULT_WORKLOADS:
-            # Give each workload its own graph.
+            # Give each workload its own graph,
+            # with 1 metric for each s3-client.
             # These metrics are created by <aws-crt-s3-benchmarks>/scripts/metrics.py
-            # They have a LOT of dimensions. Search only needs to match the ones we care about.
-            search = f"SEARCH('S3Benchmarks MetricName=Throughput InstanceType={instance_type.id} Workload={workload} Branch=main', 'Average', 5)"
-            widgets.append(cloudwatch.GraphWidget(
+            metric_per_s3_client = []
+            for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
+                metric_per_s3_client.append(cloudwatch.Metric(
+                    namespace="S3Benchmarks",
+                    metric_name=f"Throughput",
+                    dimensions_map={
+                        "S3Client": s3_client_id,
+                        "InstanceType": instance_type.id,
+                        "Branch": "main",
+                        "Workload": workload,
+                    },
+                    label=s3_client_id,
+                    color=s3_client_props.color,
+                    period=cdk.Duration.seconds(1),
+                ))
+
+            graph_per_workload.append(cloudwatch.GraphWidget(
                 title=workload,
-                left=[cloudwatch.MathExpression(expression=search)],
+                left=metric_per_s3_client,
                 left_y_axis=cloudwatch.YAxisProps(
                     min=0,
                     max=instance_type.bandwidth_Gbps,
@@ -356,11 +379,11 @@ class S3BenchmarksStack(Stack):
                 ),
             ))
 
-        # let CDK format the widgets, with N per row
-        WIDGETS_PER_ROW = 4
-        for i in range(0, len(widgets), WIDGETS_PER_ROW):
-            row_widgets = widgets[i:i+WIDGETS_PER_ROW]
-            dashboard.add_widgets(*row_widgets)
+        # let CDK format the graphs, with N per row
+        GRAPHS_PER_ROW = 4
+        for i in range(0, len(graph_per_workload), GRAPHS_PER_ROW):
+            row_of_graphs = graph_per_workload[i:i+GRAPHS_PER_ROW]
+            dashboard.add_widgets(*row_of_graphs)
 
     def _add_canary(self):
         """

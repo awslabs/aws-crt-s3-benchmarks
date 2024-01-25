@@ -38,13 +38,13 @@ DEFAULT_INSTANCE_TYPES = [
 
 # The "default" set of S3 clients to benchmark.
 # For now, only have the Canary test the CRT-based clients.
-DEFAULT_S3_CLIENTS = [
-    'crt-c',
-    'crt-java',
-    'crt-python',
-    'cli-crt',
-    'boto3-crt',
-]
+DEFAULT_S3_CLIENTS = {
+    'crt-c': S3ClientProps(color=cloudwatch.Color.RED),
+    'crt-java': S3ClientProps(color=cloudwatch.Color.GREEN),
+    'crt-python': S3ClientProps(color=cloudwatch.Color.BLUE),
+    'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
+    'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
+}
 
 # The "default" set of workloads to benchmark.
 # This isn't everything in workloads/, it's a reasonable spread

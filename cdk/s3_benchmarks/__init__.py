@@ -23,10 +23,16 @@ class InstanceType:
 QUOTA_CODE_STANDARD_INSTANCES = "L-1216C47A"
 
 # Instance types to run benchmarks on
-ALL_INSTANCE_TYPES = [
-    InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
-                 bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES),
-]
+INSTANCE_TYPES: dict[str, InstanceType] = {}
+
+
+def _add(instance_type: InstanceType):
+    INSTANCE_TYPES[instance_type.id] = instance_type
+
+
+_add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
+                  bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
+
 
 # Orchestrator instance type
 # How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):

@@ -36,7 +36,7 @@ PARSER.add_argument(
     help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
     '--instance-type', required=True,
-    choices=[x.id for x in s3_benchmarks.ALL_INSTANCE_TYPES],
+    choices=s3_benchmarks.INSTANCE_TYPES.keys(),
     help="EC2 instance type this is running on")
 PARSER.add_argument(
     '--s3-clients', required=True, type=comma_separated_list,
@@ -69,8 +69,7 @@ if __name__ == '__main__':
 
     args = PARSER.parse_args()
 
-    instance_type = next(
-        x for x in s3_benchmarks.ALL_INSTANCE_TYPES if x.id == args.instance_type)
+    instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
     # cd into tmp working dir
     tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-')).absolute()

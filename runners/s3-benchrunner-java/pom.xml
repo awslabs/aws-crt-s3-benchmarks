@@ -11,6 +11,7 @@
   <properties>
     <!-- build with -Dawscrt.version=1.0.0-SNAPSHOT to use the locally installed dev version) -->
     <awscrt.version>[0.26,)</awscrt.version>
+    <aws.sdk.version>[2.23,)</aws.sdk.version>
 
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -78,6 +79,11 @@
       <groupId>software.amazon.awssdk.crt</groupId>
       <artifactId>aws-crt</artifactId>
       <version>${awscrt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${aws.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

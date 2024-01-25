@@ -1,5 +1,6 @@
 package com.example.s3benchrunner.crtjava;
 
+import com.example.s3benchrunner.BenchmarkRunner;
 import software.amazon.awssdk.crt.auth.credentials.CredentialsProvider;
 import software.amazon.awssdk.crt.auth.credentials.DefaultChainCredentialsProvider;
 import software.amazon.awssdk.crt.auth.signing.AwsSigningConfig;
@@ -10,7 +11,11 @@ import software.amazon.awssdk.crt.s3.S3ClientOptions;
 import java.util.ArrayList;
 import java.util.Random;
 
-class Benchmark {
+import com.example.s3benchrunner.BenchmarkConfig;
+import com.example.s3benchrunner.Main;
+import com.example.s3benchrunner.Util;
+
+public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
     BenchmarkConfig config;
     String bucket;
     String region;
@@ -24,9 +29,9 @@ class Benchmark {
     S3Client s3Client;
 
     // if uploading, and filesOnDisk is false, then upload this
-    byte randomDataForUpload[];
+    byte[] randomDataForUpload;
 
-    Benchmark(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
+    public CrtJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
         this.bucket = bucket;
         this.region = region;
@@ -68,26 +73,12 @@ class Benchmark {
         // All uploads will use this same buffer,
         // so make it big enough for the largest file.
         if (!config.filesOnDisk) {
-            long largestUpload = 0;
-            for (var task : config.tasks) {
-                if (task.action.equals("upload")) {
-                    largestUpload = Math.max(largestUpload, task.size);
-                }
-            }
-
-            // NOTE: if this raises an exception, either the size > Integer.MAX_VALUE
-            // or we failed allocating such a large buffer.
-            // So we need a new technique.
-            // Either generate random data within sendRequestBody()
-            // (may impact performance).
-            // Or just use a smaller buffer that we send repeatedly.
-            randomDataForUpload = new byte[Math.toIntExact(largestUpload)];
-            new Random().nextBytes(randomDataForUpload);
+            randomDataForUpload = Util.generateRandomData(config);
         }
     }
 
     // A benchmark can be run repeatedly
-    void run() {
+    public void run() {
         // kick off all tasks
         var runningTasks = new ArrayList<Task>(config.tasks.size());
         for (int i = 0; i < config.tasks.size(); ++i) {

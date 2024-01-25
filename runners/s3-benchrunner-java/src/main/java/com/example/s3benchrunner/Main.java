@@ -1,7 +1,10 @@
-package com.example.s3benchrunner.crtjava;
+package com.example.s3benchrunner;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.example.s3benchrunner.crtjava.CrtJavaBenchmarkRunner;
+import com.example.s3benchrunner.sdkjava.SDKJavaBenchmarkRunner;
 
 public class Main {
 
@@ -9,7 +12,7 @@ public class Main {
 
     // 256MiB is Java Transfer Mgr v2 default.
     // TODO: Investigate. At time of writing, this noticeably impacts performance.
-    static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 256;
+    public static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 256;
 
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
@@ -41,16 +44,22 @@ public class Main {
             throw new RuntimeException("expected args: S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
         }
         String s3ClientId = args[0];
-        if (!s3ClientId.equals("crt-java")) {
-            throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java");
-        }
         String configJsonFilepath = args[1];
         String bucket = args[2];
         String region = args[3];
         double targetThroughputGbps = Double.parseDouble(args[4]);
 
         BenchmarkConfig config = BenchmarkConfig.fromJson(configJsonFilepath);
-        var benchmark = new Benchmark(config, bucket, region, targetThroughputGbps);
+        BenchmarkRunner runner;
+        if (s3ClientId.equals("crt-java")) {
+            runner= new CrtJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+        } else if(s3ClientId.equals("sdk-java")){
+            runner= new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+        } else {
+
+            throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java, sdk-java");
+        }
+
         long bytesPerRun = config.bytesPerRun();
 
         List<Double> durations = new ArrayList<>();
@@ -59,7 +68,7 @@ public class Main {
         for (int runI = 0; runI < config.maxRepeatCount; runI++) {
             long runStartNs = System.nanoTime();
 
-            benchmark.run();
+            runner.run();
 
             long runDurationNs = System.nanoTime() - runStartNs;
             double runSecs = Util.nanoToSecs(runDurationNs);

@@ -52,9 +52,9 @@ public class Main {
         BenchmarkConfig config = BenchmarkConfig.fromJson(configJsonFilepath);
         BenchmarkRunner runner;
         if (s3ClientId.equals("crt-java")) {
-            runner= new CrtJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
-        } else if(s3ClientId.equals("sdk-java")){
-            runner= new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            runner = new CrtJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+        } else if (s3ClientId.equals("sdk-java")) {
+            runner = new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
         } else {
 
             throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java, sdk-java");

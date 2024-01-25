@@ -19,17 +19,16 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     // if uploading, and filesOnDisk is false, then upload this
     byte[] randomDataForUpload;
 
-    public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps){
+    public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
         this.bucket = bucket;
         this.region = region;
 
-        s3AsyncClient =
-                S3AsyncClient.crtBuilder()
-                        .region(Region.of(region))
-                        .targetThroughputInGbps(targetThroughputGbps)
-                        .minimumPartSizeInBytes(bytesFromMiB(8))
-                        .build();
+        s3AsyncClient = S3AsyncClient.crtBuilder()
+                .region(Region.of(region))
+                .targetThroughputInGbps(targetThroughputGbps)
+                .minimumPartSizeInBytes(bytesFromMiB(8))
+                .build();
         if (!config.filesOnDisk) {
             randomDataForUpload = Util.generateRandomData(config);
         }

@@ -44,6 +44,7 @@ public class SDKJavaTask {
                     publisher.complete();
                 });
                 data = AsyncRequestBody.fromPublisher(publisher);
+                uploadThread.start();
             }
             runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), data)
                     .whenComplete((result, failure) -> {

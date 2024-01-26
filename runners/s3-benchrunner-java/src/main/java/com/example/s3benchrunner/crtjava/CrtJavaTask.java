@@ -159,20 +159,20 @@ class CrtJavaTask implements S3MetaRequestResponseHandler {
     }
 
     static class UploadFromRamStream implements HttpRequestBodyStream {
-        final int size;
-        int bytesWritten;
+        final long size;
+        long bytesWritten;
         byte[] body;
 
         UploadFromRamStream(byte[] body, long size) {
             this.body = body;
-            this.size = Math.toIntExact(size);
+            this.size = size;
         }
 
         @Override
         public boolean sendRequestBody(ByteBuffer dstBuf) {
-            int bufferSpaceAvailable = dstBuf.remaining();
-            int bodyBytesAvailable = size - bytesWritten;
-            int amountToWrite = Math.min(bufferSpaceAvailable, bodyBytesAvailable);
+            long bufferSpaceAvailable = dstBuf.remaining();
+            long bodyBytesAvailable = size - bytesWritten;
+            long amountToWrite = Math.min(bufferSpaceAvailable, bodyBytesAvailable);
 
             while (bytesWritten < size && dstBuf.remaining() > 0) {
                 long amtToTransfer = Math.min(size - bytesWritten, (long) dstBuf.remaining());

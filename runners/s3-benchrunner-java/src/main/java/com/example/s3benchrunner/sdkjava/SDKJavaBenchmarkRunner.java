@@ -16,8 +16,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     String region;
 
     S3AsyncClient s3AsyncClient;
-    // if uploading, and filesOnDisk is false, then upload this
-    byte[] randomDataForUpload;
+    byte[] payload;
 
     public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
@@ -30,7 +29,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
                 .minimumPartSizeInBytes(bytesFromMiB(8))
                 .build();
         if (!config.filesOnDisk) {
-            randomDataForUpload = Util.generateRandomData(config);
+            this.payload = Util.generateRandomData();
         }
     }
 

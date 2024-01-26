@@ -5,10 +5,13 @@ import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.utils.async.SimplePublisher;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 public class SDKJavaTask {
 
@@ -29,7 +32,18 @@ public class SDKJavaTask {
             if (runner.config.filesOnDisk) {
                 data = AsyncRequestBody.fromFile(Path.of(config.key));
             } else {
-                data = AsyncRequestBody.fromBytes(runner.randomDataForUpload);
+                SimplePublisher<ByteBuffer> publisher = new SimplePublisher<>();
+                Thread uploadThread = Executors.defaultThreadFactory().newThread(() -> {
+                    long remaining = config.size;
+                    long perPartLen = runner.payload.length;
+                    while (remaining > 0) {
+                        long amtToTransfer = Math.min(remaining, perPartLen);
+                        publisher.send(ByteBuffer.wrap(runner.payload, 0, (int) amtToTransfer));
+                        remaining -= amtToTransfer;
+                    }
+                    publisher.complete();
+                });
+                data = AsyncRequestBody.fromPublisher(publisher);
             }
             runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), data)
                     .whenComplete((result, failure) -> {

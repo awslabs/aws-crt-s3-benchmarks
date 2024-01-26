@@ -15,13 +15,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.example.s3benchrunner.TaskConfig;
 import com.example.s3benchrunner.Util;
 
-class Task implements S3MetaRequestResponseHandler {
+class CrtJavaTask implements S3MetaRequestResponseHandler {
 
     CrtJavaBenchmarkRunner runner;
     int taskI;
@@ -31,7 +32,7 @@ class Task implements S3MetaRequestResponseHandler {
     ReadableByteChannel uploadFileChannel;
     WritableByteChannel downloadFileChannel;
 
-    Task(CrtJavaBenchmarkRunner runner, int taskI) {
+    CrtJavaTask(CrtJavaBenchmarkRunner runner, int taskI) {
         this.runner = runner;
         this.taskI = taskI;
         this.config = runner.config.tasks.get(taskI);
@@ -57,7 +58,7 @@ class Task implements S3MetaRequestResponseHandler {
             if (runner.config.filesOnDisk) {
                 options.withRequestFilePath(Path.of(config.key));
             } else {
-                requestUploadStream = new UploadFromRamStream(runner.randomDataForUpload, config.size);
+                requestUploadStream = new UploadFromRamStream(runner.payload, config.size);
             }
 
         } else if (config.action.equals("download")) {
@@ -121,8 +122,8 @@ class Task implements S3MetaRequestResponseHandler {
     @Override
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
-            // Task failed. Report error and kill program...
-            System.err.printf("Task[%d] failed. actions:%s key:%s error_code:%s/n",
+            // CrtJavaTask failed. Report error and kill program...
+            System.err.printf("CrtJavaTask[%d] failed. actions:%s key:%s error_code:%s/n",
                     taskI, config.action, config.key, CRT.awsErrorName(context.getErrorCode()));
 
             if (context.getResponseStatus() != 0) {
@@ -135,7 +136,7 @@ class Task implements S3MetaRequestResponseHandler {
 
             Util.exitWithError("S3MetaRequest failed");
         } else {
-            // Task succeeded. Clean up...
+            // CrtJavaTask succeeded. Clean up...
             try {
                 if (downloadFileChannel != null) {
                     downloadFileChannel.close();
@@ -158,11 +159,11 @@ class Task implements S3MetaRequestResponseHandler {
     }
 
     static class UploadFromRamStream implements HttpRequestBodyStream {
-        byte[] body;
         final int size;
         int bytesWritten;
+        byte[] body;
 
-        UploadFromRamStream(byte body[], long size) {
+        UploadFromRamStream(byte[] body, long size) {
             this.body = body;
             this.size = Math.toIntExact(size);
         }
@@ -173,9 +174,13 @@ class Task implements S3MetaRequestResponseHandler {
             int bodyBytesAvailable = size - bytesWritten;
             int amountToWrite = Math.min(bufferSpaceAvailable, bodyBytesAvailable);
 
-            dstBuf.put(body, bytesWritten, amountToWrite);
+            while (bytesWritten < size && dstBuf.remaining() > 0) {
+                long amtToTransfer = Math.min(size - bytesWritten, (long) dstBuf.remaining());
+                amtToTransfer = Math.min(amtToTransfer, (long) body.length);
+                dstBuf.put(body, 0, (int) amtToTransfer);
+                bytesWritten += (int) amtToTransfer;
+            }
 
-            bytesWritten += amountToWrite;
             return bytesWritten == size;
         }
     }

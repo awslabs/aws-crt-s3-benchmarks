@@ -45,23 +45,8 @@ public class Util {
         System.exit(123);
     }
 
-    public static byte[] generateRandomData(BenchmarkConfig config) {
-
-        long largestUpload = 0;
-        byte[] randomDataForUpload;
-        for (var task : config.tasks) {
-            if (task.action.equals("upload")) {
-                largestUpload = Math.max(largestUpload, task.size);
-            }
-        }
-
-        // NOTE: if this raises an exception, either the size > Integer.MAX_VALUE
-        // or we failed allocating such a large buffer.
-        // So we need a new technique.
-        // Either generate random data within sendRequestBody()
-        // (may impact performance).
-        // Or just use a smaller buffer that we send repeatedly.
-        randomDataForUpload = new byte[Math.toIntExact(largestUpload)];
+    public static byte[] generateRandomData() {
+        byte[] randomDataForUpload = new byte[Math.toIntExact(bytesFromMiB(8))];
         new Random().nextBytes(randomDataForUpload);
         return randomDataForUpload;
     }

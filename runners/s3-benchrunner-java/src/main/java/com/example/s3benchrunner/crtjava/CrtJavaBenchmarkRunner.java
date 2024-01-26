@@ -9,7 +9,6 @@ import software.amazon.awssdk.crt.s3.S3Client;
 import software.amazon.awssdk.crt.s3.S3ClientOptions;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import com.example.s3benchrunner.BenchmarkConfig;
 import com.example.s3benchrunner.Main;
@@ -28,8 +27,7 @@ public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
     CredentialsProvider credentialsProvider;
     S3Client s3Client;
 
-    // if uploading, and filesOnDisk is false, then upload this
-    byte[] randomDataForUpload;
+    byte[] payload;
 
     public CrtJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
@@ -64,25 +62,19 @@ public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
         if (config.filesOnDisk) {
             s3ClientOpts.withReadBackpressureEnabled(true);
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
+        } else {
+            this.payload = Util.generateRandomData();
         }
 
         s3Client = new S3Client(s3ClientOpts);
-
-        // If we're uploading, and not using files on disk,
-        // then generate an in-memory buffer of random data to upload.
-        // All uploads will use this same buffer,
-        // so make it big enough for the largest file.
-        if (!config.filesOnDisk) {
-            randomDataForUpload = Util.generateRandomData(config);
-        }
     }
 
     // A benchmark can be run repeatedly
     public void run() {
         // kick off all tasks
-        var runningTasks = new ArrayList<Task>(config.tasks.size());
+        var runningTasks = new ArrayList<CrtJavaTask>(config.tasks.size());
         for (int i = 0; i < config.tasks.size(); ++i) {
-            runningTasks.add(new Task(this, i));
+            runningTasks.add(new CrtJavaTask(this, i));
         }
 
         // wait until all tasks are done

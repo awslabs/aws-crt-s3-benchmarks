@@ -1,7 +1,9 @@
 import boto3  # type: ignore
+import importlib.util
 import os.path
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 from typing import Optional, Tuple
 
@@ -45,7 +47,7 @@ class CliBenchmarkRunner(BenchmarkRunner):
             lines += [f'  target_bandwidth = {megabits} Mb/s']
 
         else:
-            lines += ['  preferred_transfer_client = default']
+            lines += ['  preferred_transfer_client = classic']
 
         lines += ['']  # blank line at end of file
         return '\n'.join(lines)
@@ -60,7 +62,19 @@ class CliBenchmarkRunner(BenchmarkRunner):
         num_tasks = len(self.config.tasks)
         first_task = self.config.tasks[0]
 
-        cmd = ['aws', 's3', 'cp']
+        # If awscli was pip installed, run via: python3 -m awscli
+        # Otherwise, use the system installation.
+        if importlib.util.find_spec('awscli'):
+            cmd = [sys.executable, '-m', 'awscli']
+        else:
+            cmd = ['aws']
+
+        if self.config.verbose:
+            version_cmd = cmd + ['--version']
+            print(f'> {subprocess.list2cmdline(version_cmd)}', flush=True)
+            subprocess.run(version_cmd, check=True)
+
+        cmd += ['s3', 'cp']
         stdin: Optional[bytes] = None
 
         if num_tasks == 1:

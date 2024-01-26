@@ -27,10 +27,11 @@ public class SDKJavaTask {
         doneFuture = new CompletableFuture<Void>();
 
         if (config.action.equals("upload")) {
-            AsyncRequestBody data;
-
             if (runner.config.filesOnDisk) {
-                data = AsyncRequestBody.fromFile(Path.of(config.key));
+                runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), Path.of(config.key))
+                        .whenComplete((result, failure) -> {
+                            this.complete(failure);
+                        });
             } else {
                 SimplePublisher<ByteBuffer> publisher = new SimplePublisher<>();
                 Thread uploadThread = Executors.defaultThreadFactory().newThread(() -> {
@@ -43,13 +44,13 @@ public class SDKJavaTask {
                     }
                     publisher.complete();
                 });
-                data = AsyncRequestBody.fromPublisher(publisher);
+
+                runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), AsyncRequestBody.fromPublisher(publisher))
+                        .whenComplete((result, failure) -> {
+                            this.complete(failure);
+                        });
                 uploadThread.start();
             }
-            runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), data)
-                    .whenComplete((result, failure) -> {
-                        this.complete(failure);
-                    });
         } else if (config.action.equals("download")) {
             if (runner.config.filesOnDisk) {
                 runner.s3AsyncClient.getObject(req -> req.bucket(this.runner.bucket)

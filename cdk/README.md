@@ -29,13 +29,15 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
     {
         "account": "012345678901",
         "region": "us-west-2",
-        "bucket": "my-benchmarking-bucket"
+        "bucket": "my-benchmarking-bucket",
+        "canary": false
     }
     ```
     Fields are:
     * `account`: AWS account ID
     * `region`: AWS region
     * `bucket`: (Optional) If you want to use a pre-existing bucket, or you want the bucket to persist when stack is destroyed, pass its name here. If you omit this field, or set the value `""` or `null`, a bucket will be created that gets destroyed when the stack is destroyed.
+    * `canary`: (Optional) Set `true` to have the benchmarks run nightly.
 
 1) Deploy this CDK app, passing in your settings file:
     ```sh

@@ -78,6 +78,7 @@ Here are the IDs used for various S3 Clients, and the runner you must build to b
 | `cli-crt` | [AWS CLI v2](https://github.com/aws/aws-cli/tree/v2) using CRT | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
 | `cli-classic` | [AWS CLI v2](https://github.com/boto/boto3/) with pure-python transfer manager | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
 | `crt-java` | [aws-crt-java](https://github.com/awslabs/aws-crt-java/) | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
+| `sdk-java-crt` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with CRT based S3AsyncClient | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
 
 
 ### Build a Runner

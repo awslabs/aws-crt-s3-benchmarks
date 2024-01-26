@@ -132,10 +132,9 @@ if __name__ == '__main__':
     instance_types = []
     for instance_type_id in args.instance_types:
         try:
-            instance_type = next(
-                x for x in s3_benchmarks.ALL_INSTANCE_TYPES if x.id == instance_type_id)
+            instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
             instance_types.append(instance_type)
-        except StopIteration:
+        except KeyError:
             exit(f'No known instance type "{instance_type_id}"')
 
     # create Batch client

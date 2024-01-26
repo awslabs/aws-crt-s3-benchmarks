@@ -76,9 +76,7 @@ for workload in workloads:
             run_end_time=end_time,
             s3_client_id=args.s3_client,
             workload_path=workload,
-            bucket=args.bucket,
             region=args.region,
-            target_throughput_Gbps=args.throughput,
             instance_type=args.metrics_instance_type,
             branch=args.metrics_branch,
         )

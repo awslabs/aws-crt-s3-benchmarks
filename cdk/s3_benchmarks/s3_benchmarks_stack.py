@@ -3,36 +3,63 @@ from aws_cdk import (
     CfnOutput,
     Stack,
     aws_batch as batch,
+    aws_cloudwatch as cloudwatch,
     aws_ec2 as ec2,
     aws_ecr_assets as ecr_assets,
     aws_ecs as ecs,
+    aws_events as events,
+    aws_events_targets as events_targets,
     aws_iam as iam,
     aws_s3 as s3,
 )
 from constructs import Construct
+from dataclasses import dataclass
 from math import floor
 import subprocess
 from typing import Optional
 
 import s3_benchmarks
 
-# The "default" set of instance types to benchmark
-# TODO: put more thought into this
+
+@dataclass
+class S3ClientProps:
+    # hex color code, prefixed with ‘#’ (e.g. ‘#00ff00’) used in dashboards
+    color: str
+
+
+# The "default" set of instance types to benchmark.
+# This, and the other defaults below, serve several purposes:
+# - When submitting a job via the console, these are the default values.
+# - These defaults are what the Canary runs.
+# - (TODO) A dashboard is set up to view these instance-type/s3-client/workload combinations.
 DEFAULT_INSTANCE_TYPES = [
     'c5n.18xlarge',
 ]
 
-# The "default" set of S3 clients to benchmark
-# TODO: put more thought into this
-DEFAULT_S3_CLIENTS = [
-    'crt-c'
-]
+# The "default" set of S3 clients to benchmark.
+# For now, only have the Canary test the CRT-based clients.
+DEFAULT_S3_CLIENTS = {
+    'crt-c': S3ClientProps(color=cloudwatch.Color.RED),
+    'crt-java': S3ClientProps(color=cloudwatch.Color.GREEN),
+    'crt-python': S3ClientProps(color=cloudwatch.Color.BLUE),
+    'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
+    'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
+}
 
-# The "default" set of workloads to benchmark
-# TODO: put more thought into this
+# The "default" set of workloads to benchmark.
+# This isn't everything in workloads/, it's a reasonable spread
+# of use cases that won't take TOO long to run.
 DEFAULT_WORKLOADS = [
-    'download-Caltech256Sharded',
-    'upload-Caltech256Sharded',
+    'download-max-throughput',  # how fast can we theoretically go?
+    'upload-max-throughput',
+    'download-30GiB-1x',  # very big file
+    'upload-30GiB-1x',
+    'download-5GiB-1x',  # moderately big file
+    'upload-5GiB-1x',
+    'download-5GiB-1x-ram',  # no disk access to slow us down
+    'upload-5GiB-1x-ram',
+    'download-256KiB-10_000x',  # lots of small files
+    'upload-256KiB-10_000x',
 ]
 
 PER_INSTANCE_STORAGE_GiB = 500
@@ -40,7 +67,10 @@ PER_INSTANCE_STORAGE_GiB = 500
 
 class S3BenchmarksStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, existing_bucket_name: Optional[str], **kwargs):
+    def __init__(self, scope: Construct, construct_id: str,
+                 existing_bucket_name: Optional[str],
+                 add_canary: bool,
+                 **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
         # If existing bucket specified, use it.
@@ -71,6 +101,11 @@ class S3BenchmarksStack(Stack):
         self._define_orchestrator_batch_job()
 
         self._add_git_commit_cfn_output()
+
+        self._define_all_dashboards()
+
+        if add_canary:
+            self._add_canary()
 
     def _define_all_per_instance_batch_jobs(self):
         # First, create resources shared by all per-instance jobs...
@@ -117,7 +152,7 @@ class S3BenchmarksStack(Stack):
         )
 
         # Now create the actual jobs...
-        for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:
+        for instance_type in s3_benchmarks.INSTANCE_TYPES.values():
             self._define_per_instance_batch_job(instance_type)
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
@@ -196,7 +231,7 @@ class S3BenchmarksStack(Stack):
         instance_type = s3_benchmarks.ORCHESTRATOR_INSTANCE_TYPE
         ec2_instance_type = ec2.InstanceType(instance_type.id)
 
-        compute_env = batch.ManagedEc2EcsComputeEnvironment(
+        self.orchestrator_compute_env = batch.ManagedEc2EcsComputeEnvironment(
             self, "OrchestratorComputeEnv",
             # scale down to 0 when there's no work
             minv_cpus=0,
@@ -210,21 +245,21 @@ class S3BenchmarksStack(Stack):
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
         )
 
-        job_queue = batch.JobQueue(
+        self.orchestrator_job_queue = batch.JobQueue(
             self, "OrchestratorJobQueue",
             compute_environments=[batch.OrderedComputeEnvironment(
-                compute_environment=compute_env, order=0)],
+                compute_environment=self.orchestrator_compute_env, order=0)],
         )
 
         # Set up role for the orchestrator-job.py script.
         # Every AWS call you add to this script will fail until you add a policy that allows it.
-        job_role = iam.Role(
+        self.orchestrator_job_role = iam.Role(
             self, "OrchestratorJobRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             max_session_duration=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
         )
-        job_role.add_to_policy(iam.PolicyStatement(
+        self.orchestrator_job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:SubmitJob"],
             # "*" at the end necessary so orchestrator-job.py can submit job
             # by its hard-coded name, like "S3Benchmarks-PerInstance-c5n.18xlarge".
@@ -236,13 +271,13 @@ class S3BenchmarksStack(Stack):
             effect=iam.Effect.ALLOW,
         ))
         # policy for actions that don't support resource-level permissions
-        job_role.add_to_policy(iam.PolicyStatement(
+        self.orchestrator_job_role.add_to_policy(iam.PolicyStatement(
             actions=["batch:DescribeJobs"],
             resources=["*"],
             effect=iam.Effect.ALLOW,
         ))
 
-        container_defn = batch.EcsEc2ContainerDefinition(
+        self.orchestrator_container_defn = batch.EcsEc2ContainerDefinition(
             self, "OrchestratorContainerDefn",
             image=ecs.ContainerImage.from_asset(
                 directory='.',
@@ -258,12 +293,12 @@ class S3BenchmarksStack(Stack):
                 "--s3-clients", "Ref::s3Clients",
                 "--workloads", "Ref::workloads",
             ],
-            job_role=job_role,
+            job_role=self.orchestrator_job_role,
         )
 
-        job_defn = batch.EcsJobDefinition(
+        self.orchestrator_job_defn = batch.EcsJobDefinition(
             self, "OrchestratorJobDefn",
-            container=container_defn,
+            container=self.orchestrator_container_defn,
             timeout=cdk.Duration.hours(
                 s3_benchmarks.ORCHESTRATOR_JOB_TIMEOUT_HOURS),
             parameters={
@@ -289,6 +324,84 @@ class S3BenchmarksStack(Stack):
             self, "GitCommit",
             value=git_commit,
             description="Git commit this stack was generated from")
+
+    def _define_all_dashboards(self):
+        """
+        Add CloudWatch Dashboards to show the results of the "default" benchmarks.
+        Each instance-type gets its own dashboard, then have a graph per workload,
+        and in that graph plot the results of each s3-client.
+        """
+        for instance_type_id in DEFAULT_INSTANCE_TYPES:
+            instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
+            self._define_per_instance_dashboard(instance_type)
+
+    def _define_per_instance_dashboard(self, instance_type: s3_benchmarks.InstanceType):
+        id_with_hyphens = instance_type.id.replace('.', '-')
+
+        dashboard = cloudwatch.Dashboard(
+            self, f"PerInstanceDashboard-{id_with_hyphens}",
+            dashboard_name=f"S3Benchmarks-{id_with_hyphens}",
+        )
+        dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
+
+        graph_per_workload = []
+        for workload in DEFAULT_WORKLOADS:
+            # Give each workload its own graph,
+            # with 1 metric for each s3-client.
+            # These metrics are created by <aws-crt-s3-benchmarks>/scripts/metrics.py
+            metric_per_s3_client = []
+            for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
+                metric_per_s3_client.append(cloudwatch.Metric(
+                    namespace="S3Benchmarks",
+                    metric_name=f"Throughput",
+                    dimensions_map={
+                        "S3Client": s3_client_id,
+                        "InstanceType": instance_type.id,
+                        "Branch": "main",
+                        "Workload": workload,
+                    },
+                    label=s3_client_id,
+                    color=s3_client_props.color,
+                    period=cdk.Duration.seconds(1),
+                ))
+
+            graph_per_workload.append(cloudwatch.GraphWidget(
+                title=workload,
+                left=metric_per_s3_client,
+                left_y_axis=cloudwatch.YAxisProps(
+                    min=0,
+                    max=instance_type.bandwidth_Gbps,
+                    # Turn off automatic units and manually label them.
+                    # I don't know why automatic doesn't work, when metrics.py
+                    # is calling PutMetricData() with Unit="Gigabits/Second"
+                    show_units=False,
+                    label="Gigabits/s",
+                ),
+            ))
+
+        # let CDK format the graphs, with N per row
+        GRAPHS_PER_ROW = 4
+        for i in range(0, len(graph_per_workload), GRAPHS_PER_ROW):
+            row_of_graphs = graph_per_workload[i:i+GRAPHS_PER_ROW]
+            dashboard.add_widgets(*row_of_graphs)
+
+    def _add_canary(self):
+        """
+        Add canary that regularly runs the benchmarks
+        via an AWS Event Bridge cron rule.
+        """
+        events.Rule(
+            self, "CanaryCronRule",
+            # run the night before each workday
+            # Note this is UTC so hour=8 means midnight PST
+            schedule=events.Schedule.cron(
+                minute='0', hour='8', week_day='MON-FRI'),
+            targets=[events_targets.BatchJob(
+                job_queue_arn=self.orchestrator_job_queue.job_queue_arn,
+                job_queue_scope=self.orchestrator_job_queue,
+                job_definition_arn=self.orchestrator_job_defn.job_definition_arn,
+                job_definition_scope=self.orchestrator_job_defn)],
+        )
 
 
 def _max_container_memory(instance_type_memory: cdk.Size) -> cdk.Size:

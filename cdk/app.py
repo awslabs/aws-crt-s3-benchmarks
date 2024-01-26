@@ -13,7 +13,8 @@ from s3_benchmarks.s3_benchmarks_stack import S3BenchmarksStack
 class Settings:
     account: str
     region: str
-    bucket: Optional[str]
+    bucket: Optional[str] = None
+    canary: bool = False
 
 
 def load_settings(app: cdk.App) -> Settings:
@@ -37,5 +38,6 @@ S3BenchmarksStack(
     env=cdk.Environment(
         account=settings.account, region=settings.region),
     existing_bucket_name=settings.bucket,
+    add_canary=settings.canary,
 )
 app.synth()

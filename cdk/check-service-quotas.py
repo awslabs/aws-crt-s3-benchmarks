@@ -14,7 +14,7 @@ args = PARSER.parse_args()
 # Find quotas needed to run each instance type one at a time.
 # (quota value is number of running vCPUs)
 quotas_needed: dict[str, int] = {}
-for instance_type in s3_benchmarks.ALL_INSTANCE_TYPES:
+for instance_type in s3_benchmarks.INSTANCE_TYPES.values():
     code = instance_type.quota_code
     prev_needed = quotas_needed.get(code, 0)
     quotas_needed[code] = max(instance_type.vcpu, prev_needed)

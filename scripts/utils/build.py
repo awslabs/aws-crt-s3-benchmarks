@@ -197,4 +197,12 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'java': _build_java,
     }
     build_fn = build_functions[lang]
-    return build_fn(work_dir, branch)
+
+    # restore cwd after building
+    cwd_prev = Path.cwd()
+
+    runner_cmd = build_fn(work_dir, branch)
+
+    os.chdir(cwd_prev)
+
+    return runner_cmd

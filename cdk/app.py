@@ -31,6 +31,10 @@ def load_settings(app: cdk.App) -> Settings:
 
 
 app = cdk.App()
+
+# Add this tag to everything, so we can identify its costs in the AWS bill.
+cdk.Tags.of(app).add("Project", "S3Benchmarks")
+
 settings = load_settings(app)
 S3BenchmarksStack(
     app, "S3BenchmarksStack",

@@ -362,13 +362,19 @@ class S3BenchmarksStack(Stack):
                     },
                     label=s3_client_id,
                     color=s3_client_props.color,
-                    period=cdk.Duration.seconds(1),
+                    # The Canary runs daily. Set period to match
+                    # so we get a line connecting the sparse data points.
+                    period=cdk.Duration.days(1),
                 ))
 
             graph_per_workload.append(cloudwatch.GraphWidget(
                 title=workload,
                 left=metric_per_s3_client,
                 left_y_axis=cloudwatch.YAxisProps(
+                    # Have y-axis go from 0 to max-theoretical-throughput.
+                    # pro: easy to compare different graphs, since they all have same range.
+                    # pro: 0-max is intuitive.
+                    # con: for some graphs, the results are all clustered near 0.
                     min=0,
                     max=instance_type.bandwidth_Gbps,
                     # Turn off automatic units and manually label them.
@@ -377,6 +383,8 @@ class S3BenchmarksStack(Stack):
                     show_units=False,
                     label="Gigabits/s",
                 ),
+                # Double the default height (6), to help see results in graphs that all cluster near 0.
+                height=12,
             ))
 
         # let CDK format the graphs, with N per row

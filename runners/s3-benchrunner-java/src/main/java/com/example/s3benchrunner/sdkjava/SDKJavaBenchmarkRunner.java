@@ -27,48 +27,53 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     Path transferPath;
     String transferKey;
 
-    public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps, boolean useTransferManager) {
+    public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
+            boolean useTransferManager) {
         this.config = config;
         this.bucket = bucket;
         this.region = region;
 
-        if(useTransferManager) {
+        s3AsyncClient = S3AsyncClient.crtBuilder()
+                .region(Region.of(region))
+                .targetThroughputInGbps(targetThroughputGbps)
+                .build();
+
+        if (useTransferManager) {
             if (!config.filesOnDisk) {
                 exitWithSkipCode("TransferManager cannot run task unless they're on disk");
             }
 
             TaskConfig firstTask = config.tasks.get(0);
             this.transferAction = firstTask.action;
-            if(config.tasks.size() == 1) {
+            if (config.tasks.size() == 1) {
                 this.transferKey = firstTask.key;
                 this.transferPath = Path.of(firstTask.key);
             } else {
                 this.transferKey = null;
                 this.transferPath = Path.of(firstTask.key).getParent();
-                if(this.transferPath == null) {
+                if (this.transferPath == null) {
                     exitWithSkipCode("TransferManager cannot run tasks unless all keys are in a directory");
                 }
                 for (TaskConfig task : config.tasks) {
-                    if(!firstTask.action.equals(task.action)) {
+                    if (!firstTask.action.equals(task.action)) {
                         exitWithSkipCode("TransferManager cannot run tasks unless all actions are the same");
                     }
                     Path task_path = Path.of(task.key);
-                    while(!task_path.startsWith(this.transferPath)) {
+                    while (!task_path.startsWith(this.transferPath)) {
                         this.transferPath = this.transferPath.getParent();
-                        if(this.transferPath == null) {
-                            exitWithSkipCode("TransferManager cannot run tasks unless all keys are in the same directory");
+                        if (this.transferPath == null) {
+                            exitWithSkipCode(
+                                    "TransferManager cannot run tasks unless all keys are in the same directory");
                         }
                     }
                 }
                 /* TODO: Check the common root dir contains ONLY the files from the tasks */
             }
-            transferManager = S3TransferManager.create();
-            s3AsyncClient = null;
-        } else {
-            s3AsyncClient = S3AsyncClient.crtBuilder()
-                    .region(Region.of(region))
-                    .targetThroughputInGbps(targetThroughputGbps)
+            transferManager = S3TransferManager.builder()
+                    .s3Client(s3AsyncClient)
                     .build();
+
+        } else {
             if (!config.filesOnDisk) {
                 this.payload = Util.generateRandomData();
             }
@@ -79,7 +84,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     // A benchmark can be run repeatedly
     public void run() {
         // kick off all
-        if(this.transferManager != null) {
+        if (this.transferManager != null) {
             SDKJavaTask task = new SDKJavaTaskTransferManager(this);
             task.waitUntilDone();
         } else {

@@ -28,7 +28,8 @@ public class SDKJavaTaskAsyncClient implements SDKJavaTask {
 
         if (config.action.equals("upload")) {
             if (runner.config.filesOnDisk) {
-                runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), Path.of(config.key))
+                runner.s3AsyncClient
+                        .putObject(req -> req.bucket(this.runner.bucket).key(config.key), Path.of(config.key))
                         .whenComplete((result, failure) -> {
                             this.complete(failure);
                         });
@@ -45,7 +46,9 @@ public class SDKJavaTaskAsyncClient implements SDKJavaTask {
                     publisher.complete();
                 });
 
-                runner.s3AsyncClient.putObject(req -> req.bucket(this.runner.bucket).key(config.key), AsyncRequestBody.fromPublisher(publisher))
+                runner.s3AsyncClient
+                        .putObject(req -> req.bucket(this.runner.bucket).key(config.key),
+                                AsyncRequestBody.fromPublisher(publisher))
                         .whenComplete((result, failure) -> {
                             this.complete(failure);
                         });

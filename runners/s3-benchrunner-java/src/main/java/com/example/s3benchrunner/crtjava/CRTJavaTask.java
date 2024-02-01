@@ -15,16 +15,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.example.s3benchrunner.TaskConfig;
 import com.example.s3benchrunner.Util;
 
-class CrtJavaTask implements S3MetaRequestResponseHandler {
+class CRTJavaTask implements S3MetaRequestResponseHandler {
 
-    CrtJavaBenchmarkRunner runner;
+    CRTJavaBenchmarkRunner runner;
     int taskI;
     TaskConfig config;
     S3MetaRequest metaRequest;
@@ -32,7 +31,7 @@ class CrtJavaTask implements S3MetaRequestResponseHandler {
     ReadableByteChannel uploadFileChannel;
     WritableByteChannel downloadFileChannel;
 
-    CrtJavaTask(CrtJavaBenchmarkRunner runner, int taskI) {
+    CRTJavaTask(CRTJavaBenchmarkRunner runner, int taskI) {
         this.runner = runner;
         this.taskI = taskI;
         this.config = runner.config.tasks.get(taskI);
@@ -122,8 +121,8 @@ class CrtJavaTask implements S3MetaRequestResponseHandler {
     @Override
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
-            // CrtJavaTask failed. Report error and kill program...
-            System.err.printf("CrtJavaTask[%d] failed. actions:%s key:%s error_code:%s/n",
+            // CRTJavaTask failed. Report error and kill program...
+            System.err.printf("CRTJavaTask[%d] failed. actions:%s key:%s error_code:%s/n",
                     taskI, config.action, config.key, CRT.awsErrorName(context.getErrorCode()));
 
             if (context.getResponseStatus() != 0) {
@@ -136,7 +135,7 @@ class CrtJavaTask implements S3MetaRequestResponseHandler {
 
             Util.exitWithError("S3MetaRequest failed");
         } else {
-            // CrtJavaTask succeeded. Clean up...
+            // CRTJavaTask succeeded. Clean up...
             try {
                 if (downloadFileChannel != null) {
                     downloadFileChannel.close();

@@ -14,7 +14,7 @@ import com.example.s3benchrunner.BenchmarkConfig;
 import com.example.s3benchrunner.Main;
 import com.example.s3benchrunner.Util;
 
-public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
+public class CRTJavaBenchmarkRunner implements BenchmarkRunner {
     BenchmarkConfig config;
     String bucket;
     String region;
@@ -29,7 +29,7 @@ public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
 
     byte[] payload;
 
-    public CrtJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
+    public CRTJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
         this.bucket = bucket;
         this.region = region;
@@ -72,9 +72,9 @@ public class CrtJavaBenchmarkRunner implements BenchmarkRunner {
     // A benchmark can be run repeatedly
     public void run() {
         // kick off all tasks
-        var runningTasks = new ArrayList<CrtJavaTask>(config.tasks.size());
+        var runningTasks = new ArrayList<CRTJavaTask>(config.tasks.size());
         for (int i = 0; i < config.tasks.size(); ++i) {
-            runningTasks.add(new CrtJavaTask(this, i));
+            runningTasks.add(new CRTJavaTask(this, i));
         }
 
         // wait until all tasks are done

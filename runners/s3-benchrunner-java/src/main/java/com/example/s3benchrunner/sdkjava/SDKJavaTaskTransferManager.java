@@ -1,22 +1,16 @@
 package com.example.s3benchrunner.sdkjava;
 
-import com.example.s3benchrunner.TaskConfig;
-import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.transfer.s3.config.DownloadFilter;
 import software.amazon.awssdk.transfer.s3.model.*;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-public class SDKJavaTaskTransferManager implements SDKJavaTask {
-    private final CompletableFuture<Void> doneFuture;
+public class SDKJavaTaskTransferManager extends SDKJavaTask {
 
     SDKJavaTaskTransferManager(SDKJavaBenchmarkRunner runner) {
+        super();
 
-        doneFuture = new CompletableFuture<Void>();
         if (runner.transferKey != null) {
             /* Transfer a single file */
             if (runner.transferAction.equals("upload")) {
@@ -88,27 +82,5 @@ public class SDKJavaTaskTransferManager implements SDKJavaTask {
                 throw new RuntimeException("Unknown task action: " + runner.transferAction);
             }
         }
-    }
-
-    public void waitUntilDone() {
-        try {
-            doneFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void completeHelper(SDKJavaBenchmarkRunner runner, Throwable failure) {
-        if (failure != null) {
-            // Task failed. Report error and kill program...
-            failure.printStackTrace();
-            existWithErrorHelper(runner);
-        }
-        this.doneFuture.complete(null);
-    }
-
-    private void existWithErrorHelper(SDKJavaBenchmarkRunner runner) {
-        Util.exitWithError(
-                String.format("Transfer with action:%s to path:%s failed", runner.transferAction, runner.transferPath));
     }
 }

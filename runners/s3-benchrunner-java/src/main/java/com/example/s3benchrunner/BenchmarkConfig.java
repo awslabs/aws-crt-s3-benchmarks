@@ -10,11 +10,11 @@ import java.util.ArrayList;
 
 // POJO for benchmark config, loaded from JSON
 public class BenchmarkConfig {
-    int version;
+    public int version;
     public boolean filesOnDisk;
     public ChecksumAlgorithm checksum;
-    int maxRepeatCount;
-    int maxRepeatSecs;
+    public int maxRepeatCount;
+    public int maxRepeatSecs;
     public ArrayList<TaskConfig> tasks;
 
     static BenchmarkConfig fromJson(String jsonFilepath) {
@@ -34,7 +34,7 @@ public class BenchmarkConfig {
         return config;
     }
 
-    long bytesPerRun() {
+    public long bytesPerRun() {
         long bytes = 0;
         for (var task : tasks) {
             bytes += task.size;

@@ -53,11 +53,12 @@ public class Main {
         BenchmarkRunner runner;
         if (s3ClientId.equals("crt-java")) {
             runner = new CrtJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
-        } else if (s3ClientId.equals("sdk-java-crt")) {
-            runner = new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+        } else if (s3ClientId.equals("sdk-java-client-crt")) {
+            runner = new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps,false);
+        } else if (s3ClientId.equals("sdk-java-tm-crt")) {
+            runner = new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true);
         } else {
-
-            throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java, sdk-java-crt");
+            throw new RuntimeException("Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt");
         }
 
         long bytesPerRun = config.bytesPerRun();

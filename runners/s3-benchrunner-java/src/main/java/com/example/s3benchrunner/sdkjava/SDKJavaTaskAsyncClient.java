@@ -29,10 +29,10 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
                 SimplePublisher<ByteBuffer> publisher = new SimplePublisher<>();
                 Thread uploadThread = Executors.defaultThreadFactory().newThread(() -> {
                     long remaining = config.size;
-                    long perPartLen = runner.payload.length;
+                    long perPartLen = runner.randomDataForUpload.length;
                     while (remaining > 0) {
                         long amtToTransfer = Math.min(remaining, perPartLen);
-                        publisher.send(ByteBuffer.wrap(runner.payload, 0, (int) amtToTransfer));
+                        publisher.send(ByteBuffer.wrap(runner.randomDataForUpload, 0, (int) amtToTransfer));
                         remaining -= amtToTransfer;
                     }
                     publisher.complete();

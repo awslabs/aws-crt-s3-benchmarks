@@ -27,7 +27,8 @@ public class CRTJavaBenchmarkRunner implements BenchmarkRunner {
     CredentialsProvider credentialsProvider;
     S3Client s3Client;
 
-    byte[] payload;
+    // if uploading, and filesOnDisk is false, then upload this
+    byte[] randomDataForUpload;
 
     public CRTJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
         this.config = config;
@@ -63,7 +64,7 @@ public class CRTJavaBenchmarkRunner implements BenchmarkRunner {
             s3ClientOpts.withReadBackpressureEnabled(true);
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         } else {
-            this.payload = Util.generateRandomData();
+            this.randomDataForUpload = Util.generateRandomData();
         }
 
         s3Client = new S3Client(s3ClientOpts);

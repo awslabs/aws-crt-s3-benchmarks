@@ -57,7 +57,7 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
             if (runner.config.filesOnDisk) {
                 options.withRequestFilePath(Path.of(config.key));
             } else {
-                requestUploadStream = new UploadFromRamStream(runner.payload, config.size);
+                requestUploadStream = new UploadFromRamStream(runner.randomDataForUpload, config.size);
             }
 
         } else if (config.action.equals("download")) {
@@ -160,26 +160,26 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
     static class UploadFromRamStream implements HttpRequestBodyStream {
         final long size;
         long bytesWritten;
-        byte[] body;
+        byte[] randomData;
 
-        UploadFromRamStream(byte[] body, long size) {
-            this.body = body;
+        UploadFromRamStream(byte[] randomData, long size) {
+            this.randomData = randomData;
             this.size = size;
         }
 
         @Override
         public boolean sendRequestBody(ByteBuffer dstBuf) {
-            long bufferSpaceAvailable = dstBuf.remaining();
-            long bodyBytesAvailable = size - bytesWritten;
-            long amountToWrite = Math.min(bufferSpaceAvailable, bodyBytesAvailable);
-
+            /*
+             * `randomData` is just a buffer of random data whose length may not equal `size`. We'll
+             * send its contents repeatedly until size bytes have been uploaded. We do this,
+             * so we can upload huge objects without actually allocating a huge buffer
+             */
             while (bytesWritten < size && dstBuf.remaining() > 0) {
-                long amtToTransfer = Math.min(size - bytesWritten, (long) dstBuf.remaining());
-                amtToTransfer = Math.min(amtToTransfer, (long) body.length);
-                dstBuf.put(body, 0, (int) amtToTransfer);
-                bytesWritten += (int) amtToTransfer;
+                int amtToTransfer = (int)Math.min(size - bytesWritten, dstBuf.remaining());
+                amtToTransfer = Math.min(amtToTransfer, randomData.length);
+                dstBuf.put(randomData, 0, amtToTransfer);
+                bytesWritten += amtToTransfer;
             }
-
             return bytesWritten == size;
         }
     }

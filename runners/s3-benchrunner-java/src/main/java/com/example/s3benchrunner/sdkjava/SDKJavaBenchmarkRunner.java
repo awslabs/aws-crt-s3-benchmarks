@@ -11,7 +11,6 @@ import software.amazon.awssdk.transfer.s3.S3TransferManager;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-import static com.example.s3benchrunner.Util.bytesFromMiB;
 import static com.example.s3benchrunner.Util.exitWithSkipCode;
 
 public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
@@ -20,7 +19,8 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     String region;
 
     S3AsyncClient s3AsyncClient;
-    byte[] payload;
+    // if uploading, and filesOnDisk is false, then upload this
+    byte[] randomDataForUpload;
 
     S3TransferManager transferManager;
     String transferAction;
@@ -75,7 +75,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
 
         } else {
             if (!config.filesOnDisk) {
-                this.payload = Util.generateRandomData();
+                this.randomDataForUpload = Util.generateRandomData();
             }
             transferManager = null;
         }

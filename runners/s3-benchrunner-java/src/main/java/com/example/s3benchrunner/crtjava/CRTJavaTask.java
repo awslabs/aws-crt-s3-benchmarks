@@ -170,12 +170,13 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
         @Override
         public boolean sendRequestBody(ByteBuffer dstBuf) {
             /*
-             * `randomData` is just a buffer of random data whose length may not equal `size`. We'll
+             * `randomData` is just a buffer of random data whose length may not equal
+             * `size`. We'll
              * send its contents repeatedly until size bytes have been uploaded. We do this,
              * so we can upload huge objects without actually allocating a huge buffer
              */
             while (bytesWritten < size && dstBuf.remaining() > 0) {
-                int amtToTransfer = (int)Math.min(size - bytesWritten, dstBuf.remaining());
+                int amtToTransfer = (int) Math.min(size - bytesWritten, dstBuf.remaining());
                 amtToTransfer = Math.min(amtToTransfer, randomData.length);
                 dstBuf.put(randomData, 0, amtToTransfer);
                 bytesWritten += amtToTransfer;

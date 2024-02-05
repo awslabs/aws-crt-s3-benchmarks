@@ -169,7 +169,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
     run(['mvn', 'clean', 'install', '-pl',
-         ':s3-transfer-manager,:s3,:bom-internal,:bom', '-P', '-quick', '--am'])
+         ':s3-transfer-manager,:s3,:bom-internal,:bom', '-P', 'quick', '--am'])
 
     # Build runner
     runner_src = RUNNERS['java'].dir

@@ -165,7 +165,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     sdk_src = work_dir/'aws-sdk-java-v2'
     fetch_git_repo(url='https://github.com/aws/aws-sdk-java-v2.git',
                    dir=sdk_src,
-                    main_branch='master',
+                   main_branch='master',
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
     run(['mvn', 'clean', 'install', '-pl',

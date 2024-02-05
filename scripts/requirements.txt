@@ -1,4 +1,5 @@
 boto3
+wheel # dependency for building aws-crt-python
 awscrt # for linting s3-benchrunner-python
 autopep8 # for code formatting
 mypy # for type checking

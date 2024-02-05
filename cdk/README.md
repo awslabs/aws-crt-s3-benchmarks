@@ -70,7 +70,7 @@ To manually kick off a benchmarking run:
     * You're taken to the new job's page.
 
 1) Navigate to the `Dashboard` tab, and wait for the benchmarking jobs to start.
-    * The new Orchestrator job should move to the "Running" state within 1-3 minutes.
+    * The new [Orchestrator](#orchestrator) job should move to the "Running" state within 1-3 minutes.
     * But only 1 Orchestrator job can run at a time, so the new job may need to wait its turn.
     * If the job hasn't started after 5+ minutes, see [Troubleshooting](#troubleshooting) below.
     * To view the logs of the running Orchestrator job:
@@ -79,7 +79,7 @@ To manually kick off a benchmarking run:
         * Click the `Log stream name` link
         * You're taken to the CloudWatch logs
 
-1) The Orchestrator will kick off "per instance" jobs on each EC2 instance type.
+1) The Orchestrator will kick off [per instance jobs](#per-instance-job) on each EC2 instance type.
     * These jobs are named after their instance type, like "c5n-18xlarge...".
     * Like the Orchestrator, these may take a few minutes to launch, and you need to do a similar series of clicks to get to their CloudWatch logs.
     * Only 1 of these "per-instance" job will run at a time. So if you're benchmarking 2 instance types, the 2nd job won't begin until the 1st completes.

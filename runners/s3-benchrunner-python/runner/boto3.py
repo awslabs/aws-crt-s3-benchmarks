@@ -1,5 +1,4 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
 import sys
 
 from runner import BenchmarkConfig, BenchmarkRunner, gigabit_to_bytes
@@ -11,13 +10,34 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
     def __init__(self, config: BenchmarkConfig, use_crt: bool):
         super().__init__(config)
 
-        # currently, boto3 uses CRT if it's installed, unless env-var BOTO_DISABLE_CRT=true
-        # so set the env-var before importing boto3
-        os.environ['BOTO_DISABLE_CRT'] = str(not use_crt).lower()
+        # Currently (Jan 2024) users can't explicitly choose CRT in boto3.
+        # Boto3 only uses CRT if it's installed, and a series of checks all pass.
+        # Therefore, do some monkey-patching to get the results we want.
+        try:
+            import awscrt  # type: ignore
+            import awscrt.s3  # type: ignore
+
+            # when CRT is installed from source, its version is "1.0.0.dev0"
+            # but boto3 expects it to be like "<int>.<int>.<int>"
+            awscrt.__version__ = awscrt.__version__.removesuffix('.dev0')
+
+            # patch function that boto3 calls to see if it should use CRT
+            def patched_is_optimized_for_system():
+                return use_crt
+            awscrt.s3.is_optimized_for_system = patched_is_optimized_for_system
+
+            # patch function that boto3 calls to get this machine's target throughput
+            def patched_recommended_throughput():
+                return config.target_throughput_Gbps
+            awscrt.s3.get_recommended_throughput_target_gbps = patched_recommended_throughput
+
+        except ModuleNotFoundError:
+            # awscrt only needs to be installed if we're benchmarking CRT
+            if use_crt:
+                raise
+
         import boto3  # type: ignore
         import boto3.s3.transfer  # type: ignore
-        import botocore.compat  # type: ignore
-        assert use_crt == botocore.compat.HAS_CRT
 
         self.use_crt = use_crt
         if (use_crt):
@@ -32,7 +52,7 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
         # NOTE 2: Don't set anything that's not publicly documented here:
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html
         transfer_kwargs = {
-            'max_bandwidth': gigabit_to_bytes(self.config.target_throughput_Gbps),
+            'preferred_transfer_client': 'auto' if use_crt else 'classic',
         }
         if not use_crt:
             # I've tried tweaking settings to get performance up,
@@ -45,12 +65,12 @@ class Boto3BenchmarkRunner(BenchmarkRunner):
             **transfer_kwargs)
 
         # report settings used by CRT and pure-python impl
-        self._verbose_config('max_bandwidth')
         self._verbose_config('multipart_chunksize')
         self._verbose_config('multipart_threshold')
         if not use_crt:
             # report settings that only the pure-python impl uses, including
             # undocumented stuff on the s3transfer.manager.TransferConfig base class
+            self._verbose_config('max_bandwidth')
             self._verbose_config('max_request_concurrency')
             self._verbose_config('max_submission_concurrency')
             self._verbose_config('max_request_queue_size')

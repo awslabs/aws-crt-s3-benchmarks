@@ -1,22 +1,6 @@
 # s3-benchrunner-java
 
-```
-usage: java -jar /path/to/s3-benchrunner-java-1.0-SNAPSHOT.jar {crt-java,sdk-java-client-crt,sdk-java-tm-crt} WORKLOAD BUCKET REGION TARGET_THROUGHPUT
-
-Java benchmark runner. Pick which S3 library to use.
-
-positional arguments:
-  {crt-java,sdk-java-client-crt,sdk-java-tm-crt}
-  WORKLOAD
-  BUCKET
-  REGION
-  TARGET_THROUGHPUT
-```
-
-This is the runner for java libraries. Pass which library you want to benchmark:
-* `crt-java`: Uses the [aws-crt-java](https://github.com/awslabs/aws-crt-java/) (the CRT bindings for java) directly.
-* `sdk-java-client-crt`: Uses CRT based [S3AsyncClient](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3AsyncClient.html) from [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/).
-* `sdk-java-tm-crt`: Uses CRT based [S3TransferManager](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/transfer/s3/S3TransferManager.html) from [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/).
+s3-benchrunner for [aws-crt-java](https://github.com/awslabs/aws-crt-java).
 
 ## Building
 
@@ -47,8 +31,19 @@ Now get the runner to use it by building with the "snapshot" profile active:
 
 ```sh
 cd /path/to/s3-benchrunner-java
-mvn -P snapshot package
+mvn clean -P snapshot package
 ```
+
+### Using a local build of aws-sdk-java-v2
+
+```sh
+cd my/dev/dir
+git clone https://github.com/aws/aws-sdk-java-v2.git
+cd aws-sdk-java-v2
+mvn clean install -pl :s3-transfer-manager,:s3,:bom-internal,:bom -P quick --am
+```
+
+This installs the latest SNAPSHOT version. Now rebuild the runner with `mvn clean package` , it will pick up the latest SNAPSHOT version directly.
 
 ### Working in IntelliJ
 

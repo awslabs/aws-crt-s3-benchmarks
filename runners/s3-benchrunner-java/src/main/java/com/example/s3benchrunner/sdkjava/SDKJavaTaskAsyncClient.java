@@ -30,6 +30,9 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
                 Thread uploadThread = Executors.defaultThreadFactory().newThread(() -> {
                     long remaining = config.size;
                     long perPartLen = runner.randomDataForUpload.length;
+                    // Enqueue all the ByteBuffers right away without waiting for demand. This isn't
+                    // very "reactive", but it's simple. We're just enqueuing the same byte[] over
+                    // and over, so this doesn't actually consume much memory.
                     while (remaining > 0) {
                         long amtToTransfer = Math.min(remaining, perPartLen);
                         publisher.send(ByteBuffer.wrap(runner.randomDataForUpload, 0, (int) amtToTransfer));

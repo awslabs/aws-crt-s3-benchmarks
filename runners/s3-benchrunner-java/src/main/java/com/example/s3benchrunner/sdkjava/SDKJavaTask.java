@@ -25,12 +25,12 @@ public class SDKJavaTask {
         if (failure != null) {
             // Task failed. Report error and kill program...
             failure.printStackTrace();
-            existWithErrorHelper(runner);
+            exitWithErrorHelper(runner);
         }
         this.doneFuture.complete(null);
     }
 
-    protected void existWithErrorHelper(SDKJavaBenchmarkRunner runner) {
+    protected void exitWithErrorHelper(SDKJavaBenchmarkRunner runner) {
         Util.exitWithError(
                 String.format("Transfer with action:%s to path:%s failed", runner.transferAction, runner.transferPath));
     }

@@ -22,6 +22,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
     // if uploading, and filesOnDisk is false, then upload this
     byte[] randomDataForUpload;
 
+    // The rest of these variables are only used when useTransferManager==true
     S3TransferManager transferManager;
     String transferAction;
     Path transferPath;

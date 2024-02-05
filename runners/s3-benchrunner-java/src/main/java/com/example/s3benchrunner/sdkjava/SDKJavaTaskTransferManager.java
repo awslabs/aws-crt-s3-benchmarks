@@ -49,7 +49,7 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
                         (result, failure) -> {
                             if (result != null && !result.failedTransfers().isEmpty()) {
                                 result.failedTransfers().forEach(System.out::println);
-                                this.existWithErrorHelper(runner);
+                                this.exitWithErrorHelper(runner);
                             }
                             completeHelper(runner, failure);
                         });
@@ -74,7 +74,7 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
                         (result, failure) -> {
                             if (result != null && !result.failedTransfers().isEmpty()) {
                                 result.failedTransfers().forEach(System.out::println);
-                                this.existWithErrorHelper(runner);
+                                this.exitWithErrorHelper(runner);
                             }
                             completeHelper(runner, failure);
                         });

@@ -77,7 +77,7 @@ To manually kick off a benchmarking run:
         * Click the entry in the `Running` column
         * Click the job
         * Click the `Log stream name` link
-        * Your taken to the CloudWatch logs
+        * You're taken to the CloudWatch logs
 
 1) The Orchestrator will kick off "per instance" jobs on each EC2 instance type.
     * These jobs are named after their instance type, like "c5n-18xlarge...".

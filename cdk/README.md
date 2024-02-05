@@ -44,6 +44,53 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
     cdk deploy -c settings=<myname.settings.json>
     ```
 
+## Running benchmarks
+
+To manually kick off a benchmarking run:
+
+1) Navigate to [AWS Batch](https://console.aws.amazon.com/batch/home#jobs) in the console.
+    * Make sure you're in the right region
+
+1) In the `Jobs` tab, press `Submit New Job` button.
+    * General configuration
+        * `Name`: enter something
+        * `Job definition`: select `OrchestratorJobDefnXYZ`
+        * `Job queue`: select `OrchestratorJobQueueXYZ`
+        * press `Next` button
+
+    * Configure overrides
+        * In `Job overrides`, expand `Additional configuration`
+        * In the `Parameters` box, make any changes you need. The default values are what the nightly canary runs.
+            * `instanceTypes` (comma-separated-list): The EC2 instance types to run benchmarks on. Supported types are listed in [s3_benchmarks.INSTANCE_TYPES](s3_benchmarks/__init__.py). If you need to add a new type, edit the code and redeploy the CDK app.
+            * `s3Clients` (comma-separated-list): The S3 Clients to benchmark. Supported types are [listed here](../README.md#s3-clients).
+            * `workloads` (comma-separated-list): Simplified name of the workload to run. It must live in the [workloads/](../workloads/) folder. (e.g. "download-5GiB-1x" will run `workloads/download-5GiB-1x.run.json`
+            * `branch`: Git branch/commit/tag to prefer when the benchmarking jobs pull this repo and its dependencies.
+        * Press `Next` button.
+    * Press `Create Job` button.
+    * You're taken to the new job's page.
+
+1) Navigate to the `Dashboard` tab, and wait for the benchmarking jobs to start.
+    * The new Orchestrator job should move to the "Running" state within 1-3 minutes.
+    * But only 1 Orchestrator job can run at a time, so the new job may need to wait its turn.
+    * If the job hasn't started after 5+ minutes, see [Troubleshooting](#troubleshooting) below.
+    * To view the logs of the running Orchestrator job:
+        * Click the entry in the `Running` column
+        * Click the job
+        * Click the `Log stream name` link
+        * Your taken to the CloudWatch logs
+
+1) The Orchestrator will kick off "per instance" jobs on each EC2 instance type.
+    * These jobs are named after their instance type, like "c5n-18xlarge...".
+    * Like the Orchestrator, these may take a few minutes to launch, and you need to do a similar series of clicks to get to their CloudWatch logs.
+    * Only 1 of these "per-instance" job will run at a time. So if you're benchmarking 2 instance types, the 2nd job won't begin until the 1st completes.
+
+1) As the benchmarks run, metrics are submitted to CloudWatch. To view these:
+    * Navigate to [CloudWatch](https://console.aws.amazon.com/cloudwatch/home) in the console.
+    * Make sure you're in the right region
+    * Go to the `All metrics` tab
+    * Click `Custom namespaces` -> `S3Benchmarks` -> `Branch, InstanceType, S3Client, Workload`
+    * Each combination is its own metric
+
 ## Troubleshooting
 
 If your Batch job is stuck in the RUNNABLE state forever, use the

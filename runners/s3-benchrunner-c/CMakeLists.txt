@@ -22,5 +22,6 @@ FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download
 FetchContent_MakeAvailable(json)
 
 find_package(aws-c-s3 REQUIRED)
+find_package(AWSSDK REQUIRED COMPONENTS s3-crt s3)
 
 target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json)

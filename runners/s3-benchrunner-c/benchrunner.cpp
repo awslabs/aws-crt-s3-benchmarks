@@ -21,6 +21,10 @@
 #include <aws/s3/s3_client.h>
 #include <nlohmann/json.hpp>
 
+#include <aws/core/http/HttpResponse.h>
+#include <aws/s3-crt/S3CrtClient.h>
+#include <aws/s3-crt/model/GetObjectRequest.h>
+
 using namespace std;
 using namespace std::chrono;
 using namespace std::chrono_literals;
@@ -183,6 +187,89 @@ class Benchmark
     void run();
 
     friend class Task;
+};
+
+class SdkCrtBenchmark
+{
+    BenchmarkConfig config;
+    string bucket;
+    string region;
+    string targetGbps;
+
+    Aws::S3Crt::S3CrtClient *client;
+
+    // if uploading, and filesOnDisk is false, then upload this
+    vector<uint8_t> randomDataForUpload;
+
+  public:
+    SdkCrtBenchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps);
+
+    ~SdkCrtBenchmark();
+
+    void run();
+
+    friend class SdkCrtTask;
+};
+
+// A runnable task
+class SdkCrtTask
+{
+    SdkCrtBenchmark &benchmark;
+    size_t taskI;
+    TaskConfig &config;
+    promise<void> donePromise;
+    future<void> doneFuture;
+
+    FILE *downloadFile = NULL;
+
+  public:
+    // Creates the task and begins its work
+    SdkCrtTask(SdkCrtBenchmark &benchmark, size_t taskI)
+        : benchmark(benchmark), taskI(taskI), config(benchmark.config.tasks[taskI]), donePromise(),
+          doneFuture(donePromise.get_future())
+    {
+        if (config.action == "upload")
+        {
+            fail(string("Unknown task action: ") + config.action);
+        }
+        else if (config.action == "download")
+        {
+            Aws::S3Crt::Model::GetObjectRequest request;
+            request.SetBucket(benchmark.bucket);
+            request.SetKey(config.key);
+            auto getObjectCallback = [&](const Aws::S3Crt::S3CrtClient *client,
+                                         const Aws::S3Crt::Model::GetObjectRequest &request,
+                                         Aws::S3Crt::Model::GetObjectOutcome out_come,
+                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context)
+            {
+                if (!out_come.IsSuccess())
+                {
+                    printf(
+                        "Task[%zu] failed. action:%s key:%s error_message:%s\n",
+                        this->taskI,
+                        this->config.action.c_str(),
+                        this->config.key.c_str(),
+                        out_come.GetError().GetMessage());
+                    if (out_come.GetError().GetResponseCode() != Aws::Http::HttpResponseCode::REQUEST_NOT_MADE)
+                        printf("Status-Code: %d\n", out_come.GetError().GetResponseCode());
+                    fail("GetObject failed");
+                }
+                else
+                {
+                    if (this->benchmark.config.filesOnDisk)
+                    {
+                        fail(string("Not implemented download to disk: ") + config.action);
+                    }
+                    this->donePromise.set_value();
+                }
+            };
+            benchmark.client->GetObjectAsync(request, getObjectCallback, nullptr);
+        }
+        else
+            fail(string("Unknown task action: ") + config.action);
+    }
+
+    void waitUntilDone() { return doneFuture.wait(); }
 };
 
 BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
@@ -585,4 +672,61 @@ int main(int argc, char *argv[])
     printStats(bytesPerRun, durations);
 
     return 0;
+}
+
+// Instantiates S3 Client, does not run the benchmark yet
+SdkCrtBenchmark::SdkCrtBenchmark(
+    const BenchmarkConfig &config,
+    string_view bucket,
+    string_view region,
+    double targetThroughputGbps)
+{
+    this->config = config;
+    this->bucket = bucket;
+    this->region = region;
+
+    Aws::S3Crt::ClientConfiguration client_config;
+    client_config.region = region;
+    client_config.throughputTargetGbps = targetThroughputGbps;
+
+    this->client = new Aws::S3Crt::S3CrtClient(client_config);
+    /* TODO: hopefully SDK handles the back pressure for us */
+
+    // If we're uploading, and not using files on disk,
+    // then generate an in-memory buffer of random data to upload.
+    // All uploads will use this same buffer, so make it big enough for the largest file.
+    if (!config.filesOnDisk)
+    {
+        for (auto &&task : config.tasks)
+        {
+            if (task.action == "upload")
+            {
+                if (task.size > randomDataForUpload.size())
+                {
+                    size_t prevSize = randomDataForUpload.size();
+                    randomDataForUpload.resize(task.size);
+
+                    independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
+                    generate(randomDataForUpload.begin() + prevSize, randomDataForUpload.end(), randEngine);
+                }
+            }
+        }
+    }
+}
+
+SdkCrtBenchmark::~SdkCrtBenchmark()
+{
+    delete this->client;
+}
+
+void SdkCrtBenchmark::run()
+{
+    // kick off all tasks
+    list<Task> runningTasks;
+    for (size_t i = 0; i < config.tasks.size(); ++i)
+        runningTasks.emplace_back(*this, i);
+
+    // wait until all tasks are done
+    for (auto &&task : runningTasks)
+        task.waitUntilDone();
 }

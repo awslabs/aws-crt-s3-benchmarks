@@ -83,6 +83,7 @@ First, create a virtual environment, to isolate your dev versions from system de
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
+(.venv) pip install --upgrade pip wheel
 ```
 
 Now make a build dir somewhere.

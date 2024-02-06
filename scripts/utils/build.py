@@ -105,7 +105,8 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
         run([sys.executable, '-m', 'venv', str(venv_dir)])
 
         # upgrade pip to avoid warnings
-        run([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        # and install wheel so we can build aws-crt-python
+        run([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip', 'wheel'])
 
     _fetch_and_install_python_repo(
         url='https://github.com/aws/aws-cli.git',

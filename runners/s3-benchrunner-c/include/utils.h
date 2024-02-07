@@ -1,9 +1,6 @@
 #pragma once
 
 #include <aws/common/system_resource_util.h>
-#include <aws/core/Aws.h>
-#include <aws/s3-crt/S3CrtClient.h>
-#include <aws/s3/s3_client.h>
 
 #include <chrono>
 #include <cstdio>

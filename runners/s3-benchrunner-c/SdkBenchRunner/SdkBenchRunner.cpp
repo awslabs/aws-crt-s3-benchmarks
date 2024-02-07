@@ -61,8 +61,7 @@ class SdkCrtTask : public Task
             auto getObjectCallback = [&](const Aws::S3Crt::S3CrtClient *client,
                                          const Aws::S3Crt::Model::GetObjectRequest &request,
                                          Aws::S3Crt::Model::GetObjectOutcome out_come,
-                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context)
-            {
+                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context) {
                 if (!out_come.IsSuccess())
                 {
                     printf(
@@ -107,7 +106,6 @@ class SdkBenchmarkRunner : public BenchmarkRunner
 {
 
     std::shared_ptr<Aws::S3::S3Client> client;
-    Aws::SDKOptions options;
 
   public:
     friend class SdkTask;
@@ -119,18 +117,13 @@ class SdkBenchmarkRunner : public BenchmarkRunner
         : BenchmarkRunner(config, bucket, region)
     {
 
-        Aws::InitAPI(options);
         Aws::Client::ClientConfiguration client_config;
         client_config.region = region;
 
         this->client = Aws::MakeShared<Aws::S3::S3Client>("S3Client", client_config);
     }
 
-    ~SdkBenchmarkRunner()
-    {
-        this->client.reset();
-        Aws::ShutdownAPI(options);
-    }
+    ~SdkBenchmarkRunner() = default;
 
     void run();
 };
@@ -156,8 +149,7 @@ class SdkTask : public Task
             auto getObjectCallback = [&](const Aws::S3::S3Client *client,
                                          const Aws::S3::Model::GetObjectRequest &request,
                                          Aws::S3::Model::GetObjectOutcome out_come,
-                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context)
-            {
+                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context) {
                 if (!out_come.IsSuccess())
                 {
                     printf(
@@ -209,21 +201,26 @@ int main(int argc, char *argv[])
     {
         fail("Unsupported S3_CLIENT. Options are: sdk-cpp-crt, sdk-cpp");
     }
-
-    auto config = BenchmarkConfig::fromJson(argv[2]);
-    string bucket = argv[3];
-    string region = argv[4];
-    double targetThroughputGbps = stod(argv[5]);
-
-    if (s3ClientId == "sdk-cpp-crt")
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
     {
-        auto runner = SdkCrtBenchmarkRunner(config, bucket, region, targetThroughputGbps);
-        main_run(runner, config);
+
+        auto config = BenchmarkConfig::fromJson(argv[2]);
+        string bucket = argv[3];
+        string region = argv[4];
+        double targetThroughputGbps = stod(argv[5]);
+
+        if (s3ClientId == "sdk-cpp-crt")
+        {
+            auto runner = SdkCrtBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            main_run(runner, config);
+        }
+        else
+        {
+            auto runner = SdkBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            main_run(runner, config);
+        }
     }
-    else
-    {
-        auto runner = SdkBenchmarkRunner(config, bucket, region, targetThroughputGbps);
-        main_run(runner, config);
-    }
+    Aws::ShutdownAPI(options);
     return 0;
 }

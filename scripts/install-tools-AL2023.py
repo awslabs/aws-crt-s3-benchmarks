@@ -16,5 +16,8 @@ run(['dnf', 'install', '-y',
      'gcc-c++',  # for building s3-benchrunner-c
      'maven',  # for building s3-benchrunner-java
      'java-17-amazon-corretto-devel',  # for building s3-benchrunner-java
-     'python3-devel',  # for building aws-crt-python
+     'python3-devel',  # for building aws-crt-python,
+     'zlib-devel', # for building aws-sdk-cpp,
+     'openssl-devel', # for building aws-sdk-cpp,
+     'libcurl-devel', # for building aws-sdk-cpp,
      ])

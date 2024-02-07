@@ -34,7 +34,8 @@ def _add_runner(runner: Runner):
     RUNNERS[runner.lang] = runner
 
 
-_add_runner(Runner('c', s3_clients=['crt-c', 'sdk-cpp-crt', 'sdk-cpp']))
+_add_runner(Runner('c', s3_clients=['crt-c']))
+_add_runner(Runner('cpp', s3_clients=['sdk-cpp-crt', 'sdk-cpp']))
 _add_runner(Runner('java', s3_clients=['crt-java']))
 _add_runner(Runner('python',
                    s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))
@@ -137,7 +138,7 @@ def fetch_git_repo(url: str, dir: Path, main_branch: str = 'main', preferred_bra
         run(['git', 'pull'])
 
     # update submodules
-    run(['git', 'submodule', 'update', '--init'])
+    run(['git', 'submodule', 'update', '--init', '--recursive'])
 
     os.chdir(cwd_prev)
 

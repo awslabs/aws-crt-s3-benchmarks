@@ -39,6 +39,7 @@ jobs:
       matrix:
         runner:
           - c
+          - cpp
           - java
           - python
     steps:

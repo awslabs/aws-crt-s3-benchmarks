@@ -1,8 +1,22 @@
 cmake_minimum_required(VERSION 3.22)
 cmake_policy(VERSION 3.22...3.24)
-project(s3-benchrunner-c CXX)
+project(s3-benchrunner-c-utils CXX)
 
-add_executable(${PROJECT_NAME} benchrunner.cpp)
+option(CPP_SDK_RUNNER "If enabled, build the cpp runner" ON)
+
+file(GLOB UTILS_HEADERS
+    include/*.h
+)
+file(GLOB UTILS_SOURCE
+    source/*.cpp
+)
+
+file(GLOB UTILS_SRC
+  ${UTILS_HEADERS}
+  ${UTILS_SOURCE}
+)
+
+add_library(${PROJECT_NAME} ${UTILS_SRC})
 
 install(TARGETS ${PROJECT_NAME}
     DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -21,7 +35,14 @@ include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
-find_package(aws-c-s3 REQUIRED)
-find_package(AWSSDK REQUIRED COMPONENTS s3-crt s3)
+find_package(aws-c-s3)
 
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json)
+add_subdirectory(cs3Runner)
+
+if (CPP_SDK_RUNNER)
+    add_subdirectory(SdkBenchRunner)
+endif()

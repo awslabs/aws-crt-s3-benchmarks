@@ -34,7 +34,7 @@ def _add_runner(runner: Runner):
     RUNNERS[runner.lang] = runner
 
 
-_add_runner(Runner('c', s3_clients=['crt-c']))
+_add_runner(Runner('c', s3_clients=['crt-c', 'sdk-cpp-crt', 'sdk-cpp']))
 _add_runner(Runner('java', s3_clients=['crt-java']))
 _add_runner(Runner('python',
                    s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))

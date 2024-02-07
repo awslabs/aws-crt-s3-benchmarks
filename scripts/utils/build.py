@@ -10,7 +10,7 @@ from typing import Optional
 from utils import fetch_git_repo, run, RUNNERS
 
 
-def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, cmake_extra : list[str] = None):
+def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, cmake_extra : list[str] = []):
 
     config_cmd = ['cmake',
                   '-S', str(src_dir),

@@ -1,16 +1,5 @@
-#include <chrono>
-#include <cstdio>
-#include <fstream>
-#include <functional>
-#include <future>
-#include <iostream>
-#include <list>
-#include <random>
-#include <thread>
-#include <vector>
 
 #include <aws/auth/credentials.h>
-#include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
 #include <aws/io/channel_bootstrap.h>
@@ -18,46 +7,8 @@
 #include <aws/io/host_resolver.h>
 #include <aws/io/stream.h>
 #include <aws/io/tls_channel_handler.h>
-#include <aws/s3/s3_client.h>
-#include <nlohmann/json.hpp>
-
-#include <aws/core/http/HttpResponse.h>
-#include <aws/s3-crt/S3CrtClient.h>
-#include <aws/s3-crt/model/GetObjectRequest.h>
 
 #include "utils.h"
-
-using namespace std;
-using namespace std::chrono;
-using namespace std::chrono_literals;
-using json = nlohmann::json;
-
-struct TaskConfig;
-class Benchmark;
-
-// A runnable task
-class CrtTask : public Task
-{
-    Benchmark &benchmark;
-    aws_s3_meta_request *metaRequest;
-
-    FILE *downloadFile = NULL;
-
-    static int onDownloadData(
-        struct aws_s3_meta_request *meta_request,
-        const struct aws_byte_cursor *body,
-        uint64_t range_start,
-        void *user_data);
-
-    static void onFinished(
-        struct aws_s3_meta_request *meta_request,
-        const struct aws_s3_meta_request_result *meta_request_result,
-        void *user_data);
-
-  public:
-    // Creates the task and begins its work
-    CrtTask(Benchmark &benchmark, size_t taskI);
-};
 
 // A runnable benchmark
 class Benchmark : public BenchmarkRunner
@@ -82,6 +33,30 @@ class Benchmark : public BenchmarkRunner
     void run();
 
     friend class CrtTask;
+};
+
+// A runnable task
+class CrtTask : public Task
+{
+    Benchmark &benchmark;
+    aws_s3_meta_request *metaRequest;
+
+    FILE *downloadFile = NULL;
+
+    static int onDownloadData(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_byte_cursor *body,
+        uint64_t range_start,
+        void *user_data);
+
+    static void onFinished(
+        struct aws_s3_meta_request *meta_request,
+        const struct aws_s3_meta_request_result *meta_request_result,
+        void *user_data);
+
+  public:
+    // Creates the task and begins its work
+    CrtTask(Benchmark &benchmark, size_t taskI);
 };
 
 // Instantiates S3 Client, does not run the benchmark yet

@@ -11,7 +11,6 @@ class SdkCrtBenchmarkRunner : public BenchmarkRunner
 {
 
     std::shared_ptr<Aws::S3Crt::S3CrtClient> client;
-    Aws::SDKOptions options;
 
   public:
     friend class SdkCrtTask;
@@ -22,8 +21,6 @@ class SdkCrtBenchmarkRunner : public BenchmarkRunner
         double targetThroughputGbps)
         : BenchmarkRunner(config, bucket, region)
     {
-
-        Aws::InitAPI(options);
         Aws::S3Crt::ClientConfiguration client_config;
         client_config.region = region;
         client_config.throughputTargetGbps = targetThroughputGbps;
@@ -31,11 +28,7 @@ class SdkCrtBenchmarkRunner : public BenchmarkRunner
         this->client = Aws::MakeShared<Aws::S3Crt::S3CrtClient>("CrtClient", client_config);
     }
 
-    ~SdkCrtBenchmarkRunner()
-    {
-        this->client.reset();
-        Aws::ShutdownAPI(options);
-    }
+    ~SdkCrtBenchmarkRunner() = default;
 
     void run();
 };

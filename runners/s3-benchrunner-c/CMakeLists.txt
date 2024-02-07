@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 cmake_policy(VERSION 3.22...3.24)
 project(s3-benchrunner-c-utils CXX)
 
-option(CPP_SDK_RUNNER "If enabled, build the cpp runner" ON)
+option(CPP_SDK_RUNNER "If enabled, build the cpp runner" OFF)
 
 file(GLOB UTILS_HEADERS
     include/*.h
@@ -12,8 +12,8 @@ file(GLOB UTILS_SOURCE
 )
 
 file(GLOB UTILS_SRC
-  ${UTILS_HEADERS}
-  ${UTILS_SOURCE}
+    ${UTILS_HEADERS}
+    ${UTILS_SOURCE}
 )
 
 add_library(${PROJECT_NAME} ${UTILS_SRC})
@@ -43,6 +43,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json)
 add_subdirectory(cs3Runner)
 
-if (CPP_SDK_RUNNER)
+if(CPP_SDK_RUNNER)
     add_subdirectory(SdkBenchRunner)
 endif()

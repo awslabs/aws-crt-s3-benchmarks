@@ -400,10 +400,10 @@ class S3BenchmarksStack(Stack):
         """
         events.Rule(
             self, "CanaryCronRule",
-            # run the night before each workday
+            # run nightly
             # Note this is UTC so hour=8 means midnight PST
             schedule=events.Schedule.cron(
-                minute='0', hour='8', week_day='MON-FRI'),
+                minute='0', hour='8'),
             targets=[events_targets.BatchJob(
                 job_queue_arn=self.orchestrator_job_queue.job_queue_arn,
                 job_queue_scope=self.orchestrator_job_queue,

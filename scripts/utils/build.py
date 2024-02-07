@@ -10,7 +10,7 @@ from typing import Optional
 from utils import fetch_git_repo, run, RUNNERS
 
 
-def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, cmake_extra : list[str] = []):
+def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, cmake_extra: list[str] = []):
 
     config_cmd = ['cmake',
                   '-S', str(src_dir),
@@ -83,7 +83,6 @@ def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [str(install_dir/'bin/s3-benchrunner-c')]
 
 
-
 def _build_cpp(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-cpp"""
 
@@ -92,11 +91,12 @@ def _build_cpp(work_dir: Path, branch: Optional[str]) -> list[str]:
     # fetch and build dependencies
     src_dir = work_dir/'aws-sdk-cpp'
     fetch_git_repo(url=f'https://github.com/aws/aws-sdk-cpp.git',
-                    dir=src_dir,
-                    preferred_branch=branch)
+                   dir=src_dir,
+                   preferred_branch=branch)
 
     build_dir = work_dir/f"aws-sdk-cpp-build"
-    _build_cmake_proj(src_dir, build_dir, install_dir, ['-DBUILD_ONLY=s3-crt;s3', '-DENABLE_TESTING=OFF'])
+    _build_cmake_proj(src_dir, build_dir, install_dir, [
+                      '-DBUILD_ONLY=s3-crt;s3', '-DENABLE_TESTING=OFF'])
 
     # build s3-benchrunner-cpp
     _build_cmake_proj(src_dir=RUNNERS['c'].dir,

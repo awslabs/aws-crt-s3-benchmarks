@@ -12,11 +12,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib64;${CMAKE_INSTALL_PREFIX}/lib")
 
 find_package(AWSSDK REQUIRED COMPONENTS s3-crt s3)
+find_library(UTILS_LIB NAME s3-benchrunner-c-utils)
 
 if(NOT MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE "-fno-exceptions;-fno-rtti")
 endif()
-
-find_library(UTILS_LIB NAME s3-benchrunner-c-utils)
 
 target_link_libraries(${PROJECT_NAME} s3-benchrunner-c-utils ${AWSSDK_LINK_LIBRARIES})

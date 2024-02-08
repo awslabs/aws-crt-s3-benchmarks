@@ -13,14 +13,9 @@ import java.util.ArrayList;
 
 import static com.example.s3benchrunner.Util.exitWithSkipCode;
 
-public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
-    public BenchmarkConfig config;
-    String bucket;
-    String region;
+public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
 
     S3AsyncClient s3AsyncClient;
-    // if uploading, and filesOnDisk is false, then upload this
-    byte[] randomDataForUpload;
 
     // The rest of these variables are only used when useTransferManager==true
     S3TransferManager transferManager;
@@ -30,9 +25,7 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
 
     public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
             boolean useTransferManager) {
-        this.config = config;
-        this.bucket = bucket;
-        this.region = region;
+        super(config, bucket, region);
 
         s3AsyncClient = S3AsyncClient.crtBuilder()
                 .region(Region.of(region))
@@ -75,9 +68,6 @@ public class SDKJavaBenchmarkRunner implements BenchmarkRunner {
                     .build();
 
         } else {
-            if (!config.filesOnDisk) {
-                this.randomDataForUpload = Util.generateRandomData();
-            }
             transferManager = null;
         }
     }

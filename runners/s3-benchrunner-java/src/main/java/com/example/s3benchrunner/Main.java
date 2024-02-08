@@ -39,7 +39,7 @@ public class Main {
                 durationVariance);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         if (args.length != 5) {
             throw new RuntimeException("expected args: S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
         }
@@ -65,6 +65,8 @@ public class Main {
         // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
         long appStartNs = System.nanoTime();
         for (int runI = 0; runI < config.maxRepeatCount; runI++) {
+            runner.prepareRun();
+
             long runStartNs = System.nanoTime();
 
             runner.run();

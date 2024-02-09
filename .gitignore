@@ -1105,3 +1105,5 @@ cdk/cdk.context.json
 # don't commit personal CDK settings files
 cdk/*.settings.json
 
+
+.idea/

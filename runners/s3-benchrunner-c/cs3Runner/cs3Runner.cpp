@@ -1,16 +1,5 @@
-#include <chrono>
-#include <cstdio>
-#include <fstream>
-#include <functional>
-#include <future>
-#include <iostream>
-#include <list>
-#include <random>
-#include <thread>
-#include <vector>
 
 #include <aws/auth/credentials.h>
-#include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
 #include <aws/io/channel_bootstrap.h>
@@ -18,119 +7,39 @@
 #include <aws/io/host_resolver.h>
 #include <aws/io/stream.h>
 #include <aws/io/tls_channel_handler.h>
-#include <aws/s3/s3_client.h>
-#include <nlohmann/json.hpp>
 
-using namespace std;
-using namespace std::chrono;
-using namespace std::chrono_literals;
-using json = nlohmann::json;
+#include "utils.h"
 
-struct TaskConfig;
-class Benchmark;
-
-/////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
-
-// 256MiB is Java Transfer Mgr V2's default
-// TODO: Investigate. At time of writing, this noticeably impacts performance.
-#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
-
-/////////////// END ARBITRARY HARD-CODED VALUES ///////////////
-
-// exit due to failure
-[[noreturn]] void fail(string_view msg)
+// A runnable benchmark
+class Benchmark : public BenchmarkRunner
 {
-    cerr << "FAIL - " << msg << endl;
-    abort();
-}
+    // CRT boilerplate
+    aws_allocator *alloc = NULL;
+    aws_logger logger;
+    aws_event_loop_group *eventLoopGroup = NULL;
+    aws_host_resolver *hostResolver = NULL;
+    aws_client_bootstrap *clientBootstrap = NULL;
+    aws_tls_ctx *tlsCtx = NULL;
+    aws_credentials_provider *credentialsProvider = NULL;
+    aws_s3_client *s3Client = NULL;
 
-// exit because we're skipping the benchmark (e.g. has version# this runner doesn't support yet)
-[[noreturn]] void skip(string_view msg)
-{
-    cerr << "Skipping benchmark - " << msg << endl;
-    exit(123);
-}
+  public:
+    // Instantiates S3 Client, does not run the benchmark yet
+    Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps);
 
-uint64_t bytesFromKiB(uint64_t kibibytes)
-{
-    return kibibytes * 1024;
-}
+    ~Benchmark();
 
-uint64_t bytesFromMiB(uint64_t mebibytes)
-{
-    return mebibytes * 1024 * 1024;
-}
+    // A benchmark can be run repeatedly
+    void run();
 
-uint64_t bytesFromGiB(uint64_t gibibytes)
-{
-    return gibibytes * 1024 * 1024 * 1024;
-}
-
-double bytesToKiB(uint64_t bytes)
-{
-    return (double)bytes / 1024;
-}
-
-double bytesToMiB(uint64_t bytes)
-{
-    return (double)bytes / (1024 * 1024);
-}
-
-double bytesToGiB(uint64_t bytes)
-{
-    return (double)bytes / (1024 * 1024 * 1024);
-}
-
-double bytesToKilobit(uint64_t bytes)
-{
-    return ((double)bytes * 8) / 1'000;
-}
-
-double bytesToMegabit(uint64_t bytes)
-{
-    return ((double)bytes * 8) / 1'000'000;
-}
-
-double bytesToGigabit(uint64_t bytes)
-{
-    return ((double)bytes * 8) / 1'000'000'000;
-}
-
-aws_byte_cursor toCursor(string_view src)
-{
-    return aws_byte_cursor{.len = src.length(), .ptr = (uint8_t *)src.data()};
-}
-
-// struct for a benchmark config, loaded from JSON
-struct BenchmarkConfig
-{
-    int maxRepeatCount;
-    int maxRepeatSecs;
-    aws_s3_checksum_algorithm checksum;
-    bool filesOnDisk;
-    vector<TaskConfig> tasks;
-
-    static BenchmarkConfig fromJson(const string &jsonFilepath);
-    uint64_t bytesPerRun() const;
-};
-
-// struct for a task in the benchmark's JSON config
-struct TaskConfig
-{
-    string action;
-    string key;
-    uint64_t size;
+    friend class CrtTask;
 };
 
 // A runnable task
-class Task
+class CrtTask : public Task
 {
     Benchmark &benchmark;
-    size_t taskI;
-    TaskConfig &config;
     aws_s3_meta_request *metaRequest;
-    promise<void> donePromise;
-    future<void> doneFuture;
 
     FILE *downloadFile = NULL;
 
@@ -147,106 +56,13 @@ class Task
 
   public:
     // Creates the task and begins its work
-    Task(Benchmark &benchmark, size_t taskI);
-
-    void waitUntilDone() { return doneFuture.wait(); }
+    CrtTask(Benchmark &benchmark, size_t taskI);
 };
-
-// A runnable benchmark
-class Benchmark
-{
-    BenchmarkConfig config;
-    string bucket;
-    string region;
-    string targetGbps;
-
-    // CRT boilerplate
-    aws_allocator *alloc = NULL;
-    aws_logger logger;
-    aws_event_loop_group *eventLoopGroup = NULL;
-    aws_host_resolver *hostResolver = NULL;
-    aws_client_bootstrap *clientBootstrap = NULL;
-    aws_tls_ctx *tlsCtx = NULL;
-    aws_credentials_provider *credentialsProvider = NULL;
-    aws_s3_client *s3Client = NULL;
-
-    // if uploading, and filesOnDisk is false, then upload this
-    vector<uint8_t> randomDataForUpload;
-
-  public:
-    // Instantiates S3 Client, does not run the benchmark yet
-    Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps);
-
-    ~Benchmark();
-
-    // A benchmark can be run repeatedly
-    void run();
-
-    friend class Task;
-};
-
-BenchmarkConfig BenchmarkConfig::fromJson(const string &jsonFilepath)
-{
-    BenchmarkConfig config;
-    ifstream f(jsonFilepath);
-    if (!f)
-        fail(string("Couldn't open file: ") + string(jsonFilepath));
-
-    auto json = json::parse(f, /*cb*/ nullptr, /*exceptions*/ false);
-    if (json.is_discarded())
-        fail(string("Couldn't parse JSON: ") + string(jsonFilepath));
-
-    int version = json["version"];
-    if (version != 2)
-        skip("workload version not supported");
-
-    config.maxRepeatCount = json["maxRepeatCount"];
-    config.maxRepeatSecs = json["maxRepeatSecs"];
-
-    config.checksum = AWS_SCA_NONE;
-    if (!json["checksum"].is_null())
-    {
-        string checksumStr = json["checksum"];
-        if (checksumStr == "CRC32")
-            config.checksum = AWS_SCA_CRC32;
-        else if (checksumStr == "CRC32C")
-            config.checksum = AWS_SCA_CRC32C;
-        else if (checksumStr == "SHA1")
-            config.checksum = AWS_SCA_SHA1;
-        else if (checksumStr == "SHA256")
-            config.checksum = AWS_SCA_SHA256;
-        else
-            fail(string("Unknown checksum: ") + checksumStr);
-    }
-
-    config.filesOnDisk = json["filesOnDisk"];
-
-    for (auto &&taskJson : json["tasks"])
-    {
-        auto &task = config.tasks.emplace_back();
-        task.action = taskJson["action"];
-        task.key = taskJson["key"];
-        task.size = taskJson["size"];
-    }
-
-    return config;
-}
-
-uint64_t BenchmarkConfig::bytesPerRun() const
-{
-    uint64_t bytes = 0;
-    for (auto &&task : tasks)
-        bytes += task.size;
-    return bytes;
-}
 
 // Instantiates S3 Client, does not run the benchmark yet
 Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps)
+    : BenchmarkRunner(config, bucket, region)
 {
-    this->config = config;
-    this->bucket = bucket;
-    this->region = region;
-
     alloc = aws_default_allocator();
 
     aws_s3_library_init(alloc);
@@ -362,7 +178,7 @@ Benchmark::~Benchmark()
 void Benchmark::run()
 {
     // kick off all tasks
-    list<Task> runningTasks;
+    list<CrtTask> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
         runningTasks.emplace_back(*this, i);
 
@@ -377,19 +193,18 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
     aws_http_message_add_header(request, header);
 }
 
-Task::Task(Benchmark &benchmark, size_t taskI)
-    : benchmark(benchmark), taskI(taskI), config(benchmark.config.tasks[taskI]), donePromise(),
-      doneFuture(donePromise.get_future())
+CrtTask::CrtTask(Benchmark &benchmark, size_t taskI) : benchmark(benchmark), Task(benchmark, taskI)
 {
 
     aws_s3_meta_request_options options;
     AWS_ZERO_STRUCT(options);
     options.user_data = this;
-    options.finish_callback = Task::onFinished;
+    options.finish_callback = CrtTask::onFinished;
 
     auto request = aws_http_message_new_request(benchmark.alloc);
     options.message = request;
     addHeader(request, "Host", benchmark.bucket + ".s3." + benchmark.region + ".amazonaws.com");
+    // addHeader(request, "Range", "bytes=-128000");
     aws_http_message_set_request_path(request, toCursor(string("/") + config.key));
 
     aws_input_stream *inMemoryStreamForUpload = NULL;
@@ -426,7 +241,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
             downloadFile = fopen(config.key.c_str(), "wb");
             AWS_FATAL_ASSERT(downloadFile != NULL);
 
-            options.body_callback = Task::onDownloadData;
+            options.body_callback = CrtTask::onDownloadData;
         }
     }
     else
@@ -448,12 +263,12 @@ Task::Task(Benchmark &benchmark, size_t taskI)
     aws_http_message_release(request);
 }
 
-void Task::onFinished(
+void CrtTask::onFinished(
     struct aws_s3_meta_request *meta_request,
     const struct aws_s3_meta_request_result *meta_request_result,
     void *user_data)
 {
-    Task *task = static_cast<Task *>(user_data);
+    CrtTask *task = static_cast<CrtTask *>(user_data);
     // TODO: report failed meta-requests instead of killing benchmark?
     if (meta_request_result->error_code != 0)
     {
@@ -492,13 +307,13 @@ void Task::onFinished(
     task->donePromise.set_value();
 }
 
-int Task::onDownloadData(
+int CrtTask::onDownloadData(
     struct aws_s3_meta_request *meta_request,
     const struct aws_byte_cursor *body,
     uint64_t range_start,
     void *user_data)
 {
-    auto *task = static_cast<Task *>(user_data);
+    auto *task = static_cast<CrtTask *>(user_data);
 
     size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
     AWS_FATAL_ASSERT(written == body->len);
@@ -507,34 +322,6 @@ int Task::onDownloadData(
     aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
-}
-
-void printStats(uint64_t bytesPerRun, const vector<double> &durations)
-{
-    double n = durations.size();
-    double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
-
-    double durationVariance = std::accumulate(
-        durations.begin(),
-        durations.end(),
-        0.0,
-        [&durationMean, &n](double accumulator, const double &val)
-        { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
-
-    double mbsMean = bytesToMegabit(bytesPerRun) / durationMean;
-    double mbsVariance = bytesToMegabit(bytesPerRun) / durationVariance;
-
-    struct aws_memory_usage_stats mu;
-    aws_init_memory_usage_for_current_process(&mu);
-
-    printf(
-        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration "
-        "Variance:%.3f s Peak RSS:%.3f Mb\n",
-        mbsMean,
-        mbsVariance,
-        durationMean,
-        durationVariance,
-        (double)mu.maxrss / 1024.0);
 }
 
 int main(int argc, char *argv[])
@@ -551,38 +338,7 @@ int main(int argc, char *argv[])
     double targetThroughputGbps = stod(argv[5]);
 
     auto benchmark = Benchmark(config, bucket, region, targetThroughputGbps);
-    uint64_t bytesPerRun = config.bytesPerRun();
-
-    // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
-    std::vector<double> durations;
-    auto appStart = high_resolution_clock::now();
-    for (int runI = 0; runI < config.maxRepeatCount; ++runI)
-    {
-        auto runStart = high_resolution_clock::now();
-
-        benchmark.run();
-
-        duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
-        double runSecs = runDurationSecs.count();
-        durations.push_back(runSecs);
-        fflush(stderr);
-        printf(
-            "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
-            runI + 1,
-            runSecs,
-            bytesToGigabit(bytesPerRun) / runSecs,
-            bytesToMegabit(bytesPerRun) / runSecs,
-            bytesToGiB(bytesPerRun) / runSecs,
-            bytesToMiB(bytesPerRun) / runSecs);
-        fflush(stdout);
-
-        // break out if we've exceeded maxRepeatSecs
-        duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
-        if (appDurationSecs >= 1s * config.maxRepeatSecs)
-            break;
-    }
-
-    printStats(bytesPerRun, durations);
+    main_run(benchmark, config);
 
     return 0;
 }

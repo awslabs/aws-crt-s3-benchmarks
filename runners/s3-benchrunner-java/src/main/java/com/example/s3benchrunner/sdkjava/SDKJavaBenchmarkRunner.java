@@ -6,7 +6,6 @@ import com.example.s3benchrunner.TaskConfig;
 import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -93,7 +92,7 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
         }
         if (this.transferAction.equals("upload")) {
             Files.walk(this.transferPath).forEach(path -> {
-                if (!path.toFile().isDirectory() && !taskPath.remove(path.relativize(this.transferPath).toString())) {
+                if (!path.toFile().isDirectory() && !taskPath.remove(path.toString())) {
                     /* The file in the parent directory is not in the task */
                     exitWithError(
                             "The directory:%s contains file:%s that's not part of the the task"

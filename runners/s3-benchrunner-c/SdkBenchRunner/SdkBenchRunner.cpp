@@ -139,15 +139,13 @@ class SdkCrtTask : public Task
             // request.SetRange("bytes=-128000");
             if (runner.config.filesOnDisk)
             {
-                request.SetResponseStreamFactory(
-                    [&]()
-                    {
-                        /* TODO: the path doesn't seems to work?? */
-                        return Aws::New<Aws::FStream>(
-                            FILE_STREAM_FACTORY_TAG,
-                            config.key,
-                            std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
-                    });
+                request.SetResponseStreamFactory([&]() {
+                    /* TODO: the path doesn't seems to work?? */
+                    return Aws::New<Aws::FStream>(
+                        FILE_STREAM_FACTORY_TAG,
+                        config.key,
+                        std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
+                });
             }
             else
             {
@@ -157,8 +155,7 @@ class SdkCrtTask : public Task
             auto getObjectCallback = [&](const Aws::S3Crt::S3CrtClient *client,
                                          const Aws::S3Crt::Model::GetObjectRequest &request,
                                          Aws::S3Crt::Model::GetObjectOutcome out_come,
-                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context)
-            {
+                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context) {
                 if (!out_come.IsSuccess())
                 {
                     printf(
@@ -250,15 +247,13 @@ class SdkTask : public Task
             // request.SetRange("bytes=-128000");
             if (runner.config.filesOnDisk)
             {
-                request.SetResponseStreamFactory(
-                    [&]()
-                    {
-                        /* TODO: the path doesn't seems to work?? */
-                        return Aws::New<Aws::FStream>(
-                            FILE_STREAM_FACTORY_TAG,
-                            "test",
-                            std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
-                    });
+                request.SetResponseStreamFactory([&]() {
+                    /* TODO: the path doesn't seems to work?? */
+                    return Aws::New<Aws::FStream>(
+                        FILE_STREAM_FACTORY_TAG,
+                        "test",
+                        std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
+                });
             }
             else
             {
@@ -268,8 +263,7 @@ class SdkTask : public Task
             auto getObjectCallback = [&](const Aws::S3::S3Client *client,
                                          const Aws::S3::Model::GetObjectRequest &request,
                                          Aws::S3::Model::GetObjectOutcome out_come,
-                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context)
-            {
+                                         const std::shared_ptr<const Aws::Client::AsyncCallerContext> &context) {
                 if (!out_come.IsSuccess())
                 {
                     printf(

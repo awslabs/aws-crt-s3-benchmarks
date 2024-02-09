@@ -9,12 +9,14 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Publisher;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 import static com.example.s3benchrunner.Util.exitWithError;
 import static com.example.s3benchrunner.Util.exitWithSkipCode;
@@ -92,7 +94,7 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
         }
         if (this.transferAction.equals("upload")) {
             Files.walk(this.transferPath).forEach(path -> {
-                if (!path.toFile().isDirectory() && !taskPath.remove(path.toString())) {
+                if (!path.toFile().isDirectory() && !taskPath.remove(path.relativize(this.transferPath).toString())) {
                     /* The file in the parent directory is not in the task */
                     exitWithError(
                             "The directory:%s contains file:%s that's not part of the the task"
@@ -102,15 +104,18 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
         } else {
             ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(this.bucket).prefix(transferPath + "/")
                     .build();
-            ListObjectsV2Response response = s3AsyncClient.listObjectsV2(request).join();
-            for (S3Object content : response.contents()) {
-                if (!taskPath.remove(content.key())) {
-                    /* The file in the parent directory is not in the task */
-                    exitWithError(
-                            "The directory:%s contains file:%s that's not part of the the task"
-                                    .formatted(transferPath.toString(), content.key()));
-                }
-            }
+            ListObjectsV2Publisher publisher = s3AsyncClient.listObjectsV2Paginator(request);
+            CompletableFuture<Void> subscribe = publisher.subscribe(response -> {
+                response.contents().forEach(content -> {
+                    if (!taskPath.remove(content.key())) {
+                        /* The file in the parent directory is not in the task */
+                        exitWithError(
+                                "The directory:%s contains file:%s that's not part of the the task"
+                                        .formatted(transferPath.toString(), content.key()));
+                    }
+                });
+            });
+            subscribe.join();
         }
         if (!taskPath.isEmpty()) {
             exitWithError(

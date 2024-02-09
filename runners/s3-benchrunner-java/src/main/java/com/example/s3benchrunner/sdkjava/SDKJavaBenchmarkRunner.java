@@ -6,11 +6,18 @@ import com.example.s3benchrunner.TaskConfig;
 import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import static com.example.s3benchrunner.Util.exitWithError;
 import static com.example.s3benchrunner.Util.exitWithSkipCode;
 
 public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
@@ -61,14 +68,55 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
                         }
                     }
                 }
-                /* TODO: Check the common root dir contains ONLY the files from the tasks */
+                try {
+                    /* Check the common root dir contains ONLY the files from the tasks */
+                    checkTaskPath();
+                } catch (Exception e) {
+                    exitWithSkipCode(
+                            "TransferManager cannot run tasks unless all keys are in the same directory");
+                }
             }
+
             transferManager = S3TransferManager.builder()
                     .s3Client(s3AsyncClient)
                     .build();
 
         } else {
             transferManager = null;
+        }
+    }
+
+    private void checkTaskPath() throws IOException {
+        ArrayList<String> taskPath = new ArrayList<>();
+        for (var task : config.tasks) {
+            taskPath.add(task.key);
+        }
+        if (this.transferAction.equals("upload")) {
+            Files.walk(this.transferPath).forEach(path -> {
+                if (!path.toFile().isDirectory() && !taskPath.remove(path.relativize(this.transferPath).toString())) {
+                    /* The file in the parent directory is not in the task */
+                    exitWithError(
+                            "The directory:%s contains file:%s that's not part of the the task"
+                                    .formatted(transferPath.toString(), path.toString()));
+                }
+            });
+        } else {
+            ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(this.bucket).prefix(transferPath + "/")
+                    .build();
+            ListObjectsV2Response response = s3AsyncClient.listObjectsV2(request).join();
+            for (S3Object content : response.contents()) {
+                if (!taskPath.remove(content.key())) {
+                    /* The file in the parent directory is not in the task */
+                    exitWithError(
+                            "The directory:%s contains file:%s that's not part of the the task"
+                                    .formatted(transferPath.toString(), content.key()));
+                }
+            }
+        }
+        if (!taskPath.isEmpty()) {
+            exitWithError(
+                    "The tasks contains %d files not included in the path:%s".formatted(taskPath.size(),
+                            transferPath.toString()));
         }
     }
 

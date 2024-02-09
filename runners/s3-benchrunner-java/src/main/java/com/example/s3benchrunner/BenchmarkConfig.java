@@ -1,4 +1,4 @@
-package com.example.s3benchrunner.crtjava;
+package com.example.s3benchrunner;
 
 import com.google.gson.Gson;
 import software.amazon.awssdk.crt.s3.ChecksumAlgorithm;
@@ -9,13 +9,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 // POJO for benchmark config, loaded from JSON
-class BenchmarkConfig {
-    int version;
-    boolean filesOnDisk;
-    ChecksumAlgorithm checksum;
-    int maxRepeatCount;
-    int maxRepeatSecs;
-    ArrayList<TaskConfig> tasks;
+public class BenchmarkConfig {
+    public int version;
+    public boolean filesOnDisk;
+    public ChecksumAlgorithm checksum;
+    public int maxRepeatCount;
+    public int maxRepeatSecs;
+    public ArrayList<TaskConfig> tasks;
 
     static BenchmarkConfig fromJson(String jsonFilepath) {
         String jsonString;
@@ -34,7 +34,7 @@ class BenchmarkConfig {
         return config;
     }
 
-    long bytesPerRun() {
+    public long bytesPerRun() {
         long bytes = 0;
         for (var task : tasks) {
             bytes += task.size;

@@ -18,9 +18,12 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-class Task implements S3MetaRequestResponseHandler {
+import com.example.s3benchrunner.TaskConfig;
+import com.example.s3benchrunner.Util;
 
-    Benchmark benchmark;
+class CRTJavaTask implements S3MetaRequestResponseHandler {
+
+    CRTJavaBenchmarkRunner runner;
     int taskI;
     TaskConfig config;
     S3MetaRequest metaRequest;
@@ -28,10 +31,10 @@ class Task implements S3MetaRequestResponseHandler {
     ReadableByteChannel uploadFileChannel;
     WritableByteChannel downloadFileChannel;
 
-    Task(Benchmark benchmark, int taskI) {
-        this.benchmark = benchmark;
+    CRTJavaTask(CRTJavaBenchmarkRunner runner, int taskI) {
+        this.runner = runner;
         this.taskI = taskI;
-        this.config = benchmark.config.tasks.get(taskI);
+        this.config = runner.config.tasks.get(taskI);
         doneFuture = new CompletableFuture<Void>();
 
         var options = new S3MetaRequestOptions();
@@ -42,7 +45,7 @@ class Task implements S3MetaRequestResponseHandler {
         String httpPath = "/" + config.key;
         HttpRequestBodyStream requestUploadStream = null;
         var headers = new ArrayList<HttpHeader>();
-        headers.add(new HttpHeader("Host", benchmark.bucket + ".s3." + benchmark.region + ".amazonaws.com"));
+        headers.add(new HttpHeader("Host", runner.bucket + ".s3." + runner.region + ".amazonaws.com"));
 
         if (config.action.equals("upload")) {
             options.withMetaRequestType(S3MetaRequestOptions.MetaRequestType.PUT_OBJECT);
@@ -51,10 +54,10 @@ class Task implements S3MetaRequestResponseHandler {
             headers.add(new HttpHeader("Content-Length", Long.toString(config.size)));
             headers.add(new HttpHeader("Content-Type", "application/octet-stream"));
 
-            if (benchmark.config.filesOnDisk) {
+            if (runner.config.filesOnDisk) {
                 options.withRequestFilePath(Path.of(config.key));
             } else {
-                requestUploadStream = new UploadFromRamStream(benchmark.randomDataForUpload, config.size);
+                requestUploadStream = new UploadFromRamStream(runner.randomDataForUpload, config.size);
             }
 
         } else if (config.action.equals("download")) {
@@ -63,7 +66,7 @@ class Task implements S3MetaRequestResponseHandler {
 
             headers.add(new HttpHeader("Content-Length", "0"));
 
-            if (benchmark.config.filesOnDisk) {
+            if (runner.config.filesOnDisk) {
                 try {
                     downloadFileChannel = FileChannel.open(Path.of(config.key),
                             StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -75,9 +78,9 @@ class Task implements S3MetaRequestResponseHandler {
             throw new RuntimeException("Unknown task action: " + config.action);
         }
 
-        if (benchmark.config.checksum != null) {
+        if (runner.config.checksum != null) {
             options.withChecksumConfig(new ChecksumConfig()
-                    .withChecksumAlgorithm(benchmark.config.checksum)
+                    .withChecksumAlgorithm(runner.config.checksum)
                     .withChecksumLocation(ChecksumConfig.ChecksumLocation.HEADER)
                     .withValidateChecksum(true));
         }
@@ -88,7 +91,7 @@ class Task implements S3MetaRequestResponseHandler {
         // work around API-gotcha where callbacks can fire on other threads
         // before makeMetaRequest() has returned
         synchronized (this) {
-            metaRequest = benchmark.s3Client.makeMetaRequest(options);
+            metaRequest = runner.s3Client.makeMetaRequest(options);
         }
     }
 
@@ -118,9 +121,9 @@ class Task implements S3MetaRequestResponseHandler {
     @Override
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
-            // Task failed. Report error and kill program...
-            System.err.printf("Task[%d] failed. actions:%s key:%s error_code:%s%n",
-                    taskI, config.key, CRT.awsErrorName(context.getErrorCode()));
+            // CRTJavaTask failed. Report error and kill program...
+            System.err.printf("CRTJavaTask[%d] failed. actions:%s key:%s error_code:%s/n",
+                    taskI, config.action, config.key, CRT.awsErrorName(context.getErrorCode()));
 
             if (context.getResponseStatus() != 0) {
                 System.err.println("Status-Code: " + context.getResponseStatus());
@@ -132,7 +135,7 @@ class Task implements S3MetaRequestResponseHandler {
 
             Util.exitWithError("S3MetaRequest failed");
         } else {
-            // Task succeeded. Clean up...
+            // CRTJavaTask succeeded. Clean up...
             try {
                 if (downloadFileChannel != null) {
                     downloadFileChannel.close();
@@ -154,27 +157,31 @@ class Task implements S3MetaRequestResponseHandler {
         }
     }
 
-    class UploadFromRamStream implements HttpRequestBodyStream {
-        byte body[];
-        final int size;
-        int bytesWritten;
+    static class UploadFromRamStream implements HttpRequestBodyStream {
+        final long size;
+        long bytesWritten;
+        byte[] randomData;
 
-        UploadFromRamStream(byte body[], long size) {
-            this.body = body;
-            this.size = Math.toIntExact(size);
+        UploadFromRamStream(byte[] randomData, long size) {
+            this.randomData = randomData;
+            this.size = size;
         }
 
         @Override
         public boolean sendRequestBody(ByteBuffer dstBuf) {
-            int bufferSpaceAvailable = dstBuf.remaining();
-            int bodyBytesAvailable = size - bytesWritten;
-            int amountToWrite = Math.min(bufferSpaceAvailable, bodyBytesAvailable);
-
-            dstBuf.put(body, bytesWritten, amountToWrite);
-
-            bytesWritten += amountToWrite;
-            boolean isComplete = bytesWritten == size;
-            return isComplete;
+            /*
+             * `randomData` is just a buffer of random data whose length may not equal
+             * `size`. We'll
+             * send its contents repeatedly until size bytes have been uploaded. We do this,
+             * so we can upload huge objects without actually allocating a huge buffer
+             */
+            while (bytesWritten < size && dstBuf.remaining() > 0) {
+                int amtToTransfer = (int) Math.min(size - bytesWritten, dstBuf.remaining());
+                amtToTransfer = Math.min(amtToTransfer, randomData.length);
+                dstBuf.put(randomData, 0, amtToTransfer);
+                bytesWritten += amtToTransfer;
+            }
+            return bytesWritten == size;
         }
     }
 }

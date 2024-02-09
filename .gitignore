@@ -667,6 +667,9 @@ pyrightconfig.json
 ### VisualStudioCode ###
 .vscode/
 
+### IntelliJ IDEA ###
+.idea/
+
 # Local History for Visual Studio Code
 .history/
 
@@ -1104,4 +1107,3 @@ cdk.out
 cdk/cdk.context.json
 # don't commit personal CDK settings files
 cdk/*.settings.json
-

@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.example.s3benchrunner.crtjava</groupId>
+  <groupId>com.example.s3benchrunner</groupId>
   <artifactId>s3-benchrunner-java</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <properties>
     <!-- build with -Dawscrt.version=1.0.0-SNAPSHOT to use the locally installed dev version) -->
     <awscrt.version>[0.26,)</awscrt.version>
+    <aws.sdk.version>[2.23,)</aws.sdk.version>
 
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,7 +47,7 @@
             <configuration>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.example.s3benchrunner.crtjava.Main</mainClass>
+                  <mainClass>com.example.s3benchrunner.Main</mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -78,6 +79,16 @@
       <groupId>software.amazon.awssdk.crt</groupId>
       <artifactId>aws-crt</artifactId>
       <version>${awscrt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${aws.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3-transfer-manager</artifactId>
+      <version>${aws.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

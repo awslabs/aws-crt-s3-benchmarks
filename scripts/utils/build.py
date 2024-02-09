@@ -162,6 +162,16 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     os.chdir(str(awscrt_src))
     run(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
 
+    # fetch latest aws-sdk-java-v2 and install latest SNAPSHOT version
+    sdk_src = work_dir/'aws-sdk-java-v2'
+    fetch_git_repo(url='https://github.com/aws/aws-sdk-java-v2.git',
+                   dir=sdk_src,
+                   main_branch='master',
+                   preferred_branch=branch)
+    os.chdir(str(sdk_src))
+    run(['mvn', 'clean', 'install', '-pl',
+         ':s3-transfer-manager,:s3,:bom-internal,:bom', '-P', 'quick', '--am'])
+
     # Build runner
     runner_src = RUNNERS['java'].dir
     os.chdir(str(runner_src))

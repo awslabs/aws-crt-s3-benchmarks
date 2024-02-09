@@ -1,11 +1,87 @@
+#include <aws/core/AmazonWebServiceRequest.h>
 #include <aws/core/Aws.h>
 #include <aws/core/http/HttpResponse.h>
+#include <aws/core/utils/stream/PreallocatedStreamBuf.h>
+#include <aws/core/utils/stream/ResponseStream.h>
 #include <aws/s3-crt/S3CrtClient.h>
 #include <aws/s3-crt/model/GetObjectRequest.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/GetObjectRequest.h>
 
 #include "utils.h"
+
+static const char *FILE_STREAM_FACTORY_TAG = "FILEStreamFactory";
+
+class NullPreallocatedStreamBuf : public Aws::Utils::Stream::PreallocatedStreamBuf
+{
+  private:
+    uint64_t m_buf_len;
+    uint64_t m_dumped_put_cnt;
+    bool seek_flaged;
+
+  public:
+    using Base = Aws::Utils::Stream::PreallocatedStreamBuf;
+    explicit NullPreallocatedStreamBuf(unsigned char *buffer, uint64_t lengthToRead)
+        : Base(buffer, lengthToRead), m_dumped_put_cnt(0), m_buf_len(lengthToRead), seek_flaged(false)
+    {
+    }
+
+    ~NullPreallocatedStreamBuf() override = default;
+
+    int overflow(int c) override
+    {
+        // flush buffer to dump
+        (void)Base::seekpos(0, std::ios_base::out);
+        m_dumped_put_cnt += m_buf_len;
+
+        // dump the new char
+        m_dumped_put_cnt++;
+
+        return std::char_traits<char>::not_eof(c);
+    };
+
+    std::streamsize xsputn(const char *s, std::streamsize n) override
+    {
+        // dump them
+        m_dumped_put_cnt += n;
+        return n;
+    }
+
+    uint64_t get_total_dumped_puts(void) const { return m_dumped_put_cnt; }
+
+    uint64_t get_total_puts(void) const { return m_dumped_put_cnt + (pptr() - pbase()); }
+    pos_type seekoff(
+        off_type off,
+        std::ios_base::seekdir dir,
+        std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
+    {
+        seek_flaged = true;
+        return Base::seekoff(off, dir, which);
+    }
+    pos_type seekpos(pos_type pos, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
+    {
+        seek_flaged = true;
+        return Base::seekpos(pos, which);
+    }
+    bool get_seek_flaged(void) const { return seek_flaged; }
+
+    void reset(void)
+    {
+        (void)Base::seekpos(0, std::ios_base::in);
+        (void)Base::seekpos(0, std::ios_base::out);
+        m_dumped_put_cnt = 0;
+        seek_flaged = false;
+    }
+};
+
+class MyIOStream : public Aws::IOStream
+{
+  public:
+    using Base = Aws::IOStream;
+    explicit MyIOStream(std::streambuf *buf) : Base(buf) {}
+
+    ~MyIOStream() override = default;
+};
 
 class SdkCrtBenchmarkRunner : public BenchmarkRunner
 {
@@ -14,12 +90,15 @@ class SdkCrtBenchmarkRunner : public BenchmarkRunner
 
   public:
     friend class SdkCrtTask;
+    NullPreallocatedStreamBuf &streambuf;
+
     SdkCrtBenchmarkRunner(
         const BenchmarkConfig &config,
         string_view bucket,
         string_view region,
-        double targetThroughputGbps)
-        : BenchmarkRunner(config, bucket, region)
+        double targetThroughputGbps,
+        NullPreallocatedStreamBuf &streambuf)
+        : BenchmarkRunner(config, bucket, region), streambuf(streambuf)
     {
         Aws::S3Crt::ClientConfiguration client_config;
         client_config.region = region;
@@ -51,6 +130,30 @@ class SdkCrtTask : public Task
             Aws::S3Crt::Model::GetObjectRequest request;
             request.SetBucket(runner.bucket);
             request.SetKey(config.key);
+            // if (runner.config.checksum == AWS_SCA_NONE)
+            // {
+            //     request.SetChecksumMode(Aws::S3Crt::Model::ChecksumMode::NOT_SET);
+            // }
+            // TODO: checksum
+            /* Last 128 KB */
+            // request.SetRange("bytes=-128000");
+            if (runner.config.filesOnDisk)
+            {
+                request.SetResponseStreamFactory(
+                    [&]()
+                    {
+                        /* TODO: the path doesn't seems to work?? */
+                        return Aws::New<Aws::FStream>(
+                            FILE_STREAM_FACTORY_TAG,
+                            config.key,
+                            std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
+                    });
+            }
+            else
+            {
+                request.SetResponseStreamFactory(
+                    [&]() { return Aws::New<MyIOStream>(FILE_STREAM_FACTORY_TAG, &runner.streambuf); });
+            }
             auto getObjectCallback = [&](const Aws::S3Crt::S3CrtClient *client,
                                          const Aws::S3Crt::Model::GetObjectRequest &request,
                                          Aws::S3Crt::Model::GetObjectOutcome out_come,
@@ -70,10 +173,6 @@ class SdkCrtTask : public Task
                 }
                 else
                 {
-                    if (this->runner.config.filesOnDisk)
-                    {
-                        fail(string("Not implemented download to disk: ") + config.action);
-                    }
                     this->donePromise.set_value();
                 }
             };
@@ -103,12 +202,15 @@ class SdkBenchmarkRunner : public BenchmarkRunner
 
   public:
     friend class SdkTask;
+    NullPreallocatedStreamBuf &streambuf;
+
     SdkBenchmarkRunner(
         const BenchmarkConfig &config,
         string_view bucket,
         string_view region,
-        double targetThroughputGbps)
-        : BenchmarkRunner(config, bucket, region)
+        double targetThroughputGbps,
+        NullPreallocatedStreamBuf &streambuf)
+        : BenchmarkRunner(config, bucket, region), streambuf(streambuf)
     {
 
         Aws::Client::ClientConfiguration client_config;
@@ -140,6 +242,29 @@ class SdkTask : public Task
             Aws::S3::Model::GetObjectRequest request;
             request.SetBucket(runner.bucket);
             request.SetKey(config.key);
+            // if (runner.config.checksum == AWS_SCA_NONE)
+            // {
+            //     request.SetChecksumMode(Aws::S3::Model::ChecksumMode::NOT_SET);
+            // }
+            // // /* Last 128 KB */
+            // request.SetRange("bytes=-128000");
+            if (runner.config.filesOnDisk)
+            {
+                request.SetResponseStreamFactory(
+                    [&]()
+                    {
+                        /* TODO: the path doesn't seems to work?? */
+                        return Aws::New<Aws::FStream>(
+                            FILE_STREAM_FACTORY_TAG,
+                            "test",
+                            std::ios_base::out | std::ios_base::in | std::ios_base::binary | std::ios_base::trunc);
+                    });
+            }
+            else
+            {
+                request.SetResponseStreamFactory(
+                    [&]() { return Aws::New<MyIOStream>(FILE_STREAM_FACTORY_TAG, &runner.streambuf); });
+            }
             auto getObjectCallback = [&](const Aws::S3::S3Client *client,
                                          const Aws::S3::Model::GetObjectRequest &request,
                                          Aws::S3::Model::GetObjectOutcome out_come,
@@ -159,10 +284,6 @@ class SdkTask : public Task
                 }
                 else
                 {
-                    if (this->runner.config.filesOnDisk)
-                    {
-                        fail(string("Not implemented download to disk: ") + config.action);
-                    }
                     this->donePromise.set_value();
                 }
             };
@@ -204,15 +325,17 @@ int main(int argc, char *argv[])
         string bucket = argv[3];
         string region = argv[4];
         double targetThroughputGbps = stod(argv[5]);
+        unsigned char buffer[100];
+        NullPreallocatedStreamBuf streamBuf(buffer, static_cast<size_t>(100));
 
         if (s3ClientId == "sdk-cpp-crt")
         {
-            auto runner = SdkCrtBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            auto runner = SdkCrtBenchmarkRunner(config, bucket, region, targetThroughputGbps, streamBuf);
             main_run(runner, config);
         }
         else
         {
-            auto runner = SdkBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            auto runner = SdkBenchmarkRunner(config, bucket, region, targetThroughputGbps, streamBuf);
             main_run(runner, config);
         }
     }

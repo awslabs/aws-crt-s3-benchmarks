@@ -204,6 +204,7 @@ CrtTask::CrtTask(Benchmark &benchmark, size_t taskI) : benchmark(benchmark), Tas
     auto request = aws_http_message_new_request(benchmark.alloc);
     options.message = request;
     addHeader(request, "Host", benchmark.bucket + ".s3." + benchmark.region + ".amazonaws.com");
+    // addHeader(request, "Range", "bytes=-128000");
     aws_http_message_set_request_path(request, toCursor(string("/") + config.key));
 
     aws_input_stream *inMemoryStreamForUpload = NULL;

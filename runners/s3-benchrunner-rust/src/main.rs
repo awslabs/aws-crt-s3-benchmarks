@@ -2,12 +2,56 @@ use std::{fs::File, io, path::PathBuf};
 use std::io::{BufReader, Write};
 use std::time::{Duration, Instant};
 
+use anyhow::Error;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
-use aws_sdk_s3::operation::get_object::GetObjectError;
 use clap::Parser;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
+
+// TODO: Remove dead code
+// Add support for other stuff like checksum, upload, files on disk etc
+//
+#[allow(dead_code)]
+fn bytes_from_kib(kibibytes: u64) -> u64 {
+    kibibytes * 1024
+}
+
+#[allow(dead_code)]
+fn bytes_from_mib(mebibytes: u64) -> u64 {
+    mebibytes * 1024 * 1024
+}
+
+#[allow(dead_code)]
+fn bytes_from_gib(gibibytes: u64) -> u64 {
+    gibibytes * 1024 * 1024 * 1024
+}
+
+#[allow(dead_code)]
+fn bytes_to_kib(bytes: u64) -> f64 {
+    bytes as f64 / 1024.0
+}
+
+fn bytes_to_mib(bytes: u64) -> f64 {
+    bytes as f64 / (1024.0 * 1024.0)
+}
+
+fn bytes_to_gib(bytes: u64) -> f64 {
+    bytes as f64 / (1024.0 * 1024.0 * 1024.0)
+}
+
+#[allow(dead_code)]
+fn bytes_to_kilobit(bytes: u64) -> f64 {
+    (bytes as f64 * 8.0) / 1_000.0
+}
+
+fn bytes_to_megabit(bytes: u64) -> f64 {
+    (bytes as f64 * 8.0) / 1_000_000.0
+}
+
+fn bytes_to_gigabit(bytes: u64) -> f64 {
+    (bytes as f64 * 8.0) / 1_000_000_000.0
+}
 
 /// Defines the command line arguments structure
 #[derive(Parser, Debug)]
@@ -36,12 +80,13 @@ struct Args {
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 struct BenchmarkConfig {
     version: u8,
-    filesOnDisk: bool,
+    files_on_disk: bool,
     checksum: Option<String>,
-    maxRepeatCount: u32,
-    maxRepeatSecs: u32,
+    max_repeat_count: u32,
+    max_repeat_secs: u32,
     tasks: Vec<Task>,
 }
 
@@ -53,7 +98,6 @@ struct Task {
 }
 
 async fn get_object(client: &Client, bucket: &str, object: &str) -> Result<usize, anyhow::Error> {
-    println!("waahm7: downloading object");
     let mut object = client
         .get_object()
         .bucket(bucket)
@@ -67,7 +111,6 @@ async fn get_object(client: &Client, bucket: &str, object: &str) -> Result<usize
         //file.write_all(&bytes)?;
         byte_count += bytes_len;
     }
-    println!("waahm7: downloaded");
 
     Ok(byte_count)
 }
@@ -79,8 +122,9 @@ struct Benchmark {
 }
 
 impl Benchmark {
-    async fn new(config: BenchmarkConfig, bucket: String, region: String) -> Benchmark {
-        //let region = Region::new(region);
+    async fn new(config: BenchmarkConfig, bucket: String, _region: String) -> Benchmark {
+        // TODO:figure out how not to use the region chain
+        //let region_provider = Region::new(region);
         let region_provider = RegionProviderChain::default_provider().or_else("us-west-2");
         let sdk_config = aws_config::from_env().region(region_provider).load().await;
         let client = Client::new(&sdk_config);
@@ -92,7 +136,7 @@ impl Benchmark {
         }
     }
 
-    async fn run(&self) -> Result<(), GetObjectError> {
+    async fn run(&self) -> Result<(), Error> {
         let futures: Vec<_> = self.config.tasks.iter().map(|task| {
             get_object(&self.client, &self.bucket, &task.key)
         }).collect();
@@ -102,8 +146,7 @@ impl Benchmark {
             match result {
                 Ok(_) => continue, // If the future succeeded, continue checking the rest
                 Err(err) => {
-                    println!("Error is {err}");
-                    continue;
+                    return Err(err);
                 }, // Return an error if any future fails
             }
         }
@@ -112,6 +155,8 @@ impl Benchmark {
         Ok(())
     }
 }
+
+
 
 #[tokio::main]
 async fn main() {
@@ -126,27 +171,35 @@ async fn main() {
     let config: BenchmarkConfig = serde_json::from_reader(reader)
         .unwrap();
     let benchmark = Benchmark::new(config.clone(), args.bucket, args.region).await;
-
+    let bytes_per_run = config.tasks.iter().map(|task| {task.size}).sum();
     let mut durations = Vec::new();
     let app_start = Instant::now();
     for run_i in 0..1 {
         let run_start = Instant::now();
         let result = benchmark.run().await;
-        match result {
-            Ok(_) => println!("waahm7: downloaded all objects"),
-            Err(err) => println!("waahm7: download failed with {err}")
+        if let Err(err) = result {
+            panic!("Download failed with {err}");
         }
-        let run_duration_secs = run_start.elapsed().as_secs();
+
+        let run_duration_secs = run_start.elapsed().as_secs() as f64;
         durations.push(run_duration_secs);
         io::stderr().flush().unwrap();
-        // Print the run
+        println!(
+            "Run:{} Secs:{:.3} Gb/s:{:.1} Mb/s:{:.1} GiB/s:{:.1} MiB/s:{:.1}",
+            run_i + 1,
+            run_duration_secs,
+            bytes_to_gigabit(bytes_per_run) / run_duration_secs,
+            bytes_to_megabit(bytes_per_run) / run_duration_secs,
+            bytes_to_gib(bytes_per_run) / run_duration_secs,
+            bytes_to_mib(bytes_per_run) / run_duration_secs
+        );
         io::stdout().flush().unwrap();
 
-        if app_start.elapsed() >= Duration::from_secs(config.maxRepeatSecs as u64) {
+        if app_start.elapsed() >= Duration::from_secs(config.max_repeat_secs as u64) {
             break;
         }
     }
     // print final stats
 
-    println!("{:#?}", config)
+    //println!("{:#?}", config)
 }

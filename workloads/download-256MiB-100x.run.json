@@ -1,0 +1,510 @@
+{
+    "version": 2,
+    "comment": "",
+    "filesOnDisk": true,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/001",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/002",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/003",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/004",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/005",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/006",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/007",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/008",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/009",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/010",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/011",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/012",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/013",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/014",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/015",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/016",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/017",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/018",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/019",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/020",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/021",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/022",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/023",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/024",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/025",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/026",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/027",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/028",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/029",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/030",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/031",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/032",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/033",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/034",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/035",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/036",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/037",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/038",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/039",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/040",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/041",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/042",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/043",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/044",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/045",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/046",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/047",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/048",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/049",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/050",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/051",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/052",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/053",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/054",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/055",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/056",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/057",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/058",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/059",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/060",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/061",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/062",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/063",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/064",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/065",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/066",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/067",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/068",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/069",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/070",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/071",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/072",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/073",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/074",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/075",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/076",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/077",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/078",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/079",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/080",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/081",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/082",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/083",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/084",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/085",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/086",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/087",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/088",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/089",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/090",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/091",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/092",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/093",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/094",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/095",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/096",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/097",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/098",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/099",
+            "size": 268435456
+        },
+        {
+            "action": "download",
+            "key": "download/256MiB-100x/100",
+            "size": 268435456
+        }
+    ]
+}

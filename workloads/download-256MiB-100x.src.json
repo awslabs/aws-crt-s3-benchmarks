@@ -1,5 +1,5 @@
 {
     "action": "download",
     "fileSize": "256MiB",
-    "numFiles": 1000
+    "numFiles": 100
 }

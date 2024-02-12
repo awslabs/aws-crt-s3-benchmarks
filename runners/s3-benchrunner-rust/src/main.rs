@@ -6,7 +6,7 @@ use anyhow::Error;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
 use clap::Parser;
-use futures::future::join_all;
+use futures::future::{try_join_all};
 use serde::{Deserialize, Serialize};
 
 // TODO: Remove dead code
@@ -140,16 +140,9 @@ impl Benchmark {
         let futures: Vec<_> = self.config.tasks.iter().map(|task| {
             get_object(&self.client, &self.bucket, &task.key)
         }).collect();
-        let results = join_all(futures).await;
-        // Check if any of the futures resulted in an error
-        for result in results {
-            match result {
-                Ok(_) => continue, // If the future succeeded, continue checking the rest
-                Err(err) => {
-                    return Err(err);
-                }, // Return an error if any future fails
-            }
-        }
+
+        // Use try_join_all to await all futures and return early on any error
+        try_join_all(futures).await?;
 
         // If all futures succeeded, return Ok(())
         Ok(())
@@ -174,14 +167,14 @@ async fn main() {
     let bytes_per_run = config.tasks.iter().map(|task| {task.size}).sum();
     let mut durations = Vec::new();
     let app_start = Instant::now();
-    for run_i in 0..1 {
+    for run_i in 0..config.max_repeat_count {
         let run_start = Instant::now();
         let result = benchmark.run().await;
         if let Err(err) = result {
             panic!("Download failed with {err}");
         }
 
-        let run_duration_secs = run_start.elapsed().as_secs() as f64;
+        let run_duration_secs = run_start.elapsed().as_secs_f64();
         durations.push(run_duration_secs);
         io::stderr().flush().unwrap();
         println!(
@@ -199,7 +192,5 @@ async fn main() {
             break;
         }
     }
-    // print final stats
-
-    //println!("{:#?}", config)
+    // TODO: print final stats
 }

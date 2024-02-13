@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use anyhow::Error;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
+use aws_sdk_s3::operation::get_object::GetObjectOutput;
 use clap::Parser;
 use futures::future::{try_join_all};
 use serde::{Deserialize, Serialize};
@@ -78,7 +79,6 @@ struct Args {
     s3_client: String,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct BenchmarkConfig {
@@ -98,7 +98,7 @@ struct Task {
 }
 
 async fn get_object(client: &Client, bucket: &str, object: &str) -> Result<usize, anyhow::Error> {
-    let mut object = client
+    let mut object: GetObjectOutput = client
         .get_object()
         .bucket(bucket)
         .key(object)
@@ -151,7 +151,7 @@ impl Benchmark {
 
 
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 72)]
 async fn main() {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
@@ -166,13 +166,10 @@ async fn main() {
     let benchmark = Benchmark::new(config.clone(), args.bucket, args.region).await;
     let bytes_per_run = config.tasks.iter().map(|task| {task.size}).sum();
     let mut durations = Vec::new();
-    let app_start = Instant::now();
+   // let app_start = Instant::now();
     for run_i in 0..config.max_repeat_count {
         let run_start = Instant::now();
-        let result = benchmark.run().await;
-        if let Err(err) = result {
-            panic!("Download failed with {err}");
-        }
+        benchmark.run().await.unwrap();
 
         let run_duration_secs = run_start.elapsed().as_secs_f64();
         durations.push(run_duration_secs);
@@ -188,9 +185,11 @@ async fn main() {
         );
         io::stdout().flush().unwrap();
 
-        if app_start.elapsed() >= Duration::from_secs(config.max_repeat_secs as u64) {
-            break;
-        }
+        tokio::time::sleep(Duration::from_secs(30)).await;
+
+        // if app_start.elapsed() >= Duration::from_secs(config.max_repeat_secs as u64) {
+        //     break;
+        // }
     }
     // TODO: print final stats
 }

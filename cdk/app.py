@@ -15,6 +15,7 @@ class Settings:
     region: str
     bucket: Optional[str] = None
     canary: bool = False
+    alarm: Optional[str] = None
 
 
 def load_settings(app: cdk.App) -> Settings:
@@ -43,5 +44,6 @@ S3BenchmarksStack(
         account=settings.account, region=settings.region),
     existing_bucket_name=settings.bucket,
     add_canary=settings.canary,
+    canary_alarm_action=settings.alarm,
 )
 app.synth()

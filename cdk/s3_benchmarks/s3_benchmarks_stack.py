@@ -70,6 +70,7 @@ class S3BenchmarksStack(Stack):
     def __init__(self, scope: Construct, construct_id: str,
                  existing_bucket_name: Optional[str],
                  add_canary: bool,
+                 canary_alarm_action: Optional[str],
                  **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
@@ -102,10 +103,8 @@ class S3BenchmarksStack(Stack):
 
         self._add_git_commit_cfn_output()
 
-        self._define_all_dashboards()
-
         if add_canary:
-            self._add_canary()
+            self._add_canary(canary_alarm_action)
 
     def _define_all_per_instance_batch_jobs(self):
         # First, create resources shared by all per-instance jobs...
@@ -325,33 +324,37 @@ class S3BenchmarksStack(Stack):
             value=git_commit,
             description="Git commit this stack was generated from")
 
-    def _define_all_dashboards(self):
+    def _add_canary_dashboards(self, alarm_action: Optional[str]):
         """
-        Add CloudWatch Dashboards to show the results of the "default" benchmarks.
+        Add CloudWatch Dashboards to show the results of the "default" benchmarks that the canary runs.
         Each instance-type gets its own dashboard, then have a graph per workload,
         and in that graph plot the results of each s3-client.
         """
         for instance_type_id in DEFAULT_INSTANCE_TYPES:
             instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
-            self._define_per_instance_dashboard(instance_type)
+            self._add_per_instance_canary_dashboard(
+                instance_type, alarm_action)
 
-    def _define_per_instance_dashboard(self, instance_type: s3_benchmarks.InstanceType):
+    def _add_per_instance_canary_dashboard(self, instance_type: s3_benchmarks.InstanceType, alarm_action: Optional[str]):
         id_with_hyphens = instance_type.id.replace('.', '-')
 
         dashboard = cloudwatch.Dashboard(
             self, f"PerInstanceDashboard-{id_with_hyphens}",
-            dashboard_name=f"S3Benchmarks-{id_with_hyphens}",
+            dashboard_name=f"S3BenchmarksCanary-{id_with_hyphens}",
         )
         dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
-        graph_per_workload = []
+        graph_per_workload: list[cloudwatch.IWidget] = []
+        alarms_per_s3_client: dict[str, list[cloudwatch.Alarm]] = {
+            s3_client_id: [] for s3_client_id in DEFAULT_S3_CLIENTS}
+
         for workload in DEFAULT_WORKLOADS:
             # Give each workload its own graph,
             # with 1 metric for each s3-client.
             # These metrics are created by <aws-crt-s3-benchmarks>/scripts/metrics.py
             metric_per_s3_client = []
             for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
-                metric_per_s3_client.append(cloudwatch.Metric(
+                metric = cloudwatch.Metric(
                     namespace="S3Benchmarks",
                     metric_name=f"Throughput",
                     dimensions_map={
@@ -365,7 +368,14 @@ class S3BenchmarksStack(Stack):
                     # The Canary runs daily. Set period to match
                     # so we get a line connecting the sparse data points.
                     period=cdk.Duration.days(1),
-                ))
+                )
+                metric_per_s3_client.append(metric)
+
+                # alarms_per_s3_client[s3_client_id].append(cloudwatch.Alarm(
+                #     self, f"Alarm-{s3_client_id}-{id_with_hyphens}-{workload}",
+                #     metric=metric,
+                #     evaluation_periods=1,
+                # ))
 
             graph_per_workload.append(cloudwatch.GraphWidget(
                 title=workload,
@@ -393,23 +403,81 @@ class S3BenchmarksStack(Stack):
             row_of_graphs = graph_per_workload[i:i+GRAPHS_PER_ROW]
             dashboard.add_widgets(*row_of_graphs)
 
-    def _add_canary(self):
+    def _add_canary(self, alarm_action: Optional[str]):
         """
         Add canary that regularly runs the benchmarks
         via an AWS Event Bridge cron rule.
         """
         events.Rule(
             self, "CanaryCronRule",
-            # run the night before each workday
+            # run nightly (we considered only running on weekdays to save money,
+            # but it's hard to set alarms when there are gaps in the data)
             # Note this is UTC so hour=8 means midnight PST
             schedule=events.Schedule.cron(
-                minute='0', hour='8', week_day='MON-FRI'),
+                minute='0', hour='8'),
             targets=[events_targets.BatchJob(
                 job_queue_arn=self.orchestrator_job_queue.job_queue_arn,
                 job_queue_scope=self.orchestrator_job_queue,
                 job_definition_arn=self.orchestrator_job_defn.job_definition_arn,
                 job_definition_scope=self.orchestrator_job_defn)],
         )
+
+        metrics: list[cloudwatch.Metric] = []
+        for instance_type in s3_benchmarks.INSTANCE_TYPES.values():
+            for workload in DEFAULT_WORKLOADS:
+                for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
+                    metrics.append(cloudwatch.Metric(
+                        namespace="S3Benchmarks",
+                        metric_name=f"Throughput",
+                        dimensions_map={
+                            "S3Client": s3_client_id,
+                            "InstanceType": instance_type.id,
+                            "Branch": "main",
+                            "Workload": workload,
+                        },
+                        label=s3_client_id,
+                        color=s3_client_props.color,
+                        # The Canary runs daily. Set period to match
+                        # so we get a line connecting the sparse data points.
+                        period=cdk.Duration.days(1),
+                    ))
+
+        # Create 1 composite alarm for each S3 Client ID. Reasoning is:
+        # We want alarms on each canary metric, but there may be hundreds of metrics
+        # A composite alarm can have 100 child alarms max, so we need multiple.
+        # Grouping based on S3 Client ID means we have 10ish.
+
+        # We want alarms on the metrics, but there may be hundreds of metrics,
+        # so group them into composite alarms. A composite alarm can have
+        # 100 child alarms max. Grouping them based on S3 Client ID seems reasonable.
+        for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
+            s3_client_metric_alarms = []
+            for metric in metrics:
+                assert metric.dimensions
+                if metric.dimensions["S3Client"] == s3_client_id:
+                    s3_client_metric_alarms.append(cloudwatch.Alarm(
+                        self, f"CanaryAlarm-{s3_client_id}-{metric.dimensions['InstanceType']}-{metric.dimensions['Workload']}",
+                        metric=metric,
+                        evaluation_periods=1,
+                    ))
+
+            # s3_client_composite_alarm = cloudwatch.CompositeAlarm(
+            #     self, f"CanaryCompositeAlarm-{s3_client_id}",
+            #     alarm_name=f"S3BenchmarksCanary-{s3_client_id}",
+            #     alarm_description=f"Canary alarm for S3Benchmarks {s3_client_id}",
+            #     actions_enabled=True,
+            #     alarm_rule=cloudwatch.CompositeAlarmRule.any(
+            #         cloudwatch.CompositeAlarmRuleStateList(
+            #             cloudwatch.CompositeAlarmRuleState(
+            #                 state=cloudwatch.CompositeAlarmState.ALARM,
+            #             ),
+            #         ),
+            #     ),
+            #     alarm_action=cloudwatch.CompositeAlarmAction.from_alarm_arn(
+            #         alarm_action),
+            # )
+
+        self._add_canary_dashboards(alarm_action)
 
 
 def _max_container_memory(instance_type_memory: cdk.Size) -> cdk.Size:

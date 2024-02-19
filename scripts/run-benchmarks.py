@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import os
 from pathlib import Path
 import shlex
+import psutil
 
 from utils import S3_CLIENTS, run, workload_paths_from_args
 from utils.metrics import report_metrics
@@ -63,9 +64,18 @@ for workload in workloads:
     cmd += [args.s3_client, str(workload), args.bucket,
             args.region, str(args.throughput)]
 
+    _ = psutil.cpu_percent(interval=None)
+    cpu_times_before = psutil.cpu_times()
+
     start_time = datetime.now(timezone.utc)
     result = run(cmd, check=False, capture_output=True)
     end_time = datetime.now(timezone.utc)
+
+    cpu_after = psutil.cpu_percent(interval=None)
+    cpu_times_after = psutil.cpu_times()
+    print(f'cpu percent after: {cpu_after}')
+    print(f'cpu times before: {cpu_times_before}')
+    print(f'cpu times after: {cpu_times_after}')
 
     # reporting metrics before checking returncode
     # in case it did a few runs before failing

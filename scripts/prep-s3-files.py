@@ -304,7 +304,8 @@ def prep_file_in_s3(task: Task, s3, bucket: str, existing_s3_objects: dict[str, 
         # if it's the right size etc, then we can skip the upload
         if existing.size != task.size:
             _print_status('re-uploading due to size mismatch')
-        elif existing.checksum != task.checksum:
+        elif (task.checksum is not None) and (existing.checksum != task.checksum):
+            # NOTE: S3 Express gives objects checksums even if they were uploaded without any
             _print_status('re-uploading due to checksum mismatch')
         else:
             # return early, file already exists

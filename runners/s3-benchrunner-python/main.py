@@ -62,11 +62,8 @@ if __name__ == '__main__':
 
         run_secs = ns_to_secs(time.perf_counter_ns() - run_start_ns)
         print(f'Run:{run_i+1} ' +
-              f'Secs:{run_secs:.3f} ' +
-              f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:.3f} ' +
-              f'Mb/s:{bytes_to_megabit(bytes_per_run) / run_secs:.3f} ' +
-              f'GiB/s:{bytes_to_GiB(bytes_per_run) / run_secs:.3f} ' +
-              f'MiB/s:{bytes_to_MiB(bytes_per_run) / run_secs:.3f}',
+              f'Secs:{run_secs:f} ' +
+              f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:f}',
               flush=True)
 
         # Break out if we've exceeded max_repeat_secs

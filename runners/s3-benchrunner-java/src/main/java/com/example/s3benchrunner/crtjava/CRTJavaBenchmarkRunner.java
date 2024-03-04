@@ -9,6 +9,8 @@ import software.amazon.awssdk.crt.s3.S3Client;
 import software.amazon.awssdk.crt.s3.S3ClientOptions;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.example.s3benchrunner.BenchmarkConfig;
 import com.example.s3benchrunner.Main;
@@ -24,9 +26,30 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
     CredentialsProvider credentialsProvider;
     S3Client s3Client;
 
+    // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
+    String endpoint;
+
     public CRTJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
 
         super(config, bucket, region);
+
+        // S3 Express buckets look like "mybucket--usw2-az3--x-s3"
+        Matcher s3ExpressMatcher = Pattern.compile("--(.*)--x-s3$").matcher(bucket);
+        boolean isS3Express = s3ExpressMatcher.find();
+        if (isS3Express)
+        {
+            // extract the "usw2-az3" from "mybucket--usw2-az3--x-s3"
+            String azID = s3ExpressMatcher.group(1);
+
+            // Endpoint looks like: mybucket--usw2-az3--x-s3.s3express-usw2-az3.us-west-2.amazonaws.com
+            endpoint = bucket + ".s3express-" + azID + "." + region + ".amazonaws.com";
+        }
+        else
+        {
+            // vanilla S3.
+            // Endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
+            endpoint = bucket + ".s3." + region + ".amazonaws.com";
+        }
 
         eventLoopGroup = new EventLoopGroup(0, 0);
 
@@ -43,11 +66,16 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
 
         AwsSigningConfig signingConfig = AwsSigningConfig.getDefaultS3SigningConfig(region, credentialsProvider);
 
+        if (isS3Express) {
+            signingConfig.setAlgorithm(AwsSigningConfig.AwsSigningAlgorithm.SIGV4_S3EXPRESS);
+        }
+
         var s3ClientOpts = new S3ClientOptions()
                 .withRegion(region)
                 .withThroughputTargetGbps(targetThroughputGbps)
                 .withClientBootstrap(clientBootstrap)
                 .withTlsContext(tlsCtx)
+                .withEnableS3Express(isS3Express)
                 .withSigningConfig(signingConfig);
 
         // If writing data to disk, enable backpressure.

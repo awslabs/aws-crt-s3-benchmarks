@@ -572,17 +572,22 @@ void printValueStats(const char *label, vector<double> values)
         }
     }
 
-    double variance = std::accumulate(
-        values.begin(),
-        values.end(),
-        0.0,
-        [&mean, &n](double accumulator, const double &val)
-        { return accumulator + ((val - mean) * (val - mean) / n); });
+    double variance =
+        std::accumulate(values.begin(), values.end(), 0.0, [&mean, &n](double accumulator, const double &val) {
+            return accumulator + ((val - mean) * (val - mean) / n);
+        });
 
     double stdDev = std::sqrt(variance);
 
-    printf("Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
-        label, median, mean, min, max, variance, stdDev);
+    printf(
+        "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
+        label,
+        median,
+        mean,
+        min,
+        max,
+        variance,
+        stdDev);
 }
 
 void printStats(uint64_t bytesPerRun, const vector<double> &durations)

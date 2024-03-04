@@ -3,6 +3,7 @@ import awscrt.http  # type: ignore
 import awscrt.io  # type: ignore
 import awscrt.s3  # type: ignore
 from concurrent.futures import as_completed
+import re
 from threading import Event, Semaphore
 from typing import Optional, Tuple
 
@@ -15,6 +16,17 @@ class CrtBenchmarkRunner(BenchmarkRunner):
     def __init__(self, config: BenchmarkConfig):
         super().__init__(config)
 
+        # S3 Express buckets look like "mybucket--usw2-az3--x-s3" (where "usw2-az3" is the AZ ID)
+        s3express_match = re.search("--(.*)--x-s3$", self.config.bucket)
+        is_s3express = s3express_match is not None
+        if is_s3express:
+            az_id = s3express_match.group(1)
+            self.endpoint = \
+                f"{self.config.bucket}.s3express-{az_id}.{self.config.region}.amazonaws.com"
+        else:
+            self.endpoint = \
+                f"{self.config.bucket}.s3.{self.config.region}.amazonaws.com"
+
         elg = awscrt.io.EventLoopGroup(cpu_group=0)
         resolver = awscrt.io.DefaultHostResolver(elg)
         bootstrap = awscrt.io.ClientBootstrap(elg, resolver)
@@ -25,10 +37,15 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             region=self.config.region,
             credential_provider=credential_provider)
 
+        if is_s3express:
+            signing_config = signing_config.replace(
+                algorithm=awscrt.s3.AwsSigningAlgorithm.V4_S3EXPRESS)
+
         self._s3_client = awscrt.s3.S3Client(
             bootstrap=bootstrap,
             region=self.config.region,
             signing_config=signing_config,
+            enable_s3express=is_s3express,
             throughput_target_gbps=self.config.target_throughput_Gbps)
 
         # Cap the number of meta-requests we'll work on simultaneously,
@@ -80,8 +97,7 @@ class CrtBenchmarkRunner(BenchmarkRunner):
         task = self.config.tasks[task_i]
 
         headers = awscrt.http.HttpHeaders()
-        headers.add(
-            'Host', f'{self.config.bucket}.s3.{self.config.region}.amazonaws.com')
+        headers.add('Host', self.endpoint)
         path = f'/{task.key}'
         send_stream = None  # if uploading from ram
         send_filepath = None  # if uploading from disk

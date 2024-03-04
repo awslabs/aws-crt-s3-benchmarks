@@ -1,5 +1,7 @@
 package com.example.s3benchrunner.crtjava;
 
+import com.example.s3benchrunner.TaskConfig;
+import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.crt.CRT;
 import software.amazon.awssdk.crt.http.HttpHeader;
 import software.amazon.awssdk.crt.http.HttpRequest;
@@ -17,9 +19,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import com.example.s3benchrunner.TaskConfig;
-import com.example.s3benchrunner.Util;
 
 class CRTJavaTask implements S3MetaRequestResponseHandler {
 
@@ -45,7 +44,7 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
         String httpPath = "/" + config.key;
         HttpRequestBodyStream requestUploadStream = null;
         var headers = new ArrayList<HttpHeader>();
-        headers.add(new HttpHeader("Host", runner.bucket + ".s3." + runner.region + ".amazonaws.com"));
+        headers.add(new HttpHeader("Host", runner.endpoint));
 
         if (config.action.equals("upload")) {
             options.withMetaRequestType(S3MetaRequestOptions.MetaRequestType.PUT_OBJECT);

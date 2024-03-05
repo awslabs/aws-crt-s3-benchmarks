@@ -169,8 +169,12 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    main_branch='master',
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
-    run(['mvn', 'clean', 'install', '-pl',
-         ':s3-transfer-manager,:s3,:bom-internal,:bom', '-P', 'quick', '--am'])
+    run(['mvn', 'clean', 'install',
+         '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
+         '--activate-profiles', 'quick',
+         '--also-make',
+         '-Dawscrt.version=1.0.0-SNAPSHOT',
+    ])
 
     # Build runner
     runner_src = RUNNERS['java'].dir
@@ -180,7 +184,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
          # package along with dependencies in executable uber-java
          'package',
          # use locally installed version of aws-crt-java
-         '--activate-profiles', 'snapshot',
+         '-Dawscrt.version=1.0.0-SNAPSHOT',
          ])
 
     # return command for running the jar

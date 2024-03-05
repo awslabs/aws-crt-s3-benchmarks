@@ -17,15 +17,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>snapshot</id>
-      <properties>
-        <awscrt.version>1.0.0-SNAPSHOT</awscrt.version>
-      </properties>
-    </profile>
-  </profiles>
-
   <build>
     <plugins>
       <plugin>
@@ -94,11 +85,6 @@
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
-    </dependency>
-    <dependency>
-      <groupId>software.amazon.awssdk.crt</groupId>
-      <artifactId>aws-crt</artifactId>
-      <version>0.28.11</version>
     </dependency>
   </dependencies>
 

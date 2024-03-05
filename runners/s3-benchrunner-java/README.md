@@ -11,12 +11,11 @@ mvn package
 
 This produces the uber-jar: `target/s3-benchrunner-java-1.0-SNAPSHOT.jar` .
 
-### Using a local build of aws-crt-java
+### Using a local build of aws-crt-java and aws-sdk-java-v2
 
-By default, the latest release of aws-crt-java is pulled from Maven Central.
+By default, the latest release of aws-crt-java and aws-sdk-java-v2 are pulled from Maven Central. If you want to build these locally...
 
-If you want to build aws-crt-java locally:
-
+First, install aws-crt-java (this installs version 1.0.0-SNAPSHOT):
 ```sh
 cd my/dev/dir
 git clone https://github.com/awslabs/aws-crt-java.git
@@ -25,25 +24,19 @@ git submodule update --init
 mvn install -Dmaven.test.skip
 ```
 
-This installs version 1.0.0-SNAPSHOT.
-
-Now get the runner to use it by building with the "snapshot" profile active:
-
-```sh
-cd /path/to/s3-benchrunner-java
-mvn clean -P snapshot package
+Next, install the SDK:
 ```
-
-### Using a local build of aws-sdk-java-v2
-
-```sh
 cd my/dev/dir
 git clone https://github.com/aws/aws-sdk-java-v2.git
 cd aws-sdk-java-v2
-mvn clean install -pl :s3-transfer-manager,:s3,:bom-internal,:bom -P quick --am
+mvn clean install -pl :s3-transfer-manager,:s3,:bom-internal,:bom -P quick --am -Dawscrt.version=1.0.0-SNAPSHOT
 ```
 
-This installs the latest SNAPSHOT version. Now rebuild the runner with `mvn clean package` , it will pick up the latest SNAPSHOT version directly.
+Finally, build the runner:
+```sh
+cd /path/to/s3-benchrunner-java
+mvn clean package -Dawscrt.version=1.0.0-SNAPSHOT
+```
 
 ### Working in IntelliJ
 

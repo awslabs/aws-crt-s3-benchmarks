@@ -27,7 +27,7 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             self.endpoint = \
                 f"{self.config.bucket}.s3.{self.config.region}.amazonaws.com"
 
-        elg = awscrt.io.EventLoopGroup(cpu_group=0)
+        elg = awscrt.io.EventLoopGroup()
         resolver = awscrt.io.DefaultHostResolver(elg)
         bootstrap = awscrt.io.ClientBootstrap(elg, resolver)
         credential_provider = awscrt.auth.AwsCredentialsProvider.new_default_chain(

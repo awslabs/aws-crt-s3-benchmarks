@@ -51,7 +51,7 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
             endpoint = bucket + ".s3." + region + ".amazonaws.com";
         }
 
-        eventLoopGroup = new EventLoopGroup(0, 0);
+        eventLoopGroup = new EventLoopGroup(0);
 
         hostResolver = new HostResolver(eventLoopGroup);
 

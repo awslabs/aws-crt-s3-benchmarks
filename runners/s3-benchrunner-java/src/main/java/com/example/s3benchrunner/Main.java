@@ -74,13 +74,10 @@ public class Main {
             long runDurationNs = System.nanoTime() - runStartNs;
             double runSecs = Util.nanoToSecs(runDurationNs);
             durations.add(runSecs);
-            System.out.printf("Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f%n",
+            System.out.printf("Run:%d Secs:%f Gb/s:%f%n",
                     runI + 1,
                     runSecs,
-                    Util.bytesToGigabit(bytesPerRun) / runSecs,
-                    Util.bytesToMegabit(bytesPerRun) / runSecs,
-                    Util.bytesToGiB(bytesPerRun) / runSecs,
-                    Util.bytesToMiB(bytesPerRun) / runSecs);
+                    Util.bytesToGigabit(bytesPerRun) / runSecs);
 
             // break out if we've exceeded maxRepeatSecs
             double appDurationSecs = Util.nanoToSecs(System.nanoTime() - appStartNs);

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <aws/auth/credentials.h>
+#include <aws/common/string.h>
 #include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
@@ -155,6 +156,7 @@ class Task
 // A runnable benchmark
 class Benchmark
 {
+  public:
     BenchmarkConfig config;
     string bucket;
     string region;
@@ -172,6 +174,9 @@ class Benchmark
 
     // if uploading, and filesOnDisk is false, then upload this
     vector<uint8_t> randomDataForUpload;
+
+    // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
+    string endpoint;
 
   public:
     // Instantiates S3 Client, does not run the benchmark yet
@@ -247,6 +252,30 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     this->bucket = bucket;
     this->region = region;
 
+    bool isS3Express = bucket.ends_with("--x-s3");
+    if (isS3Express)
+    {
+        // extract the "usw2-az3" from "mybucket--usw2-az3--x-s3"
+        string_view substrNoSuffix = bucket.substr(0, bucket.rfind("--"));
+        string_view azID = substrNoSuffix.substr(substrNoSuffix.rfind("--") + 2);
+
+        // Endpoint looks like: mybucket--usw2-az3--x-s3.s3express-usw2-az3.us-west-2.amazonaws.com
+        this->endpoint = bucket;
+        this->endpoint += ".s3express-";
+        this->endpoint += azID;
+        this->endpoint += ".";
+        this->endpoint += region;
+        this->endpoint += ".amazonaws.com";
+    }
+    else
+    {
+        // Standard S3 endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
+        this->endpoint = bucket;
+        this->endpoint += ".s3.";
+        this->endpoint += region;
+        this->endpoint += ".amazonaws.com";
+    }
+
     alloc = aws_default_allocator();
 
     aws_s3_library_init(alloc);
@@ -258,8 +287,7 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
     aws_logger_set(&logger);
 
-    eventLoopGroup = aws_event_loop_group_new_default_pinned_to_cpu_group(
-        alloc, 0 /*max-threads*/, 0 /*cpu-group*/, NULL /*shutdown-options*/);
+    eventLoopGroup = aws_event_loop_group_new_default(alloc, 0 /*max-threads*/, NULL /*shutdown-options*/);
     AWS_FATAL_ASSERT(eventLoopGroup != NULL);
 
     aws_host_resolver_default_options resolverOpts;
@@ -302,6 +330,12 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     s3ClientConfig.signing_config = &signingConfig;
     s3ClientConfig.part_size = bytesFromMiB(8);
     s3ClientConfig.throughput_target_gbps = targetThroughputGbps;
+
+    if (isS3Express)
+    {
+        signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
+        s3ClientConfig.enable_s3express = true;
+    }
 
     // If writing data to disk, enable backpressure.
     // This prevents us from running out of memory due to downloading
@@ -387,9 +421,14 @@ Task::Task(Benchmark &benchmark, size_t taskI)
     options.user_data = this;
     options.finish_callback = Task::onFinished;
 
+    // TODO: add "sizeHint" to config, if true then set options.object_size_hint.
+    // A transfer-manager downloading a directory would know the object size ahead of time.
+    // Size hint could have a big performance impact when downloading lots of
+    // small files and validating checksums.
+
     auto request = aws_http_message_new_request(benchmark.alloc);
     options.message = request;
-    addHeader(request, "Host", benchmark.bucket + ".s3." + benchmark.region + ".amazonaws.com");
+    addHeader(request, "Host", benchmark.endpoint);
     aws_http_message_set_request_path(request, toCursor(string("/") + config.key));
 
     aws_input_stream *inMemoryStreamForUpload = NULL;
@@ -509,32 +548,68 @@ int Task::onDownloadData(
     return AWS_OP_SUCCESS;
 }
 
+// Print all kinds of stats about these values (median, mean, min, max, etc)
+void printValueStats(const char *label, vector<double> values)
+{
+    std::sort(values.begin(), values.end());
+    double n = values.size();
+    double min = values.front();
+    double max = values.back();
+    double mean = std::accumulate(values.begin(), values.end(), 0.0) / n;
+
+    double median = values.front();
+    if (values.size() > 1)
+    {
+        size_t middle = values.size() / 2;
+        if (values.size() % 2 == 1)
+        {
+            // odd number, use middle value
+            median = values[middle];
+        }
+        else
+        {
+            // even number, use avg of two middle values
+            double a = values[middle - 1];
+            double b = values[middle];
+            median = (a + b) / 2;
+        }
+    }
+
+    // clang-format off
+    double variance = std::accumulate(
+        values.begin(),
+        values.end(),
+        0.0,
+        [mean, n](double accumulator, const double &val) { return accumulator + ((val - mean) * (val - mean) / n); });
+    // clang-format on
+
+    double stdDev = std::sqrt(variance);
+
+    printf(
+        "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
+        label,
+        median,
+        mean,
+        min,
+        max,
+        variance,
+        stdDev);
+}
+
 void printStats(uint64_t bytesPerRun, const vector<double> &durations)
 {
-    double n = durations.size();
-    double durationMean = std::accumulate(durations.begin(), durations.end(), 0.0) / n;
+    vector<double> throughputsGbps;
+    for (double duration : durations)
+        throughputsGbps.push_back(bytesToGigabit(bytesPerRun) / duration);
 
-    double durationVariance = std::accumulate(
-        durations.begin(),
-        durations.end(),
-        0.0,
-        [&durationMean, &n](double accumulator, const double &val)
-        { return accumulator + ((val - durationMean) * (val - durationMean) / n); });
+    printValueStats("Throughput (Gb/s)", throughputsGbps);
 
-    double mbsMean = bytesToMegabit(bytesPerRun) / durationMean;
-    double mbsVariance = bytesToMegabit(bytesPerRun) / durationVariance;
+    printValueStats("Duration (Secs)", durations);
 
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
-    printf(
-        "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration "
-        "Variance:%.3f s Peak RSS:%.3f Mb\n",
-        mbsMean,
-        mbsVariance,
-        durationMean,
-        durationVariance,
-        (double)mu.maxrss / 1024.0);
+    printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
 }
 
 int main(int argc, char *argv[])
@@ -566,14 +641,7 @@ int main(int argc, char *argv[])
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
         fflush(stderr);
-        printf(
-            "Run:%d Secs:%.3f Gb/s:%.1f Mb/s:%.1f GiB/s:%.1f MiB/s:%.1f\n",
-            runI + 1,
-            runSecs,
-            bytesToGigabit(bytesPerRun) / runSecs,
-            bytesToMegabit(bytesPerRun) / runSecs,
-            bytesToGiB(bytesPerRun) / runSecs,
-            bytesToMiB(bytesPerRun) / runSecs);
+        printf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs

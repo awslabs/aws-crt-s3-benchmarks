@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
 
-from runner import BenchmarkConfig, BenchmarkRunner, gigabit_to_bytes
+from runner import BenchmarkConfig, BenchmarkRunner
 
 
 class Boto3BenchmarkRunner(BenchmarkRunner):

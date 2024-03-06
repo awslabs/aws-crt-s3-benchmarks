@@ -3,12 +3,9 @@ package com.example.s3benchrunner.sdkjava;
 import com.example.s3benchrunner.BenchmarkConfig;
 import com.example.s3benchrunner.BenchmarkRunner;
 import com.example.s3benchrunner.TaskConfig;
-import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Publisher;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
 

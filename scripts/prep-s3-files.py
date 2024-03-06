@@ -154,23 +154,25 @@ def prep_bucket(s3, bucket: str, region: str):
 
     # Set lifecycle rules on this bucket, so we don't waste money.
     # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
-    s3.put_bucket_lifecycle_configuration(
-        Bucket=bucket,
-        LifecycleConfiguration={
-            'Rules': [
-                {
-                    'ID': 'Abort all incomplete multipart uploads after 1 day',
-                    'Status': 'Enabled',
-                    'Filter': {'Prefix': ''},  # blank string means all
-                    'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
-                },
-                {
-                    'ID': 'Objects under "upload/" expire after 1 day',
-                    'Status': 'Enabled',
-                    'Filter': {'Prefix': 'upload/'},
-                    'Expiration': {'Days': 1},
-                },
-            ]})
+    # NOTE: S3 Express doesn't support lifecycle rules (as of March 2024).
+    if not bucket.endswith('--x-s3'):
+        s3.put_bucket_lifecycle_configuration(
+            Bucket=bucket,
+            LifecycleConfiguration={
+                'Rules': [
+                    {
+                        'ID': 'Abort all incomplete multipart uploads after 1 day',
+                        'Status': 'Enabled',
+                        'Filter': {'Prefix': ''},  # blank string means all
+                        'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
+                    },
+                    {
+                        'ID': 'Objects under "upload/" expire after 1 day',
+                        'Status': 'Enabled',
+                        'Filter': {'Prefix': 'upload/'},
+                        'Expiration': {'Days': 1},
+                    },
+                ]})
 
 
 @dataclass
@@ -302,7 +304,8 @@ def prep_file_in_s3(task: Task, s3, bucket: str, existing_s3_objects: dict[str, 
         # if it's the right size etc, then we can skip the upload
         if existing.size != task.size:
             _print_status('re-uploading due to size mismatch')
-        elif existing.checksum != task.checksum:
+        elif (task.checksum is not None) and (existing.checksum != task.checksum):
+            # NOTE: S3 Express gives objects checksums even if they were uploaded without any
             _print_status('re-uploading due to checksum mismatch')
         else:
             # return early, file already exists

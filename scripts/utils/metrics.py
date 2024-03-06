@@ -71,23 +71,15 @@ def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[f
     For example, given:
     '''
     [ERROR] [2024-01-10T22:46:03Z] [00007f4124174440] [AuthCredentialsProvider] - ...
-    Run:1 Secs:8.954 Gb/s:28.8 Mb/s:28780.0 GiB/s:3.4 MiB/s:3430.8
-    Run:2 Secs:9.180 Gb/s:28.1 Mb/s:28072.4 GiB/s:3.3 MiB/s:3346.5
-    Run:3 Secs:9.321 Gb/s:27.6 Mb/s:27648.3 GiB/s:3.2 MiB/s:3295.9
+    Run:1 Secs:8.954437 Gb/s:28.847134
+    Run:2 Secs:9.180856 Gb/s:28.116831
+    Run:3 Secs:9.321967 Gb/s:27.612145
     Done!
     '''
 
-    Returns [28.780, 28.0724, 27.6483]
+    Returns [28.847134, 28.116831, 27.612145]
     """
-    # NOTE: Runners print throughput thats "nice" for humans to read,
-    # (no scientific notation and only .1f precision).
-    # They print throughput at multiple scales (Gb, Mb, GiB, MiB)
-    # so people can look eyeball whichever number makes sense to them.
-    #
-    # Anyway, parse "Mb/s" here since it will be the largest number
-    # and therefore retain the most precision. But return it as gigabits
-    # since that's how we usually think of throughput.
-    pattern = re.compile(r'^Run:\d+ .* Mb/s:([^ ]+) ')
+    pattern = re.compile(r'^Run:\d+ .* Gb/s:(\d+\.\d+)')
     throughput_per_run = []
     for line in stdout.splitlines():
         m = pattern.match(line)

@@ -572,10 +572,13 @@ void printValueStats(const char *label, vector<double> values)
         }
     }
 
-    auto varianceAccumulatorOp = [mean, n](double accumulator, const double &val)
-    { return accumulator + ((val - mean) * (val - mean) / n); };
-
-    double variance = std::accumulate(values.begin(), values.end(), 0.0, varianceAccumulatorOp);
+    // clang-format off
+    double variance = std::accumulate(
+        values.begin(),
+        values.end(),
+        0.0,
+        [mean, n](double accumulator, const double &val) { return accumulator + ((val - mean) * (val - mean) / n); });
+    // clang-format on
 
     double stdDev = std::sqrt(variance);
 

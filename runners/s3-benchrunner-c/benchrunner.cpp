@@ -269,8 +269,7 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     }
     else
     {
-        // vanilla S3.
-        // Endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
+        // Standard S3 endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
         this->endpoint = bucket;
         this->endpoint += ".s3.";
         this->endpoint += region;

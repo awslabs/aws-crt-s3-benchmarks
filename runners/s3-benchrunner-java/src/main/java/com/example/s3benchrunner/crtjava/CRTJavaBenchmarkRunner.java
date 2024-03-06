@@ -44,8 +44,7 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
             // mybucket--usw2-az3--x-s3.s3express-usw2-az3.us-west-2.amazonaws.com
             endpoint = bucket + ".s3express-" + azID + "." + region + ".amazonaws.com";
         } else {
-            // vanilla S3.
-            // Endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
+            // Standard S3 endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
             endpoint = bucket + ".s3." + region + ".amazonaws.com";
         }
 

@@ -418,9 +418,13 @@ Task::Task(Benchmark &benchmark, size_t taskI)
 
     aws_s3_meta_request_options options;
     AWS_ZERO_STRUCT(options);
-    options.object_size_hint = &config.size;
     options.user_data = this;
     options.finish_callback = Task::onFinished;
+
+    // TODO: add "sizeHint" to config, if true then set options.object_size_hint.
+    // A transfer-manager downloading a directory would know the object size ahead of time.
+    // Size hint could have a big performance impact when downloading lots of
+    // small files and validating checksums.
 
     auto request = aws_http_message_new_request(benchmark.alloc);
     options.message = request;

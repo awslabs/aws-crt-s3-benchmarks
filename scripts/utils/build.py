@@ -173,9 +173,9 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
          '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
          '--activate-profiles', 'quick',
          '--also-make',
-          # use locally installed version of aws-crt-java
+         # use locally installed version of aws-crt-java
          '-Dawscrt.version=1.0.0-SNAPSHOT',
-    ])
+         ])
 
     # Build runner
     runner_src = RUNNERS['java'].dir

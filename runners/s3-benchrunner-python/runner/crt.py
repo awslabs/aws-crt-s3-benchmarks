@@ -18,12 +18,13 @@ class CrtBenchmarkRunner(BenchmarkRunner):
 
         # S3 Express buckets look like "mybucket--usw2-az3--x-s3" (where "usw2-az3" is the AZ ID)
         s3express_match = re.search("--(.*)--x-s3$", self.config.bucket)
-        is_s3express = s3express_match is not None
-        if is_s3express:
+        if s3express_match:
+            is_s3express = True
             az_id = s3express_match.group(1)
             self.endpoint = \
                 f"{self.config.bucket}.s3express-{az_id}.{self.config.region}.amazonaws.com"
         else:
+            is_s3express = False
             self.endpoint = \
                 f"{self.config.bucket}.s3.{self.config.region}.amazonaws.com"
 

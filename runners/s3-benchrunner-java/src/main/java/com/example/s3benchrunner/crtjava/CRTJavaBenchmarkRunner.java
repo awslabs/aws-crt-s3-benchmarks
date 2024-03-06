@@ -36,16 +36,14 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
         // S3 Express buckets look like "mybucket--usw2-az3--x-s3"
         Matcher s3ExpressMatcher = Pattern.compile("--(.*)--x-s3$").matcher(bucket);
         boolean isS3Express = s3ExpressMatcher.find();
-        if (isS3Express)
-        {
+        if (isS3Express) {
             // extract the "usw2-az3" from "mybucket--usw2-az3--x-s3"
             String azID = s3ExpressMatcher.group(1);
 
-            // Endpoint looks like: mybucket--usw2-az3--x-s3.s3express-usw2-az3.us-west-2.amazonaws.com
+            // Endpoint looks like:
+            // mybucket--usw2-az3--x-s3.s3express-usw2-az3.us-west-2.amazonaws.com
             endpoint = bucket + ".s3express-" + azID + "." + region + ".amazonaws.com";
-        }
-        else
-        {
+        } else {
             // vanilla S3.
             // Endpoint looks like: mybucket.s3.us-west-2.amazonaws.com
             endpoint = bucket + ".s3." + region + ".amazonaws.com";

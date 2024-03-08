@@ -5,8 +5,10 @@
 #include <aws/core/utils/stream/ResponseStream.h>
 #include <aws/s3-crt/S3CrtClient.h>
 #include <aws/s3-crt/model/GetObjectRequest.h>
+#include <aws/s3-crt/model/PutObjectRequest.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/GetObjectRequest.h>
+#include <aws/s3/model/PutObjectRequest.h>
 
 #include "utils.h"
 
@@ -235,7 +237,10 @@ class SdkTask : public Task
     {
         if (config.action == "upload")
         {
-            fail(string("Unknown task action: ") + config.action);
+            Aws::S3::Model::PutObjectRequest request;
+            request.SetBucket(runner.bucket);
+            request.SetKey(config.key);
+            request.SetBody();
         }
         else if (config.action == "download")
         {

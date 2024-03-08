@@ -34,6 +34,9 @@ def comma_separated_list(arg):
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
 PARSER.add_argument(
+    '--stack-name', required=True,
+    help="Name of stack running this job (e.g. S3Benchmarks)")
+PARSER.add_argument(
     '--region', required=True,
     help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
@@ -155,8 +158,8 @@ if __name__ == '__main__':
         submit_job_kwargs = {
             'jobName': job_name,
             # currently, job queues and definitions have hard-coded names
-            'jobQueue': instance_type.resource_name(),
-            'jobDefinition': instance_type.resource_name(),
+            'jobQueue': instance_type.resource_name(args.stack_name),
+            'jobDefinition': instance_type.resource_name(args.stack_name),
             # pass select args along to per-instance job
             'parameters': {
                 'branch': args.branch,

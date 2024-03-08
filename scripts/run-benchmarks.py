@@ -35,8 +35,8 @@ parser.add_argument(
     'Files are uploaded from and downloaded to here. ' +
     'If omitted, CWD is used.')
 parser.add_argument(
-    '--report-metrics', action='store_true',
-    help='Report metrics to CloudWatch')
+    '--report-metrics',
+    help='Report metrics to CloudWatch. Provide namespace for data (e.g. S3Benchmarks).')
 parser.add_argument(
     '--metrics-instance-type',
     help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
@@ -77,6 +77,7 @@ for workload in workloads:
             s3_client_id=args.s3_client,
             workload_path=workload,
             region=args.region,
+            metrics_namespace=args.report_metrics,
             instance_type=args.metrics_instance_type,
             branch=args.metrics_branch,
         )

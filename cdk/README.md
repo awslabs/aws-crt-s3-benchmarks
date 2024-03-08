@@ -27,16 +27,26 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
 1) Create a settings file for the account you'll be deploying to. Name it something like "myname.settings.json". It should look like:
     ```json
     {
+        "stack_name": "S3Benchmarks",
         "account": "012345678901",
         "region": "us-west-2",
         "bucket": "my-benchmarking-bucket",
+        "availability_zone": "us-west-2a",
         "canary": false
     }
     ```
     Fields are:
+    * `stack_name`: Name for CDK stack, canary dashboards, metrics etc. "S3Benchmarks" is fine. But if you're deploying multiple times to same account (e.g. once for general purpose bucket, and again for S3 Express directory bucket) you'll need unique names.
     * `account`: AWS account ID
     * `region`: AWS region
-    * `bucket`: (Optional) If you want to use a pre-existing bucket, or you want the bucket to persist when stack is destroyed, pass its name here. If you omit this field, or set the value `""` or `null`, a bucket will be created that gets destroyed when the stack is destroyed.
+    * `bucket`: (Optional) If you want to use a pre-existing bucket, or you want the bucket to persist when stack is destroyed, pass its name here. If you omit this field, or set the value `""` or `null`, a bucket will be created that gets destroyed when the stack is destroyed. For S3 Express One Zone directory buckets, you must use a pre-existing bucket.
+    * `availability_zone`: (Optional) Specify the AWS Availability Zone to run benchmarks in. For S3 Express One Zone directory buckets, this is important, follow these steps:
+        * Find directory bucket's AZ ID. For a bucket named "my-benchmarking-bucket--usw2-az3--x-s3", this would be: "usw2-az3"
+        * Get the Availability Zone Name for this AZ ID. Run:
+            ```sh
+            aws ec2 describe-availability-zones --zone-ids <az-id-from-above>
+            ```
+        * From output, get "ZoneName", and use that. It will be like "us-west-2d".
     * `canary`: (Optional) Set `true` to have the benchmarks run nightly.
 
 1) Deploy this CDK app, passing in your settings file:

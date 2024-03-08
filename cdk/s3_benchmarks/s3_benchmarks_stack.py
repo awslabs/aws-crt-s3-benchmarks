@@ -71,9 +71,14 @@ class S3BenchmarksStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str,
                  existing_bucket_name: Optional[str],
+                 availability_zone: Optional[str],
                  add_canary: bool,
                  **kwargs):
         super().__init__(scope, construct_id, **kwargs)
+
+        # If no availability zone specified, pick one.
+        if not availability_zone:
+            availability_zone = self.availability_zones[0]
 
         # If existing bucket specified, use it.
         # Otherwise, create one that will be destroyed when stack is destroyed.
@@ -96,6 +101,7 @@ class S3BenchmarksStack(Stack):
             # of S3 traffic through the default NAT gateway (ask me how I know).
             gateway_endpoints={"S3": ec2.GatewayVpcEndpointOptions(
                 service=ec2.GatewayVpcEndpointAwsService.S3)},
+            availability_zones=[availability_zone],
         )
 
         self._define_all_per_instance_batch_jobs()
@@ -134,7 +140,7 @@ class S3BenchmarksStack(Stack):
             # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatch.html
             resources=["*"],
             conditions={
-                "StringEquals": {"cloudwatch:namespace": "S3Benchmarks"},
+                "StringEquals": {"cloudwatch:namespace": self.stack_name},
             },
             effect=iam.Effect.ALLOW,
         ))
@@ -181,7 +187,7 @@ class S3BenchmarksStack(Stack):
         job_queue = batch.JobQueue(
             self, f"PerInstanceJobQueue-{id_with_hyphens}",
             # specify name so orchestrator script can easily reference it
-            job_queue_name=instance_type.resource_name(),
+            job_queue_name=instance_type.resource_name(self.stack_name),
             compute_environments=[batch.OrderedComputeEnvironment(
                 compute_environment=compute_env, order=0)],
         )
@@ -197,6 +203,7 @@ class S3BenchmarksStack(Stack):
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
             command=[
                 "python3", "/per-instance-job.py",
+                "--stack-name", self.stack_name,
                 "--bucket", self.bucket.bucket_name,
                 "--region", self.region,
                 "--branch", "Ref::branch",
@@ -210,7 +217,7 @@ class S3BenchmarksStack(Stack):
         job_defn = batch.EcsJobDefinition(
             self, f"PerInstanceJobDefn-{id_with_hyphens}",
             # specify name so orchestrator script can easily reference it
-            job_definition_name=instance_type.resource_name(),
+            job_definition_name=instance_type.resource_name(self.stack_name),
             container=container_defn,
             timeout=cdk.Duration.hours(
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
@@ -268,8 +275,8 @@ class S3BenchmarksStack(Stack):
             # The resolved names have an incrementing version like ":16" at the end.
             # So we can't remove the "*" unless we add complexity to pass all
             # fully resolved names over to the job script.
-            resources=[f"arn:{self.partition}:batch:{self.region}:{self.account}:job-queue/S3Benchmarks-PerInstance-*",
-                       f"arn:{self.partition}:batch:{self.region}:{self.account}:job-definition/S3Benchmarks-PerInstance-*"],
+            resources=[f"arn:{self.partition}:batch:{self.region}:{self.account}:job-queue/{self.stack_name}-PerInstance-*",
+                       f"arn:{self.partition}:batch:{self.region}:{self.account}:job-definition/{self.stack_name}-PerInstance-*"],
             effect=iam.Effect.ALLOW,
         ))
         # policy for actions that don't support resource-level permissions
@@ -289,6 +296,7 @@ class S3BenchmarksStack(Stack):
             memory=cdk.Size.mebibytes(256),  # cheap and puny
             command=[
                 "python3", "/orchestrator-job.py",
+                "--stack-name", self.stack_name,
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-types", "Ref::instanceTypes",
@@ -342,7 +350,7 @@ class S3BenchmarksStack(Stack):
 
         dashboard = cloudwatch.Dashboard(
             self, f"PerInstanceDashboard-{id_with_hyphens}",
-            dashboard_name=f"S3Benchmarks-{id_with_hyphens}",
+            dashboard_name=f"{self.stack_name}-{id_with_hyphens}",
         )
         dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
@@ -354,7 +362,7 @@ class S3BenchmarksStack(Stack):
             metric_per_s3_client = []
             for s3_client_id, s3_client_props in DEFAULT_S3_CLIENTS.items():
                 metric_per_s3_client.append(cloudwatch.Metric(
-                    namespace="S3Benchmarks",
+                    namespace=self.stack_name,
                     metric_name=f"Throughput",
                     dimensions_map={
                         "S3Client": s3_client_id,

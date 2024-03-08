@@ -13,6 +13,7 @@ def report_metrics(*,
                    s3_client_id: str,
                    workload_path: Path,
                    region: str,
+                   metrics_namespace: str,
                    instance_type: Optional[str],
                    branch: Optional[str],
                    ):
@@ -59,7 +60,7 @@ def report_metrics(*,
     print('Reporting metrics...')
     cloudwatch_client = boto3.client('cloudwatch', region_name=region)
     cloudwatch_client.put_metric_data(
-        Namespace='S3Benchmarks',
+        Namespace=metrics_namespace,
         MetricData=metric_data,
     )
 

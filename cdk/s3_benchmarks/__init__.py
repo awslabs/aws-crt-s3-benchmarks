@@ -15,8 +15,9 @@ class InstanceType:
     bandwidth_Gbps: float
     quota_code: str
 
-    def resource_name(self):
-        return f"S3Benchmarks-PerInstance-{self.id.replace('.', '-')}"
+    def resource_name(self, stack_name):
+        """Use this anywhere we need a hardcoded name (e.g. Job Definition)"""
+        return f"{stack_name}-PerInstance-{self.id.replace('.', '-')}"
 
 
 # EC2 Quota: Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances

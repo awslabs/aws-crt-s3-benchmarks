@@ -29,6 +29,9 @@ def comma_separated_list(arg):
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
 PARSER.add_argument(
+    '--stack-name', required=True,
+    help="Name of stack running this job (e.g. S3Benchmarks)")
+PARSER.add_argument(
     '--bucket', required=True,
     help="S3 bucket name")
 PARSER.add_argument(
@@ -120,7 +123,8 @@ if __name__ == '__main__':
     files_dir.mkdir()
     cmd_args.extend(['--files-dir', str(files_dir)])
 
-    cmd_args.extend(['--report-metrics'])
+    # use stack name as metrics namespace
+    cmd_args.extend(['--report-metrics', args.stack_name])
     cmd_args.extend(['--metrics-instance-type', args.instance_type])
 
     cmd_args.extend(['--s3-clients', *args.s3_clients])

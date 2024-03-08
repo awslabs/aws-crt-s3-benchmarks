@@ -39,8 +39,8 @@ PARSER.add_argument(
     '--branch',
     help='If specified, try to use this branch/commit/tag of various Git repos.')
 PARSER.add_argument(
-    '--report-metrics', action='store_true',
-    help='Report metrics to CloudWatch')
+    '--report-metrics',
+    help='Report metrics to CloudWatch. Provide namespace for data (e.g. S3Benchmarks).')
 PARSER.add_argument(
     '--metrics-instance-type',
     help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
@@ -89,7 +89,7 @@ if __name__ == '__main__':
             '--workloads', *[str(x) for x in workloads],
         ]
         if args.report_metrics:
-            run_cmd += ['--report-metrics']
+            run_cmd += ['--report-metrics', args.report_metrics]
 
             if args.metrics_instance_type:
                 run_cmd += ['--metrics-instance-type',

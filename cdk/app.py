@@ -11,8 +11,10 @@ from s3_benchmarks.s3_benchmarks_stack import S3BenchmarksStack
 
 @dataclass
 class Settings:
+    stack_name: str
     account: str
     region: str
+    availability_zone: Optional[str] = None
     bucket: Optional[str] = None
     canary: bool = False
 
@@ -37,11 +39,12 @@ cdk.Tags.of(app).add("Project", "S3Benchmarks")
 
 settings = load_settings(app)
 S3BenchmarksStack(
-    app, "S3BenchmarksStack",
+    app, f"{settings.stack_name}",
     description="Stack for running S3 benchmarks on specific EC2 instance types",
     env=cdk.Environment(
         account=settings.account, region=settings.region),
     existing_bucket_name=settings.bucket,
+    availability_zone=settings.availability_zone,
     add_canary=settings.canary,
 )
 app.synth()

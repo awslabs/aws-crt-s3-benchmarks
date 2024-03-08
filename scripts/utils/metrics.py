@@ -85,22 +85,6 @@ def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[f
         m = pattern.match(line)
         if not m:
             continue
-        megabits_per_sec = float(m.group(1))
-        gigabits_per_sec = megabits_per_sec / 1000
+        gigabits_per_sec = float(m.group(1))
         throughput_per_run.append(gigabits_per_sec)
     return throughput_per_run
-
-
-def _pretty_file_size(size_in_bytes: int) -> str:
-    """e.g. 2046 -> '2.0 KiB'"""
-    size_in_KiB = size_in_bytes / 1024
-    size_in_MiB = size_in_bytes / 1024**2
-    size_in_GiB = size_in_bytes / 1024**3
-
-    if size_in_GiB > 1:
-        return f"{size_in_GiB:.1f} GiB"
-    if size_in_MiB > 1:
-        return f"{size_in_MiB:.1f} MiB"
-    if size_in_KiB > 1:
-        return f"{size_in_KiB:.1f} KiB"
-    return f"{size_in_bytes} Bytes"

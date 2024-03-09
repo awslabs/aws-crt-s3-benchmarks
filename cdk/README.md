@@ -29,14 +29,22 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
     {
         "account": "012345678901",
         "region": "us-west-2",
-        "bucket": "my-benchmarking-bucket",
+        "buckets": ["my-benchmarking-bucket", "my-benchmarking-bucket--usw2-az3--x-s3"],
+        "availability_zone": "us-west-2a",
         "canary": false
     }
     ```
     Fields are:
     * `account`: AWS account ID
     * `region`: AWS region
-    * `bucket`: (Optional) If you want to use a pre-existing bucket, or you want the bucket to persist when stack is destroyed, pass its name here. If you omit this field, or set the value `""` or `null`, a bucket will be created that gets destroyed when the stack is destroyed.
+    * `buckets`: (Optional list) Omit this field to use a standard bucket that's destroyed when the stack is destroyed. Pass 2 names if you want to benchmark both an S3 Express One Zone directory bucket, and a standard bucket. Or just pass 1 name. If you pass names, the buckets will be created if necessary, and the buckets will persist even after the stack is destroyed.
+    * `availability_zone`: (Required for S3 Express) Name of AWS Availability Zone to run benchmarks in. **WARNING: Zone ID != Zone Name**. To find the zone *name* corresponding to the zone *ID* for your directory bucket:
+        * Get the zone ID: For bucket named "my-benchmarking-bucket--usw2-az3--x-s3", this would be: "usw2-az3".
+        * Run:
+            ```sh
+            aws ec2 describe-availability-zones --zone-ids <zone-id-from-above>
+            ```
+        * From output, get "ZoneName", and use that. It will be like "us-west-2d".
     * `canary`: (Optional) Set `true` to have the benchmarks run nightly.
 
 1) Deploy this CDK app, passing in your settings file:

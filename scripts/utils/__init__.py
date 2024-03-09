@@ -160,3 +160,18 @@ def print_banner(msg, *, border=5, char='*'):
     print(top_bottom_row)
     print(middle_row)
     print(top_bottom_row)
+
+
+def is_s3express_bucket(bucket: str) -> bool:
+    return bucket.endswith('--x-s3')
+
+
+def get_s3express_bucket_az_id(bucket: str) -> str:
+    assert is_s3express_bucket(bucket)
+    # extract the "usw2-az3" from "mybucket--usw2-az3--x-s3"
+    az_id = bucket.split('--')[-2]
+    return az_id
+
+
+def get_bucket_storage_class(bucket: str) -> str:
+    return 'S3Express' if is_s3express_bucket(bucket) else 'S3Standard'

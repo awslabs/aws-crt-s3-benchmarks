@@ -29,8 +29,8 @@ def comma_separated_list(arg):
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
 PARSER.add_argument(
-    '--bucket', required=True,
-    help="S3 bucket name")
+    '--buckets', required=True, type=comma_separated_list,
+    help="S3 bucket names, comma separated (e.g. my-bucket,my-bucket--usw2-az3--x-s3)")
 PARSER.add_argument(
     '--region', required=True,
     help="AWS region (e.g. us-west-2)")
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # run script in aws-crt-s3-benchmarks that does the rest
     cmd_args = [sys.executable,
                 str(benchmarks_dir/'scripts/prep-build-run-benchmarks.py')]
-    cmd_args.extend(['--bucket', args.bucket])
+    cmd_args.extend(['--buckets', *args.buckets])
     cmd_args.extend(['--region', args.region])
     cmd_args.extend(['--throughput', str(instance_type.bandwidth_Gbps)])
 

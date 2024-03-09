@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from utils import print_banner, run, workload_paths_from_args, S3_CLIENTS, SCRIPTS_DIR
+from utils import get_bucket_storage_class, print_banner, run, workload_paths_from_args, S3_CLIENTS, SCRIPTS_DIR
 import utils.build
 
 
@@ -12,8 +12,8 @@ PARSER = argparse.ArgumentParser(
     description='Do-it-all script that prepares S3 files, builds runners, ' +
     'runs benchmarks, and reports results.')
 PARSER.add_argument(
-    '--bucket', required=True,
-    help='S3 bucket (will be created if necessary)')
+    '--buckets', nargs='+', required=True,
+    help='S3 buckets to benchmark (will be created if necessary)')
 PARSER.add_argument(
     '--region', required=True,
     help='AWS region (e.g. us-west-2)')
@@ -53,14 +53,15 @@ if __name__ == '__main__':
     workloads = workload_paths_from_args(args.workloads)
 
     # prepare S3 files
-    print_banner('PREPARE S3 FILES')
-    run([
-        sys.executable, str(SCRIPTS_DIR/'prep-s3-files.py'),
-        '--bucket', args.bucket,
-        '--region', args.region,
-        '--files-dir', str(files_dir),
-        '--workloads', *[str(x) for x in workloads]
-    ])
+    for bucket in args.buckets:
+        print_banner(f'PREPARE S3 FILES - {get_bucket_storage_class(bucket)}')
+        run([
+            sys.executable, str(SCRIPTS_DIR/'prep-s3-files.py'),
+            '--bucket', bucket,
+            '--region', args.region,
+            '--files-dir', str(files_dir),
+            '--workloads', *[str(x) for x in workloads]
+        ])
 
     # track which runners we've already built
     runner_lang_to_cmd = {}
@@ -77,25 +78,27 @@ if __name__ == '__main__':
             runner_cmd_str = subprocess.list2cmdline(runner_cmd_list)
             runner_lang_to_cmd[runner.lang] = runner_cmd_str
 
-        print_banner(f'RUN BENCHMARKS: {s3_client_id}')
-        run_cmd = [
-            sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
-            '--runner-cmd', runner_lang_to_cmd[runner.lang],
-            '--s3-client', s3_client_id,
-            '--bucket', args.bucket,
-            '--region', args.region,
-            '--throughput', str(args.throughput),
-            '--files-dir', str(files_dir),
-            '--workloads', *[str(x) for x in workloads],
-        ]
-        if args.report_metrics:
-            run_cmd += ['--report-metrics']
+        for bucket in args.buckets:
+            print_banner(
+                f'RUN BENCHMARKS: {get_bucket_storage_class(bucket)} - {s3_client_id}')
+            run_cmd = [
+                sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
+                '--runner-cmd', runner_lang_to_cmd[runner.lang],
+                '--s3-client', s3_client_id,
+                '--bucket', bucket,
+                '--region', args.region,
+                '--throughput', str(args.throughput),
+                '--files-dir', str(files_dir),
+                '--workloads', *[str(x) for x in workloads],
+            ]
+            if args.report_metrics:
+                run_cmd += ['--report-metrics']
 
-            if args.metrics_instance_type:
-                run_cmd += ['--metrics-instance-type',
-                            args.metrics_instance_type]
+                if args.metrics_instance_type:
+                    run_cmd += ['--metrics-instance-type',
+                                args.metrics_instance_type]
 
-            # if default branch was used, report "main"
-            run_cmd += ['--metrics-branch', args.branch or "main"]
+                # if default branch was used, report "main"
+                run_cmd += ['--metrics-branch', args.branch or "main"]
 
-        run(run_cmd)
+            run(run_cmd)

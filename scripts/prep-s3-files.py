@@ -13,7 +13,7 @@ import subprocess
 import time
 from typing import Optional
 
-from utils import workload_paths_from_args
+from utils import workload_paths_from_args, is_s3express_bucket, get_s3express_bucket_az_id
 
 PARSER = argparse.ArgumentParser(
     description='Create files (on disk, and in S3 bucket) needed to run the benchmarks')
@@ -136,26 +136,44 @@ def prep_bucket(s3, bucket: str, region: str):
     def _print_status(msg):
         print(f's3://{bucket}: {msg}')
 
+    bucket_exists = False
     try:
         s3.head_bucket(Bucket=bucket)
         _print_status('✓ bucket already exists')
+        bucket_exists = True
 
     except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] != '404':
+        # S3 Standard gives 404, S3 Express gives NoSuchBucket
+        if e.response['Error']['Code'] not in ('404', 'NoSuchBucket'):
             raise e
 
+    if not bucket_exists:
         _print_status('creating bucket...')
 
-        s3.create_bucket(
-            Bucket=bucket,
-            CreateBucketConfiguration={'LocationConstraint': region})
+        if is_s3express_bucket(bucket):
+            s3.create_bucket(
+                Bucket=bucket,
+                CreateBucketConfiguration={
+                    'Location': {
+                        'Type': 'AvailabilityZone',
+                        'Name': get_s3express_bucket_az_id(bucket),
+                    },
+                    'Bucket': {
+                        'Type': 'Directory',
+                        'DataRedundancy': 'SingleAvailabilityZone'
+                    }
+                })
+        else:
+            s3.create_bucket(
+                Bucket=bucket,
+                CreateBucketConfiguration={'LocationConstraint': region})
 
         # note: no versioning on this bucket, so we don't waste money
 
     # Set lifecycle rules on this bucket, so we don't waste money.
     # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
     # NOTE: S3 Express doesn't support lifecycle rules (as of March 2024).
-    if not bucket.endswith('--x-s3'):
+    if not is_s3express_bucket(bucket):
         s3.put_bucket_lifecycle_configuration(
             Bucket=bucket,
             LifecycleConfiguration={

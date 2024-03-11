@@ -1,9 +1,9 @@
 import boto3  # type: ignore
 from datetime import datetime
-import json
 from pathlib import Path
 import re
 from typing import Optional
+from utils import get_bucket_storage_class
 
 
 def report_metrics(*,
@@ -12,6 +12,7 @@ def report_metrics(*,
                    run_end_time: datetime,
                    s3_client_id: str,
                    workload_path: Path,
+                   bucket: str,
                    region: str,
                    instance_type: Optional[str],
                    branch: Optional[str],
@@ -31,6 +32,7 @@ def report_metrics(*,
         {'Name': 'InstanceType', 'Value': instance_type or 'Unknown'},
         {'Name': 'Branch', 'Value': branch or 'Unknown'},
         {'Name': 'Workload', 'Value': workload_path.name.split('.')[0]},
+        {'Name': 'StorageClass', 'Value': get_bucket_storage_class(bucket)},
     ]
 
     metric_data = []

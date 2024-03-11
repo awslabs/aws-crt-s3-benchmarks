@@ -70,24 +70,32 @@ PER_INSTANCE_STORAGE_GiB = 500
 class S3BenchmarksStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str,
-                 existing_bucket_name: Optional[str],
+                 existing_bucket_names: Optional[list[str]],
+                 availability_zone: Optional[str],
                  add_canary: bool,
                  **kwargs):
         super().__init__(scope, construct_id, **kwargs)
 
-        # If existing bucket specified, use it.
+        # If no availability zone specified, pick one.
+        if not availability_zone:
+            availability_zone = self.availability_zones[0]
+
+        # If buckets provided, use them.
         # Otherwise, create one that will be destroyed when stack is destroyed.
-        if existing_bucket_name:
-            self.bucket = s3.Bucket.from_bucket_name(
-                self, "Bucket", existing_bucket_name)
+        if existing_bucket_names:
+            # note: not using s3.Bucket.from_bucket_name() because (as of March 2024)
+            # CDK doesn't work with S3 Express (gives wrong ARN for bucket)
+            self.bucket_names = existing_bucket_names
         else:
-            self.bucket = s3.Bucket(
+            bucket = s3.Bucket(
                 self, "Bucket",
                 auto_delete_objects=True,
-                removal_policy=cdk.RemovalPolicy.DESTROY,
+                removal_policy=cdk.RemovalPolicy.DESTROY
             )
             # note: lifecycle rules for this bucket will be set later,
             # by prep-s3-files.py, which runs as part of the per-instance job
+
+            self.bucket_names = [bucket.bucket_name]
 
         self.vpc = ec2.Vpc(
             self, "Vpc",
@@ -96,6 +104,7 @@ class S3BenchmarksStack(Stack):
             # of S3 traffic through the default NAT gateway (ask me how I know).
             gateway_endpoints={"S3": ec2.GatewayVpcEndpointOptions(
                 service=ec2.GatewayVpcEndpointAwsService.S3)},
+            availability_zones=[availability_zone],
         )
 
         self._define_all_per_instance_batch_jobs()
@@ -120,13 +129,20 @@ class S3BenchmarksStack(Stack):
             max_session_duration=cdk.Duration.hours(
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
         )
-        # per-instance-job can do whatever it wants to the bucket
-        self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
-            actions=["s3:*"],
-            resources=[self.bucket.bucket_arn,
-                       f"{self.bucket.bucket_arn}/*"],
-            effect=iam.Effect.ALLOW,
-        ))
+        # per-instance-job can do whatever it wants to the buckets
+        for bucket in self.bucket_names:
+            if s3_benchmarks.is_s3express_bucket(bucket):
+                bucket_arn = f"arn:{self.partition}:s3express:{self.region}:{self.account}:bucket/{bucket}"
+                service = "s3express"
+            else:
+                bucket_arn = f"arn:{self.partition}:s3:::{bucket}"
+                service = "s3"
+            self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
+                actions=[f"{service}:*"],
+                resources=[bucket_arn,
+                           f"{bucket_arn}/*"],
+                effect=iam.Effect.ALLOW,
+            ))
         # job reports metrics to CloudWatch
         self.per_instance_job_role.add_to_policy(iam.PolicyStatement(
             actions=["cloudwatch:PutMetricData"],
@@ -197,7 +213,7 @@ class S3BenchmarksStack(Stack):
                 cdk.Size.gibibytes(instance_type.mem_GiB)),
             command=[
                 "python3", "/per-instance-job.py",
-                "--bucket", self.bucket.bucket_name,
+                "--buckets", "Ref::buckets",
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-type", instance_type.id,
@@ -216,6 +232,7 @@ class S3BenchmarksStack(Stack):
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
             parameters={
                 "branch": "main",
+                "buckets": ','.join(self.bucket_names),
                 "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },
@@ -292,6 +309,7 @@ class S3BenchmarksStack(Stack):
                 "--region", self.region,
                 "--branch", "Ref::branch",
                 "--instance-types", "Ref::instanceTypes",
+                '--buckets', "Ref::buckets",
                 "--s3-clients", "Ref::s3Clients",
                 "--workloads", "Ref::workloads",
             ],
@@ -306,6 +324,7 @@ class S3BenchmarksStack(Stack):
             parameters={
                 "branch": "main",
                 "instanceTypes": ','.join(DEFAULT_INSTANCE_TYPES),
+                "buckets": ','.join(self.bucket_names),
                 "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },
@@ -333,16 +352,18 @@ class S3BenchmarksStack(Stack):
         Each instance-type gets its own dashboard, then have a graph per workload,
         and in that graph plot the results of each s3-client.
         """
-        for instance_type_id in DEFAULT_INSTANCE_TYPES:
-            instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
-            self._define_per_instance_dashboard(instance_type)
+        for bucket in self.bucket_names:
+            for instance_type_id in DEFAULT_INSTANCE_TYPES:
+                instance_type = s3_benchmarks.INSTANCE_TYPES[instance_type_id]
+                self._define_per_instance_dashboard(instance_type, bucket)
 
-    def _define_per_instance_dashboard(self, instance_type: s3_benchmarks.InstanceType):
+    def _define_per_instance_dashboard(self, instance_type: s3_benchmarks.InstanceType, bucket: str):
+        storage_class = s3_benchmarks.get_bucket_storage_class(bucket)
         id_with_hyphens = instance_type.id.replace('.', '-')
 
         dashboard = cloudwatch.Dashboard(
-            self, f"PerInstanceDashboard-{id_with_hyphens}",
-            dashboard_name=f"S3Benchmarks-{id_with_hyphens}",
+            self, f"PerInstanceDashboard-{storage_class}-{id_with_hyphens}",
+            dashboard_name=f"S3Benchmarks-{storage_class}-{id_with_hyphens}",
         )
         dashboard.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
 
@@ -361,6 +382,7 @@ class S3BenchmarksStack(Stack):
                         "InstanceType": instance_type.id,
                         "Branch": "main",
                         "Workload": workload,
+                        "StorageClass": storage_class,
                     },
                     label=s3_client_id,
                     color=s3_client_props.color,

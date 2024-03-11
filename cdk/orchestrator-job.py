@@ -34,6 +34,9 @@ def comma_separated_list(arg):
 PARSER = argparse.ArgumentParser(
     description="Run S3 benchmarks on each EC2 instance type")
 PARSER.add_argument(
+    '--buckets', required=True, type=comma_separated_list,
+    help="S3 bucket names, comma separated (e.g. my-bucket,my-bucket--usw2-az3--x-s3)")
+PARSER.add_argument(
     '--region', required=True,
     help="AWS region (e.g. us-west-2)")
 PARSER.add_argument(
@@ -160,6 +163,7 @@ if __name__ == '__main__':
             # pass select args along to per-instance job
             'parameters': {
                 'branch': args.branch,
+                'buckets': ','.join(args.buckets),
                 'workloads': ','.join(args.workloads),
                 's3Clients': ','.join(args.s3_clients),
             },

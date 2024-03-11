@@ -50,3 +50,11 @@ PER_INSTANCE_JOB_TIMEOUT_HOURS = 6.0
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.
 ORCHESTRATOR_JOB_TIMEOUT_HOURS = 12.0
+
+
+def is_s3express_bucket(bucket: str) -> bool:
+    return bucket.endswith('--x-s3')
+
+
+def get_bucket_storage_class(bucket: str) -> str:
+    return 'S3Express' if is_s3express_bucket(bucket) else 'S3Standard'

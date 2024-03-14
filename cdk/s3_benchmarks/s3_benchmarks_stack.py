@@ -102,8 +102,16 @@ class S3BenchmarksStack(Stack):
             # Add gateway endpoint for S3.
             # Otherwise, it costs thousands of dollars to naively send terabytes
             # of S3 traffic through the default NAT gateway (ask me how I know).
-            gateway_endpoints={"S3": ec2.GatewayVpcEndpointOptions(
-                service=ec2.GatewayVpcEndpointAwsService.S3)},
+            #
+            # Also add one for S3 Express.
+            # If you naively assumed the S3 one would cover this,
+            # you'd be out thousands of dollars more (ask me how I know).
+            gateway_endpoints={
+                "S3": ec2.GatewayVpcEndpointOptions(
+                    service=ec2.GatewayVpcEndpointAwsService("s3")),
+                "S3Express": ec2.GatewayVpcEndpointOptions(
+                    service=ec2.GatewayVpcEndpointAwsService("s3express"))
+            },
             availability_zones=[availability_zone],
         )
 

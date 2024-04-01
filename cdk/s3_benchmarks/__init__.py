@@ -45,11 +45,11 @@ ORCHESTRATOR_INSTANCE_TYPE = InstanceType(
 
 # Timeout for job running on our slowest EC2 instance type,
 # running ALL benchmarking workloads, using ALL S3 clients.
-PER_INSTANCE_JOB_TIMEOUT_HOURS = 6.0
+PER_INSTANCE_JOB_TIMEOUT_HOURS = 9.0
 
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.
-ORCHESTRATOR_JOB_TIMEOUT_HOURS = 12.0
+ORCHESTRATOR_JOB_TIMEOUT_HOURS = 18.0
 
 
 def is_s3express_bucket(bucket: str) -> bool:

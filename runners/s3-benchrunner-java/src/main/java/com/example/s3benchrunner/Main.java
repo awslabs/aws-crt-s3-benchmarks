@@ -56,11 +56,12 @@ public class Main {
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, true);
             case "sdk-java-tm-crt" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, true);
-            case "sdk-java-client" ->
+            case "sdk-java-client-classic" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, false);
-            case "sdk-java-tm" -> new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, false);
+            case "sdk-java-tm-classic" ->
+                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, false);
             default -> throw new RuntimeException(
-                    "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt");
+                    "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
         };
 
         long bytesPerRun = config.bytesPerRun();

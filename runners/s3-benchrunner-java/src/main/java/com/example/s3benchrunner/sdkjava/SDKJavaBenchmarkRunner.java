@@ -38,7 +38,12 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
                     .targetThroughputInGbps(targetThroughputGbps)
                     .build();
         } else {
-            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(true).build();
+            /**
+             * TODO: SDKs don't support multipart download yet. But, they do have a
+             * workaround to fallback for transfer manager.
+             * So, use multipart for transfer manager, and default one for client directly.
+             */
+            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(useTransferManager).build();
         }
 
         if (useTransferManager) {

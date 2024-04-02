@@ -29,13 +29,17 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
     String transferKey;
 
     public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
-            boolean useTransferManager) {
+            boolean useTransferManager, boolean useCRT) {
         super(config, bucket, region);
 
-        s3AsyncClient = S3AsyncClient.crtBuilder()
-                .region(Region.of(region))
-                .targetThroughputInGbps(targetThroughputGbps)
-                .build();
+        if (useCRT) {
+            s3AsyncClient = S3AsyncClient.crtBuilder()
+                    .region(Region.of(region))
+                    .targetThroughputInGbps(targetThroughputGbps)
+                    .build();
+        } else {
+            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(true).build();
+        }
 
         if (useTransferManager) {
             if (!config.filesOnDisk) {

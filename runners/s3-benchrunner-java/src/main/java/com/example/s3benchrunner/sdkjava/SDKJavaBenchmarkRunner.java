@@ -43,7 +43,8 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
              * workaround to fallback for transfer manager.
              * So, use multipart for transfer manager, and default one for client directly.
              */
-            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(useTransferManager).build();
+            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(useTransferManager).region(Region.of(region))
+                    .build();
         }
 
         if (useTransferManager) {

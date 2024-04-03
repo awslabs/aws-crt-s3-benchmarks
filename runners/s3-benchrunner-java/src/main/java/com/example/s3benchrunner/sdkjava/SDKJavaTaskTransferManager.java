@@ -9,7 +9,7 @@ import java.nio.file.Path;
 public class SDKJavaTaskTransferManager extends SDKJavaTask {
 
     SDKJavaTaskTransferManager(SDKJavaBenchmarkRunner runner) {
-        super();
+        super(runner);
 
         if (runner.transferKey != null) {
             /* Transfer a single file */

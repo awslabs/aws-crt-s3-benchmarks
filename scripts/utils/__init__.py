@@ -36,7 +36,7 @@ def _add_runner(runner: Runner):
 
 _add_runner(Runner('c', s3_clients=['crt-c']))
 _add_runner(Runner('java',
-                   s3_clients=['crt-java', 'sdk-java-client-crt', 'sdk-java-tm-crt']))
+                   s3_clients=['crt-java', 'sdk-java-client-crt', 'sdk-java-tm-crt', 'sdk-java-client-classic', 'sdk-java-tm-classic']))
 _add_runner(Runner('python',
                    s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))
 

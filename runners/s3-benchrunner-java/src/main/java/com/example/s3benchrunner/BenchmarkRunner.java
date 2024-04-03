@@ -2,6 +2,7 @@ package com.example.s3benchrunner;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.Semaphore;
 
 public abstract class BenchmarkRunner {
 
@@ -10,6 +11,8 @@ public abstract class BenchmarkRunner {
     public String region;
 
     public byte[] randomDataForUpload;
+    private static final int MAX_CONCURRENCE = 1000;
+    public Semaphore concurrency_semaphore = new Semaphore(MAX_CONCURRENCE, true);
 
     public BenchmarkRunner(BenchmarkConfig config, String bucket, String region) {
         this.config = config;

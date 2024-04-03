@@ -9,8 +9,13 @@ public class SDKJavaTask {
 
     protected CompletableFuture<Void> doneFuture;
 
-    SDKJavaTask() {
+    SDKJavaTask(SDKJavaBenchmarkRunner runner) {
         doneFuture = new CompletableFuture<Void>();
+        try{
+            runner.concurrency_semaphore.acquire();
+        } catch (InterruptedException e) {
+            completeHelper(runner, e);
+        }
     }
 
     public void waitUntilDone() {
@@ -27,6 +32,7 @@ public class SDKJavaTask {
             failure.printStackTrace();
             exitWithErrorHelper(runner);
         }
+        runner.concurrency_semaphore.release();
         this.doneFuture.complete(null);
     }
 

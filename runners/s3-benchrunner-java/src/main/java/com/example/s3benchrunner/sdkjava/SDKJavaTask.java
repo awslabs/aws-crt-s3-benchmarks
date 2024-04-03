@@ -11,7 +11,7 @@ public class SDKJavaTask {
 
     SDKJavaTask(SDKJavaBenchmarkRunner runner) {
         doneFuture = new CompletableFuture<Void>();
-        try{
+        try {
             runner.concurrency_semaphore.acquire();
         } catch (InterruptedException e) {
             completeHelper(runner, e);

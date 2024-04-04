@@ -39,6 +39,7 @@ jobs:
   Build:
     runs-on: ubuntu-22.04 # latest at time of writing
     strategy:
+      fail-fast: false
       matrix:
         runner:
           - c

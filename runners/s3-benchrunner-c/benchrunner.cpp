@@ -30,6 +30,9 @@ using json = nlohmann::json;
 struct TaskConfig;
 class Benchmark;
 
+#define USE_ASYNC_WRITES 1
+#define ASYNC_WRITE_SIZE (256 * 1024)
+
 /////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
 
 // 256MiB is Java Transfer Mgr V2's default
@@ -135,6 +138,8 @@ class Task
 
     FILE *downloadFile = NULL;
 
+    size_t bytesUploaded = 0;
+
     static int onDownloadData(
         struct aws_s3_meta_request *meta_request,
         const struct aws_byte_cursor *body,
@@ -145,6 +150,8 @@ class Task
         struct aws_s3_meta_request *meta_request,
         const struct aws_s3_meta_request_result *meta_request_result,
         void *user_data);
+
+    static void doAsyncWrite(void *user_data);
 
   public:
     // Creates the task and begins its work
@@ -369,8 +376,8 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
                     size_t prevSize = randomDataForUpload.size();
                     randomDataForUpload.resize(task.size);
 
-                    independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-                    generate(randomDataForUpload.begin() + prevSize, randomDataForUpload.end(), randEngine);
+                    // independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
+                    // generate(randomDataForUpload.begin() + prevSize, randomDataForUpload.end(), randEngine);
                 }
             }
         }
@@ -438,19 +445,23 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         options.type = AWS_S3_META_REQUEST_TYPE_PUT_OBJECT;
 
         aws_http_message_set_request_method(request, toCursor("PUT"));
-        addHeader(request, "Content-Length", to_string(config.size));
+        // addHeader(request, "Content-Length", to_string(config.size));
         addHeader(request, "Content-Type", "application/octet-stream");
 
         if (benchmark.config.filesOnDisk)
             options.send_filepath = toCursor(config.key);
         else
         {
+#if USE_ASYNC_WRITES
+            options.send_using_async_writes = true;
+#else
             // set up input-stream that uploads random data from a buffer
             auto randomDataCursor =
                 aws_byte_cursor_from_array(benchmark.randomDataForUpload.data(), benchmark.randomDataForUpload.size());
             auto inMemoryStreamForUpload = aws_input_stream_new_from_cursor(benchmark.alloc, &randomDataCursor);
             aws_http_message_set_body_stream(request, inMemoryStreamForUpload);
             aws_input_stream_release(inMemoryStreamForUpload);
+#endif
         }
     }
     else if (config.action == "download")
@@ -483,6 +494,13 @@ Task::Task(Benchmark &benchmark, size_t taskI)
 
     metaRequest = aws_s3_client_make_meta_request(benchmark.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
+
+#if USE_ASYNC_WRITES
+    if (config.action == "upload" && !benchmark.config.filesOnDisk)
+    {
+        Task::doAsyncWrite(this);
+    }
+#endif
 
     aws_http_message_release(request);
 }
@@ -546,6 +564,23 @@ int Task::onDownloadData(
     aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
+}
+
+void Task::doAsyncWrite(void *user_data)
+{
+    auto task = static_cast<Task *>(user_data);
+    size_t bytesRemaining = task->config.size - task->bytesUploaded;
+    if (bytesRemaining == 0)
+        return;
+
+    size_t bytesToWrite = std::min<size_t>(ASYNC_WRITE_SIZE, bytesRemaining);
+    auto data =
+        aws_byte_cursor_from_array(task->benchmark.randomDataForUpload.data() + task->bytesUploaded, bytesToWrite);
+    task->bytesUploaded += bytesToWrite;
+    bool eof = task->bytesUploaded == task->config.size;
+    aws_future_void *writeFuture = aws_s3_meta_request_write(task->metaRequest, data, eof);
+    aws_future_void_register_callback(writeFuture, doAsyncWrite, task);
+    aws_future_void_release(writeFuture);
 }
 
 // Print all kinds of stats about these values (median, mean, min, max, etc)

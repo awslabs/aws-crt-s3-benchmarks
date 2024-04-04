@@ -3,7 +3,7 @@
     "comment": "Find the limits of network I/O. Don't do anything that might slow us down, like touch the disk",
     "filesOnDisk": false,
     "checksum": null,
-    "maxRepeatCount": 10,
+    "maxRepeatCount": 5,
     "maxRepeatSecs": 600,
     "tasks": [
         {"action": "upload", "key": "upload/5GiB-1x/1", "size": 5368709120},

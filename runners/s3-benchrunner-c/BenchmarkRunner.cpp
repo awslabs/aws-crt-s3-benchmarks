@@ -18,14 +18,14 @@ class Benchmark;
 [[noreturn]] void fail(string_view msg)
 {
     cerr << "FAIL - " << msg << endl;
-    exit(255);
+    _Exit(255);
 }
 
 // exit because we're skipping the benchmark (e.g. has version# this runner doesn't support yet)
 [[noreturn]] void skip(string_view msg)
 {
     cerr << "Skipping benchmark - " << msg << endl;
-    exit(123);
+    _Exit(123);
 }
 
 uint64_t bytesFromKiB(uint64_t kibibytes)

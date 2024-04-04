@@ -66,6 +66,9 @@ class BenchmarkRunner
     BenchmarkRunner(const BenchmarkConfig &config);
     virtual ~BenchmarkRunner();
 
+    BenchmarkRunner(const BenchmarkRunner &) = delete;
+    BenchmarkRunner& operator=(const BenchmarkRunner&) = delete;
+
     // A benchmark can be run repeatedly
     virtual void run() = 0;
 };

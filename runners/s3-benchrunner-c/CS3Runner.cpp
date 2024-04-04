@@ -62,7 +62,7 @@ class CS3BenchmarkRunner : public BenchmarkRunner
 // A runnable task
 class Task
 {
-    CS3BenchmarkRunner &benchmark;
+    CS3BenchmarkRunner &runner;
     size_t taskI;
     TaskConfig &config;
     aws_s3_meta_request *metaRequest;
@@ -84,7 +84,7 @@ class Task
 
   public:
     // Creates the task and begins its work
-    Task(CS3BenchmarkRunner &benchmark, size_t taskI);
+    Task(CS3BenchmarkRunner &runner, size_t taskI);
 
     void waitUntilDone() { return doneFuture.wait(); }
 };
@@ -255,8 +255,8 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
     aws_http_message_add_header(request, header);
 }
 
-Task::Task(CS3BenchmarkRunner &benchmark, size_t taskI)
-    : benchmark(benchmark), taskI(taskI), config(benchmark.config.tasks[taskI]), donePromise(),
+Task::Task(CS3BenchmarkRunner &runner, size_t taskI)
+    : runner(runner), taskI(taskI), config(runner.config.tasks[taskI]), donePromise(),
       doneFuture(donePromise.get_future())
 {
 
@@ -270,9 +270,9 @@ Task::Task(CS3BenchmarkRunner &benchmark, size_t taskI)
     // Size hint could have a big performance impact when downloading lots of
     // small files and validating checksums.
 
-    auto request = aws_http_message_new_request(benchmark.alloc);
+    auto request = aws_http_message_new_request(runner.alloc);
     options.message = request;
-    addHeader(request, "Host", benchmark.endpoint);
+    addHeader(request, "Host", runner.endpoint);
     aws_http_message_set_request_path(request, toCursor(string("/") + config.key));
 
     aws_input_stream *inMemoryStreamForUpload = NULL;
@@ -285,14 +285,14 @@ Task::Task(CS3BenchmarkRunner &benchmark, size_t taskI)
         addHeader(request, "Content-Length", to_string(config.size));
         addHeader(request, "Content-Type", "application/octet-stream");
 
-        if (benchmark.config.filesOnDisk)
+        if (runner.config.filesOnDisk)
             options.send_filepath = toCursor(config.key);
         else
         {
             // set up input-stream that uploads random data from a buffer
             auto randomDataCursor =
-                aws_byte_cursor_from_array(benchmark.randomDataForUpload.data(), benchmark.randomDataForUpload.size());
-            auto inMemoryStreamForUpload = aws_input_stream_new_from_cursor(benchmark.alloc, &randomDataCursor);
+                aws_byte_cursor_from_array(runner.randomDataForUpload.data(), runner.randomDataForUpload.size());
+            auto inMemoryStreamForUpload = aws_input_stream_new_from_cursor(runner.alloc, &randomDataCursor);
             aws_http_message_set_body_stream(request, inMemoryStreamForUpload);
             aws_input_stream_release(inMemoryStreamForUpload);
         }
@@ -304,7 +304,7 @@ Task::Task(CS3BenchmarkRunner &benchmark, size_t taskI)
         aws_http_message_set_request_method(request, toCursor("GET"));
         addHeader(request, "Content-Length", "0");
 
-        if (benchmark.config.filesOnDisk)
+        if (runner.config.filesOnDisk)
         {
             downloadFile = fopen(config.key.c_str(), "wb");
             AWS_FATAL_ASSERT(downloadFile != NULL);
@@ -317,24 +317,24 @@ Task::Task(CS3BenchmarkRunner &benchmark, size_t taskI)
 
     aws_s3_checksum_config checksumConfig;
     AWS_ZERO_STRUCT(checksumConfig);
-    if (!benchmark.config.checksum.empty())
+    if (!runner.config.checksum.empty())
     {
-        if (benchmark.config.checksum == "CRC32")
+        if (runner.config.checksum == "CRC32")
             checksumConfig.checksum_algorithm = AWS_SCA_CRC32;
-        else if (benchmark.config.checksum == "CRC32C")
+        else if (runner.config.checksum == "CRC32C")
             checksumConfig.checksum_algorithm = AWS_SCA_CRC32C;
-        else if (benchmark.config.checksum == "SHA1")
+        else if (runner.config.checksum == "SHA1")
             checksumConfig.checksum_algorithm = AWS_SCA_SHA1;
-        else if (benchmark.config.checksum == "SHA256")
+        else if (runner.config.checksum == "SHA256")
             checksumConfig.checksum_algorithm = AWS_SCA_SHA256;
         else
-            fail(string("Unknown checksum: ") + benchmark.config.checksum);
+            fail(string("Unknown checksum: ") + runner.config.checksum);
         checksumConfig.location = AWS_SCL_HEADER;
         checksumConfig.validate_response_checksum = true;
         options.checksum_config = &checksumConfig;
     }
 
-    metaRequest = aws_s3_client_make_meta_request(benchmark.s3Client, &options);
+    metaRequest = aws_s3_client_make_meta_request(runner.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
 
     aws_http_message_release(request);

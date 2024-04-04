@@ -62,7 +62,7 @@ jobs:
         java-version: '17' # default version on Amazon Linux 2023
 
     - if: matrix.runner == 'cpp'
-      run: sudo apt-get install libcurl4-openssl-dev
+      run: apt update && apt install libcurl4-openssl-dev
 
     - name: Build
       run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

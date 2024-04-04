@@ -33,6 +33,8 @@ def _add(instance_type: InstanceType):
 _add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
                   bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
 
+_add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
+                  bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
 
 # Orchestrator instance type
 # How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):
@@ -45,7 +47,7 @@ ORCHESTRATOR_INSTANCE_TYPE = InstanceType(
 
 # Timeout for job running on our slowest EC2 instance type,
 # running ALL benchmarking workloads, using ALL S3 clients.
-PER_INSTANCE_JOB_TIMEOUT_HOURS = 6.0
+PER_INSTANCE_JOB_TIMEOUT_HOURS = 8.0
 
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.

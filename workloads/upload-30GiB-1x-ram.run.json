@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "comment": "",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload/30GiB-1x/1",
+            "size": 32212254720
+        }
+    ]
+}

@@ -53,13 +53,16 @@ jobs:
       with:
         python-version: '3.9' # default version on Amazon Linux 2023
 
+    - run: python -m pip install -r scripts/requirements.txt
+
     - if: matrix.runner == 'java'
       uses: actions/setup-java@v3
       with:
         distribution: 'corretto'
         java-version: '17' # default version on Amazon Linux 2023
 
-    - run: python -m pip install -r scripts/requirements.txt
+    - if: matrix.runner == 'cpp'
+      run: sudo apt-get install libcurl4-openssl-dev
 
     - name: Build
       run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

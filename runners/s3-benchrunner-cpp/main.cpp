@@ -1,11 +1,16 @@
 #include "SdkClientRunner.h"
 #include "SdkTransferManagerRunner.h"
 
+#include <aws/core/Aws.h>
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-    return benchmarkRunnerMain(
+    Aws::SDKOptions sdkOptions;
+    Aws::InitAPI(sdkOptions);
+
+    int exitCode = benchmarkRunnerMain(
         argc,
         argv,
         [](string_view id, const BenchmarkConfig &config)
@@ -18,4 +23,9 @@ int main(int argc, char *argv[])
                 return createSdkCrtClientRunner(config);
             fail("Unsupported S3_CLIENT. Options are: sdk-cpp-tm-classic, sdk-cpp-client-classic, sdk-cpp-client-crt");
         });
+
+    if (exitCode == 0)
+        Aws::ShutdownAPI(sdkOptions);
+
+    return exitCode;
 }

@@ -4,7 +4,6 @@
 #include <semaphore>
 #include <thread>
 
-#include <aws/core/Aws.h>
 #include <aws/s3-crt/S3CrtClient.h>
 #include <aws/s3-crt/model/GetObjectRequest.h>
 #include <aws/s3-crt/model/PutObjectRequest.h>
@@ -41,17 +40,13 @@ class SdkClientRunner : public BenchmarkRunner
     using SdkClientRunnerT =
         SdkClientRunner<S3ClientT, S3ErrorT, GetObjectRequestT, GetObjectResultT, PutObjectRequestT, PutObjectResultT>;
 
-    Aws::SDKOptions sdkOptions;
     unique_ptr<S3ClientT> client;
 
   public:
     SdkClientRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     {
-        Aws::InitAPI(sdkOptions);
         createS3Client();
     }
-
-    ~SdkClientRunner() override { Aws::ShutdownAPI(sdkOptions); }
 
     void run() override
     {

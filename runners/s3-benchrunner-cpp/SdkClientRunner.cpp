@@ -119,9 +119,8 @@ class SdkClientRunner : public BenchmarkRunner
                                                const S3ClientT *,
                                                const GetObjectRequestT &,
                                                GetObjectOutcomeT outcome,
-                                               const std::shared_ptr<const Aws::Client::AsyncCallerContext> &) {
-                    this->onFinished(outcome);
-                };
+                                               const std::shared_ptr<const Aws::Client::AsyncCallerContext> &)
+                { this->onFinished(outcome); };
                 runner.client->GetObjectAsync(request, onGetObjectFinished, nullptr);
             }
             else

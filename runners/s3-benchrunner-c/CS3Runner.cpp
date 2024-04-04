@@ -89,7 +89,8 @@ class Task
     void waitUntilDone() { return doneFuture.wait(); }
 };
 
-std::unique_ptr<BenchmarkRunner> createCS3BenchmarkRunner(const BenchmarkConfig &config) {
+std::unique_ptr<BenchmarkRunner> createCS3BenchmarkRunner(const BenchmarkConfig &config)
+{
     return make_unique<CS3BenchmarkRunner>(config);
 }
 

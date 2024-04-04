@@ -43,10 +43,7 @@ class SdkClientRunner : public BenchmarkRunner
     unique_ptr<S3ClientT> client;
 
   public:
-    SdkClientRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
-    {
-        createS3Client();
-    }
+    SdkClientRunner(const BenchmarkConfig &config) : BenchmarkRunner(config) { createS3Client(); }
 
     void run() override
     {

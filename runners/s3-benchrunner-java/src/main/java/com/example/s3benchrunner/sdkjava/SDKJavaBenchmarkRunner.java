@@ -29,13 +29,23 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
     String transferKey;
 
     public SDKJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
-            boolean useTransferManager) {
+            boolean useTransferManager, boolean useCRT) {
         super(config, bucket, region);
 
-        s3AsyncClient = S3AsyncClient.crtBuilder()
-                .region(Region.of(region))
-                .targetThroughputInGbps(targetThroughputGbps)
-                .build();
+        if (useCRT) {
+            s3AsyncClient = S3AsyncClient.crtBuilder()
+                    .region(Region.of(region))
+                    .targetThroughputInGbps(targetThroughputGbps)
+                    .build();
+        } else {
+            /**
+             * TODO: SDKs don't support multipart download yet. But, they do have a
+             * workaround to fallback for transfer manager.
+             * So, use multipart for transfer manager, and default one for client directly.
+             */
+            s3AsyncClient = S3AsyncClient.builder().multipartEnabled(useTransferManager).region(Region.of(region))
+                    .build();
+        }
 
         if (useTransferManager) {
             if (!config.filesOnDisk) {

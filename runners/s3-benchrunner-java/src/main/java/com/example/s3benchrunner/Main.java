@@ -53,10 +53,15 @@ public class Main {
         BenchmarkRunner runner = switch (s3ClientId) {
             case "crt-java" -> new CRTJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
             case "sdk-java-client-crt" ->
-                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false);
-            case "sdk-java-tm-crt" -> new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true);
+                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, true);
+            case "sdk-java-tm-crt" ->
+                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, true);
+            case "sdk-java-client-classic" ->
+                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, false);
+            case "sdk-java-tm-classic" ->
+                new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, false);
             default -> throw new RuntimeException(
-                    "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt");
+                    "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
         };
 
         long bytesPerRun = config.bytesPerRun();

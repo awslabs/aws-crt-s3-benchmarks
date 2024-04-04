@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public class SDKJavaTaskAsyncClient extends SDKJavaTask {
 
     SDKJavaTaskAsyncClient(SDKJavaBenchmarkRunner runner, int taskI) {
-        super();
+        super(runner);
         TaskConfig config = runner.config.tasks.get(taskI);
         doneFuture = new CompletableFuture<Void>();
 
@@ -42,7 +42,7 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
                 });
 
                 runner.s3AsyncClient
-                        .putObject(req -> req.bucket(runner.bucket).key(config.key),
+                        .putObject(req -> req.bucket(runner.bucket).key(config.key).contentLength(config.size),
                                 AsyncRequestBody.fromPublisher(publisher))
                         .whenComplete((result, failure) -> {
                             completeHelper(runner, failure);

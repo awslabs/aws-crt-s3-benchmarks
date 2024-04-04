@@ -26,16 +26,6 @@ def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, config_
                  '--target', 'install',
                  ]
 
-    if src_dir.name == 'aws-lc':
-        config_cmd += ['-DDISABLE_GO=ON',
-                       '-DBUILD_LIBSSL=OFF',
-                       '-DDISABLE_PERL=ON',
-                       ]
-
-    if src_dir.name != 's3-benchrunner-c':
-        # runner doesn't have tests
-        config_cmd += ['-DBUILD_TESTING=OFF']
-
     config_cmd += config_extra
 
     run(config_cmd)
@@ -72,7 +62,14 @@ def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
                        preferred_branch=branch)
 
         build_dir = work_dir/f"{dep_name}-build"
-        _build_cmake_proj(src_dir, build_dir, install_dir)
+
+        config_extra = ['-DBUILD_TESTING=OFF']
+        if dep_name == 'aws-lc':
+            config_extra += ['-DDISABLE_GO=ON',
+                             '-DBUILD_LIBSSL=OFF',
+                             '-DDISABLE_PERL=ON']
+
+        _build_cmake_proj(src_dir, build_dir, install_dir, config_extra)
 
     # build s3-benchrunner-c
     _build_cmake_proj(src_dir=RUNNERS['c'].dir,
@@ -94,7 +91,7 @@ def _build_cpp(work_dir: Path, branch: Optional[str]) -> list[str]:
                    preferred_branch=branch)
     _build_cmake_proj(
         src_dir=work_dir/'aws-sdk-cpp',
-        build_dir=work_dir/'build',
+        build_dir=work_dir/'aws-sdk-cpp-build',
         install_dir=install_dir,
         config_extra=['-DBUILD_SHARED_LIBS=OFF',
                       '-DENABLE_TESTING=OFF',

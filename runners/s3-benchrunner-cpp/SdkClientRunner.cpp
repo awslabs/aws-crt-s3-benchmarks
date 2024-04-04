@@ -14,8 +14,6 @@
 
 using namespace std;
 
-const char *ALLOCATION_TAG = "BenchmarkRunner";
-
 // lol, this does nothing with the data
 // we'll override the bare minimum of basic_streambuf functions, to make it seem like it's "working"
 class DownloadToRamNullBuf : public basic_streambuf<Aws::IOStream::char_type, Aws::IOStream::traits_type>

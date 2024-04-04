@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+from pathlib import Path
 import sys
 
 from utils import run, REPO_DIR, RUNNERS, SCRIPTS_DIR
@@ -11,8 +12,8 @@ PARSER.add_argument(
     'lang', choices=RUNNERS.keys())
 
 
-def _lint_c():
-    runner_dir = RUNNERS['c'].dir
+def _lint_c_cpp_shared(runner_dir: Path):
+    """c and cpp runners both use clang-format"""
     files: list[str] = []
     for pattern in ['*.cpp', '*.c', '*.h']:
         for i in runner_dir.glob(pattern):
@@ -28,6 +29,14 @@ def _lint_c():
         # display clang format version
         os.system('clang-format --version')
         exit('FAILED')
+
+
+def _lint_c():
+    _lint_c_cpp_shared(RUNNERS['c'].dir)
+
+
+def _lint_cpp():
+    _lint_c_cpp_shared(RUNNERS['cpp'].dir)
 
 
 def _lint_python():
@@ -67,6 +76,7 @@ if __name__ == '__main__':
     # get lint function by name, and call it
     lint_functions = {
         'c': _lint_c,
+        'cpp': _lint_cpp,
         'python': _lint_python,
         'java': _lint_java,
     }

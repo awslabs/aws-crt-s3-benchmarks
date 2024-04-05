@@ -84,7 +84,36 @@ class SdkClientRunner : public BenchmarkRunner
 
             if (taskConfig.action == "upload")
             {
-                fail("TODO: upload");
+                PutObjectRequestT request{};
+                request.SetBucket(runner.config.bucket);
+                request.SetKey(taskConfig.key);
+
+                if (!runner.config.checksum.empty())
+                {
+                    skip("TODO: checksum on upload");
+                }
+
+                if (runner.config.filesOnDisk)
+                {
+                    auto inputData = make_shared<Aws::FStream>(taskConfig.key, ios_base::in | ios_base::binary);
+                    if (!*inputData)
+                        fail(string("Failed to open file: ") + taskConfig.key);
+
+                    request.SetBody(inputData);
+                }
+                else
+                {
+                    skip("TODO: upload from ram");
+                }
+
+                auto onPutObjectFinished = [this](
+                                               const S3ClientT *,
+                                               const PutObjectRequestT &,
+                                               PutObjectOutcomeT outcome,
+                                               const std::shared_ptr<const Aws::Client::AsyncCallerContext> &)
+                { this->onFinished(outcome); };
+
+                runner.client->PutObjectAsync(request, onPutObjectFinished, nullptr);
             }
             else if (taskConfig.action == "download")
             {
@@ -113,6 +142,7 @@ class SdkClientRunner : public BenchmarkRunner
                                                GetObjectOutcomeT outcome,
                                                const std::shared_ptr<const Aws::Client::AsyncCallerContext> &)
                 { this->onFinished(outcome); };
+
                 runner.client->GetObjectAsync(request, onGetObjectFinished, nullptr);
             }
             else

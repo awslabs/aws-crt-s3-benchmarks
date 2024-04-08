@@ -60,6 +60,13 @@ def report_metrics(*,
             'Dimensions': dimensions,
         })
 
+    print('Reporting metrics throughput...')
+    cloudwatch_client = boto3.client('cloudwatch', region_name=region)
+    cloudwatch_client.put_metric_data(
+        Namespace='S3Benchmarks',
+        MetricData=metric_data,
+    )
+    metric_data = []
     for run_idx, seconds in enumerate(seconds_per_run):
 
         # if we had multiple runs, don't report the first run,
@@ -78,12 +85,13 @@ def report_metrics(*,
             'Dimensions': dimensions,
         })
 
-    print('Reporting metrics...')
-    cloudwatch_client = boto3.client('cloudwatch', region_name=region)
+    print('Reporting metrics seconds...')
     cloudwatch_client.put_metric_data(
         Namespace='S3Benchmarks',
         MetricData=metric_data,
     )
+
+
 
 
 def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[float]:

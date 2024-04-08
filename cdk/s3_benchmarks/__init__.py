@@ -14,6 +14,7 @@ class InstanceType:
     mem_GiB: float
     bandwidth_Gbps: float
     quota_code: str
+    nvme_storage: str = None
 
     def resource_name(self):
         return f"S3Benchmarks-PerInstance-{self.id.replace('.', '-')}"
@@ -34,7 +35,7 @@ _add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
                   bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
 
 _add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
-                  bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
+                  bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES, nvme_storage="/dev/nvme1n1"))
 
 # Orchestrator instance type
 # How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):

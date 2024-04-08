@@ -342,8 +342,8 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     // data faster than we can write it to disk.
     if (config.filesOnDisk)
     {
-        s3ClientConfig.enable_read_backpressure = true;
-        s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
+        //   s3ClientConfig.enable_read_backpressure = true;
+        // s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
     }
 
     // struct aws_http_connection_monitoring_options httpMonitoringOpts;
@@ -543,7 +543,7 @@ int Task::onDownloadData(
     AWS_FATAL_ASSERT(written == body->len);
 
     // Increment read window so data will continue downloading
-    aws_s3_meta_request_increment_read_window(meta_request, body->len);
+    // aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
 }

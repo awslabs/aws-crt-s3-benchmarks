@@ -21,7 +21,7 @@ def report_metrics(*,
     throughput_per_run_Gbps = _given_stdout_get_list_throughput_per_run_in_gigabits(
         run_stdout)
     seconds_per_run = _given_stdout_get_list_seconds_per_run(run_stdout)
-
+    print(seconds_per_run)
     run_count = len(throughput_per_run_Gbps)
 
     # bail out if no successful runs
@@ -93,7 +93,6 @@ def report_metrics(*,
 
 
 
-
 def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[float]:
     """
     Examine stdout from runner, and return the throughput (in gigabits/s) for each run.
@@ -135,7 +134,7 @@ def _given_stdout_get_list_seconds_per_run(stdout: str) -> list[float]:
 
     Returns [28.847134, 28.116831, 27.612145]
     """
-    pattern = re.compile(r'^Run:\d+ .* Secs:(\d+\.\d+) .*')
+    pattern = re.compile(r'^Run:\d+ Secs:(\d+\.\d+) .*')
     seconds_per_run = []
     for line in stdout.splitlines():
         m = pattern.match(line)

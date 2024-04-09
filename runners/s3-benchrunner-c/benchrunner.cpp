@@ -634,7 +634,6 @@ int main(int argc, char *argv[])
     for (int runI = 0; runI < config.maxRepeatCount; ++runI)
     {
         auto runStart = high_resolution_clock::now();
-
         benchmark.run();
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
@@ -648,6 +647,7 @@ int main(int argc, char *argv[])
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     printStats(bytesPerRun, durations);

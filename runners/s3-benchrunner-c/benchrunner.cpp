@@ -34,7 +34,7 @@ class Benchmark;
 
 // 256MiB is Java Transfer Mgr V2's default
 // TODO: Investigate. At time of writing, this noticeably impacts performance.
-#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
+#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 1024
 
 /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
@@ -526,7 +526,10 @@ void Task::onFinished(
 
     // clean up task
     if (task->downloadFile != NULL)
+    {
+        fflush(task->downloadFile);
         fclose(task->downloadFile);
+    }
     aws_s3_meta_request_release(task->metaRequest);
     task->donePromise.set_value();
 }

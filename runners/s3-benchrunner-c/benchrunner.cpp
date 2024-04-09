@@ -650,7 +650,7 @@ int main(int argc, char *argv[])
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
-        std::this_thread::sleep_for(std::chrono::seconds(30));
+        std::this_thread::sleep_for(std::chrono::seconds(60));
     }
 
     printStats(bytesPerRun, durations);

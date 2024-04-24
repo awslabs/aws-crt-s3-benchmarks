@@ -179,14 +179,14 @@ class S3BenchmarksStack(Stack):
             )],
         )
 
-        # Use a "launch template" to formart and bind the nvme storage
+        # Use a "launch template" to formart and bind the NVMe storage
         multipart_user_data = ec2.MultipartUserData()
         commands_user_data = ec2.UserData.for_linux()
         multipart_user_data.add_user_data_part(
             commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
 
-        # Format and bind the nvme volume
-        # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvmen1
+        # Format and bind the NVMe volume
+        # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
         commands_user_data.add_commands('mkdir /nvme')

@@ -75,7 +75,8 @@ if __name__ == '__main__':
     print(f"base_dir:{temp_dir_base}")
 
     # cd into tmp working dir
-    tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-', dir=temp_dir_base)).absolute()
+    tmp_dir = Path(tempfile.mkdtemp(
+        prefix='s3-benchmarks-', dir=temp_dir_base)).absolute()
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

@@ -35,7 +35,8 @@ for quota_code, value_needed in quotas_needed.items():
     msg = f"ec2: {name}. currently:{current_value} min-required:{value_needed}"
     if current_value < value_needed:
         print(f"❌ {msg}")
-        console_url = f"https://{args.region}.console.aws.amazon.com/servicequotas/home/services/ec2/quotas/{quota_code}?region={args.region}"
+        console_url = f"https://{args.region}.console.aws.amazon.com/servicequotas/home/services/ec2/quotas/{
+            quota_code}?region={args.region}"
         print(f"  👉 Request increase here: {console_url}")
         exit_code = 1
     else:

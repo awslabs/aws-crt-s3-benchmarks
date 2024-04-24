@@ -34,7 +34,7 @@ class Benchmark;
 
 // 256MiB is Java Transfer Mgr V2's default
 // TODO: Investigate. At time of writing, this noticeably impacts performance.
-#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 1024
+#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
 
 /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
@@ -342,8 +342,8 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     // data faster than we can write it to disk.
     if (config.filesOnDisk)
     {
-        //   s3ClientConfig.enable_read_backpressure = true;
-        // s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
+        s3ClientConfig.enable_read_backpressure = true;
+        s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
     }
 
     // struct aws_http_connection_monitoring_options httpMonitoringOpts;
@@ -526,10 +526,7 @@ void Task::onFinished(
 
     // clean up task
     if (task->downloadFile != NULL)
-    {
-        fflush(task->downloadFile);
         fclose(task->downloadFile);
-    }
     aws_s3_meta_request_release(task->metaRequest);
     task->donePromise.set_value();
 }
@@ -546,7 +543,7 @@ int Task::onDownloadData(
     AWS_FATAL_ASSERT(written == body->len);
 
     // Increment read window so data will continue downloading
-    // aws_s3_meta_request_increment_read_window(meta_request, body->len);
+    aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
 }
@@ -637,6 +634,7 @@ int main(int argc, char *argv[])
     for (int runI = 0; runI < config.maxRepeatCount; ++runI)
     {
         auto runStart = high_resolution_clock::now();
+
         benchmark.run();
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
@@ -650,7 +648,6 @@ int main(int argc, char *argv[])
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
-        std::this_thread::sleep_for(std::chrono::seconds(60));
     }
 
     printStats(bytesPerRun, durations);

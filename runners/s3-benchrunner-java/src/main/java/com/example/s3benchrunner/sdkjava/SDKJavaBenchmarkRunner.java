@@ -36,7 +36,6 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
             s3AsyncClient = S3AsyncClient.crtBuilder()
                     .region(Region.of(region))
                     .targetThroughputInGbps(targetThroughputGbps)
-                    .initialReadBufferSizeInBytes(1L * 1024L * 1024L * 1024L)
                     .build();
         } else {
             /**

@@ -79,8 +79,8 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
         // This prevents us from running out of memory due to downloading
         // data faster than we can write it to disk.
         if (config.filesOnDisk) {
-            // s3ClientOpts.withReadBackpressureEnabled(true);
-            // s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
+            s3ClientOpts.withReadBackpressureEnabled(true);
+            s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         }
 
         s3Client = new S3Client(s3ClientOpts);

@@ -142,7 +142,8 @@ class S3BenchmarksStack(Stack):
         # per-instance-job can do whatever it wants to the buckets
         for bucket in self.bucket_names:
             if s3_benchmarks.is_s3express_bucket(bucket):
-                bucket_arn = f"arn:{self.partition}:s3express:{self.region}:{self.account}:bucket/{bucket}"
+                bucket_arn = f"arn:{self.partition}:s3express:{
+                    self.region}:{self.account}:bucket/{bucket}"
                 service = "s3express"
             else:
                 bucket_arn = f"arn:{self.partition}:s3:::{bucket}"
@@ -174,7 +175,8 @@ class S3BenchmarksStack(Stack):
 
         # Add the commands user data as a part of the multipart user data
         # The add_user_data_part method is equivalent to adding a user data part with shell script commands
-        multipart_user_data.add_user_data_part(commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
+        multipart_user_data.add_user_data_part(
+            commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
 
         # Adding commands to the multipart user data, which in turn adds them to the commands user data
         commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
@@ -259,7 +261,8 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
-            volumes=[batch.EcsVolume.host(container_path="/nvme",host_path="/nvme",name="nvme")] if instance_type.nvme_storage is not None else None,
+            volumes=[batch.EcsVolume.host(container_path="/nvme", host_path="/nvme",
+                                          name="nvme")] if instance_type.nvme_storage is not None else None,
         )
 
         job_defn = batch.EcsJobDefinition(

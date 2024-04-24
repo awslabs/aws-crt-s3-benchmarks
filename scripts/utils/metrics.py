@@ -67,7 +67,6 @@ def report_metrics(*,
         })
 
     print('Reporting metrics...')
-    print(metric_data)
     cloudwatch_client = boto3.client('cloudwatch', region_name=region)
     cloudwatch_client.put_metric_data(
         Namespace='S3Benchmarks',

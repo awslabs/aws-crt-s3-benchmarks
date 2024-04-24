@@ -87,7 +87,6 @@ def report_metrics(*,
     )
 
 
-
 def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[float]:
     """
     Examine stdout from runner, and return the throughput (in gigabits/s) for each run.

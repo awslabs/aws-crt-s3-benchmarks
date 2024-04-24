@@ -69,7 +69,8 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
 
     # print URL for viewing job in the Console
     region = batch.meta.region_name
-    job_url = f"Job URL: https://{region}.console.aws.amazon.com/batch/home?region={region}#jobs/ec2/detail/{job_id}"
+    job_url = f"Job URL: https://{region}.console.aws.amazon.com/batch/home?region={
+        region}#jobs/ec2/detail/{job_id}"
     print(job_url)
 
     # track what we've already printed
@@ -96,7 +97,8 @@ def wait_for_completed_job_description(batch, job_id) -> dict:
                 if log_name:
                     # Transform name from: S3Benchmarks-PerInstance-c5n-18xlarge/default/9a9668ebf40e49e6890019eb83d1062e
                     # To: https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logEventViewer:group=%2Faws%2Fbatch%2Fjob;stream=S3Benchmarks-PerInstance-c5n-18xlarge%2Fdefault%2F9a9668ebf40e49e6890019eb83d1062e
-                    log_url = f"https://{region}.console.aws.amazon.com/cloudwatch/home?region={region}#logEventViewer:group=%2Faws%2Fbatch%2Fjob;stream="
+                    log_url = f"https://{region}.console.aws.amazon.com/cloudwatch/home?region={
+                        region}#logEventViewer:group=%2Faws%2Fbatch%2Fjob;stream="
                     log_url += urllib.parse.quote(log_name, safe='')
                     print(f"Job logs URL: {log_url}")
                     printed_log_url = True
@@ -150,7 +152,8 @@ if __name__ == '__main__':
 
         # name doesn't really matter, but it's helpful to indicate what's going on
         # looks like: "c5n-18xlarge_s3clients-1_workloads-12_branch-myexperiment"
-        job_name = f"{instance_type.id.replace('.', '-')}_s3clients-{len(args.s3_clients)}_workloads-{len(args.workloads)}"
+        job_name = f"{instance_type.id.replace(
+            '.', '-')}_s3clients-{len(args.s3_clients)}_workloads-{len(args.workloads)}"
         if args.branch != "main":
             safe_branch_name = re.sub(r'[^-_a-zA-Z0-9]', '', args.branch)
             job_name += f"_branch-{safe_branch_name}"

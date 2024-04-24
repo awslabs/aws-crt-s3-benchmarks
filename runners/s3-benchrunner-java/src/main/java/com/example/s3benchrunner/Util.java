@@ -37,12 +37,14 @@ public class Util {
 
     public static void exitWithError(String msg) {
         System.err.println("FAIL - " + msg);
-        System.exit(255);
+        // We are not using System.exit because it can get blocked as it tries to do a
+        // proper shutdown by calling the shutdown sequence.
+        Runtime.getRuntime().halt(255);
     }
 
     public static void exitWithSkipCode(String msg) {
         System.err.println("Skipping benchmark - " + msg);
-        System.exit(123);
+        Runtime.getRuntime().halt(123);
     }
 
     public static byte[] generateRandomData() {

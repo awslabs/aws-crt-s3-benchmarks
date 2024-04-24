@@ -1,0 +1,5170 @@
+{
+    "version": 2,
+    "comment": "English C4 dataset. 305 GiB total, 1032 files, avg size 302 MiB. https://huggingface.co/datasets/allenai/c4/tree/main/en",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00000-of-01024.json.gz",
+            "size": 319308785
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00001-of-01024.json.gz",
+            "size": 318039285
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00002-of-01024.json.gz",
+            "size": 319748667
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00003-of-01024.json.gz",
+            "size": 318564193
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00004-of-01024.json.gz",
+            "size": 318579884
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00005-of-01024.json.gz",
+            "size": 318003681
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00006-of-01024.json.gz",
+            "size": 318495137
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00007-of-01024.json.gz",
+            "size": 318417273
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00008-of-01024.json.gz",
+            "size": 318131845
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00009-of-01024.json.gz",
+            "size": 318185592
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00010-of-01024.json.gz",
+            "size": 319045292
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00011-of-01024.json.gz",
+            "size": 319686980
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00012-of-01024.json.gz",
+            "size": 320119088
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00013-of-01024.json.gz",
+            "size": 319474856
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00014-of-01024.json.gz",
+            "size": 319693210
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00015-of-01024.json.gz",
+            "size": 318427305
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00016-of-01024.json.gz",
+            "size": 318785714
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00017-of-01024.json.gz",
+            "size": 320134331
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00018-of-01024.json.gz",
+            "size": 318653930
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00019-of-01024.json.gz",
+            "size": 319468974
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00020-of-01024.json.gz",
+            "size": 319109754
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00021-of-01024.json.gz",
+            "size": 318514423
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00022-of-01024.json.gz",
+            "size": 318715623
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00023-of-01024.json.gz",
+            "size": 319874293
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00024-of-01024.json.gz",
+            "size": 318105764
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00025-of-01024.json.gz",
+            "size": 319122521
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00026-of-01024.json.gz",
+            "size": 318116783
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00027-of-01024.json.gz",
+            "size": 320171191
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00028-of-01024.json.gz",
+            "size": 319047090
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00029-of-01024.json.gz",
+            "size": 318705639
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00030-of-01024.json.gz",
+            "size": 318327902
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00031-of-01024.json.gz",
+            "size": 318990600
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00032-of-01024.json.gz",
+            "size": 320451482
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00033-of-01024.json.gz",
+            "size": 319878207
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00034-of-01024.json.gz",
+            "size": 318701510
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00035-of-01024.json.gz",
+            "size": 318529104
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00036-of-01024.json.gz",
+            "size": 318849657
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00037-of-01024.json.gz",
+            "size": 319621215
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00038-of-01024.json.gz",
+            "size": 318135467
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00039-of-01024.json.gz",
+            "size": 320131759
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00040-of-01024.json.gz",
+            "size": 320214476
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00041-of-01024.json.gz",
+            "size": 319581259
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00042-of-01024.json.gz",
+            "size": 318100985
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00043-of-01024.json.gz",
+            "size": 317803029
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00044-of-01024.json.gz",
+            "size": 318837063
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00045-of-01024.json.gz",
+            "size": 319659188
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00046-of-01024.json.gz",
+            "size": 318771753
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00047-of-01024.json.gz",
+            "size": 318088661
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00048-of-01024.json.gz",
+            "size": 317777133
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00049-of-01024.json.gz",
+            "size": 319329891
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00050-of-01024.json.gz",
+            "size": 318172322
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00051-of-01024.json.gz",
+            "size": 318704544
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00052-of-01024.json.gz",
+            "size": 320806303
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00053-of-01024.json.gz",
+            "size": 320565764
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00054-of-01024.json.gz",
+            "size": 320425170
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00055-of-01024.json.gz",
+            "size": 318713224
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00056-of-01024.json.gz",
+            "size": 319441227
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00057-of-01024.json.gz",
+            "size": 319821142
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00058-of-01024.json.gz",
+            "size": 318643105
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00059-of-01024.json.gz",
+            "size": 318053548
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00060-of-01024.json.gz",
+            "size": 317935826
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00061-of-01024.json.gz",
+            "size": 318870698
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00062-of-01024.json.gz",
+            "size": 318945246
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00063-of-01024.json.gz",
+            "size": 318827790
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00064-of-01024.json.gz",
+            "size": 318914155
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00065-of-01024.json.gz",
+            "size": 319794084
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00066-of-01024.json.gz",
+            "size": 320294453
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00067-of-01024.json.gz",
+            "size": 319468309
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00068-of-01024.json.gz",
+            "size": 318800742
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00069-of-01024.json.gz",
+            "size": 319416585
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00070-of-01024.json.gz",
+            "size": 319165846
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00071-of-01024.json.gz",
+            "size": 318017381
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00072-of-01024.json.gz",
+            "size": 318874499
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00073-of-01024.json.gz",
+            "size": 317890112
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00074-of-01024.json.gz",
+            "size": 319201956
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00075-of-01024.json.gz",
+            "size": 320575937
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00076-of-01024.json.gz",
+            "size": 320070510
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00077-of-01024.json.gz",
+            "size": 319042024
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00078-of-01024.json.gz",
+            "size": 319997520
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00079-of-01024.json.gz",
+            "size": 320736487
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00080-of-01024.json.gz",
+            "size": 320082337
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00081-of-01024.json.gz",
+            "size": 318008114
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00082-of-01024.json.gz",
+            "size": 317829809
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00083-of-01024.json.gz",
+            "size": 319265318
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00084-of-01024.json.gz",
+            "size": 319166958
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00085-of-01024.json.gz",
+            "size": 320338078
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00086-of-01024.json.gz",
+            "size": 318941314
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00087-of-01024.json.gz",
+            "size": 319218368
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00088-of-01024.json.gz",
+            "size": 318974308
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00089-of-01024.json.gz",
+            "size": 318781044
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00090-of-01024.json.gz",
+            "size": 318569651
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00091-of-01024.json.gz",
+            "size": 319683433
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00092-of-01024.json.gz",
+            "size": 318734793
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00093-of-01024.json.gz",
+            "size": 319161014
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00094-of-01024.json.gz",
+            "size": 320143246
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00095-of-01024.json.gz",
+            "size": 319707377
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00096-of-01024.json.gz",
+            "size": 320159279
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00097-of-01024.json.gz",
+            "size": 319841818
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00098-of-01024.json.gz",
+            "size": 321001731
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00099-of-01024.json.gz",
+            "size": 319475885
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00100-of-01024.json.gz",
+            "size": 319515329
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00101-of-01024.json.gz",
+            "size": 318803422
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00102-of-01024.json.gz",
+            "size": 320934688
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00103-of-01024.json.gz",
+            "size": 319835920
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00104-of-01024.json.gz",
+            "size": 319402378
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00105-of-01024.json.gz",
+            "size": 320100928
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00106-of-01024.json.gz",
+            "size": 318707110
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00107-of-01024.json.gz",
+            "size": 319904239
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00108-of-01024.json.gz",
+            "size": 320050265
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00109-of-01024.json.gz",
+            "size": 318053254
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00110-of-01024.json.gz",
+            "size": 319794699
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00111-of-01024.json.gz",
+            "size": 318761540
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00112-of-01024.json.gz",
+            "size": 319121509
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00113-of-01024.json.gz",
+            "size": 317916736
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00114-of-01024.json.gz",
+            "size": 319319540
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00115-of-01024.json.gz",
+            "size": 318863372
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00116-of-01024.json.gz",
+            "size": 318898370
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00117-of-01024.json.gz",
+            "size": 318153138
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00118-of-01024.json.gz",
+            "size": 318966511
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00119-of-01024.json.gz",
+            "size": 318733748
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00120-of-01024.json.gz",
+            "size": 319672996
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00121-of-01024.json.gz",
+            "size": 318779046
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00122-of-01024.json.gz",
+            "size": 320861175
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00123-of-01024.json.gz",
+            "size": 318338141
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00124-of-01024.json.gz",
+            "size": 317655056
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00125-of-01024.json.gz",
+            "size": 317524610
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00126-of-01024.json.gz",
+            "size": 317902192
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00127-of-01024.json.gz",
+            "size": 319243191
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00128-of-01024.json.gz",
+            "size": 318045852
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00129-of-01024.json.gz",
+            "size": 318436174
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00130-of-01024.json.gz",
+            "size": 319017217
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00131-of-01024.json.gz",
+            "size": 319237739
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00132-of-01024.json.gz",
+            "size": 318123742
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00133-of-01024.json.gz",
+            "size": 319009751
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00134-of-01024.json.gz",
+            "size": 319750057
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00135-of-01024.json.gz",
+            "size": 319068231
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00136-of-01024.json.gz",
+            "size": 317800994
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00137-of-01024.json.gz",
+            "size": 318954070
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00138-of-01024.json.gz",
+            "size": 318452853
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00139-of-01024.json.gz",
+            "size": 320013821
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00140-of-01024.json.gz",
+            "size": 319510423
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00141-of-01024.json.gz",
+            "size": 318339814
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00142-of-01024.json.gz",
+            "size": 318438444
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00143-of-01024.json.gz",
+            "size": 319413540
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00144-of-01024.json.gz",
+            "size": 319901095
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00145-of-01024.json.gz",
+            "size": 318500183
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00146-of-01024.json.gz",
+            "size": 319315120
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00147-of-01024.json.gz",
+            "size": 320621434
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00148-of-01024.json.gz",
+            "size": 318269045
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00149-of-01024.json.gz",
+            "size": 318576426
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00150-of-01024.json.gz",
+            "size": 318447048
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00151-of-01024.json.gz",
+            "size": 315388730
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00152-of-01024.json.gz",
+            "size": 319701880
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00153-of-01024.json.gz",
+            "size": 318370254
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00154-of-01024.json.gz",
+            "size": 320064875
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00155-of-01024.json.gz",
+            "size": 318089754
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00156-of-01024.json.gz",
+            "size": 320049467
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00157-of-01024.json.gz",
+            "size": 319931950
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00158-of-01024.json.gz",
+            "size": 319963615
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00159-of-01024.json.gz",
+            "size": 319000491
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00160-of-01024.json.gz",
+            "size": 319069618
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00161-of-01024.json.gz",
+            "size": 318750642
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00162-of-01024.json.gz",
+            "size": 319847814
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00163-of-01024.json.gz",
+            "size": 320370365
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00164-of-01024.json.gz",
+            "size": 319894618
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00165-of-01024.json.gz",
+            "size": 320166197
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00166-of-01024.json.gz",
+            "size": 319612575
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00167-of-01024.json.gz",
+            "size": 319183884
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00168-of-01024.json.gz",
+            "size": 319396348
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00169-of-01024.json.gz",
+            "size": 319452933
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00170-of-01024.json.gz",
+            "size": 317748609
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00171-of-01024.json.gz",
+            "size": 319052376
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00172-of-01024.json.gz",
+            "size": 319068859
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00173-of-01024.json.gz",
+            "size": 319142377
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00174-of-01024.json.gz",
+            "size": 319134484
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00175-of-01024.json.gz",
+            "size": 318330467
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00176-of-01024.json.gz",
+            "size": 318584643
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00177-of-01024.json.gz",
+            "size": 319275087
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00178-of-01024.json.gz",
+            "size": 318490550
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00179-of-01024.json.gz",
+            "size": 319083249
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00180-of-01024.json.gz",
+            "size": 319752094
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00181-of-01024.json.gz",
+            "size": 320476195
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00182-of-01024.json.gz",
+            "size": 318538551
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00183-of-01024.json.gz",
+            "size": 319620265
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00184-of-01024.json.gz",
+            "size": 318301621
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00185-of-01024.json.gz",
+            "size": 320515340
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00186-of-01024.json.gz",
+            "size": 318374733
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00187-of-01024.json.gz",
+            "size": 319116182
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00188-of-01024.json.gz",
+            "size": 318981305
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00189-of-01024.json.gz",
+            "size": 317036462
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00190-of-01024.json.gz",
+            "size": 318061662
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00191-of-01024.json.gz",
+            "size": 318556228
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00192-of-01024.json.gz",
+            "size": 317987733
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00193-of-01024.json.gz",
+            "size": 320294532
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00194-of-01024.json.gz",
+            "size": 320852679
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00195-of-01024.json.gz",
+            "size": 319016077
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00196-of-01024.json.gz",
+            "size": 319289881
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00197-of-01024.json.gz",
+            "size": 320180232
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00198-of-01024.json.gz",
+            "size": 320004709
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00199-of-01024.json.gz",
+            "size": 321006991
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00200-of-01024.json.gz",
+            "size": 317913111
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00201-of-01024.json.gz",
+            "size": 317897148
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00202-of-01024.json.gz",
+            "size": 319510250
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00203-of-01024.json.gz",
+            "size": 319762388
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00204-of-01024.json.gz",
+            "size": 317418128
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00205-of-01024.json.gz",
+            "size": 320157174
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00206-of-01024.json.gz",
+            "size": 320459080
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00207-of-01024.json.gz",
+            "size": 317361718
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00208-of-01024.json.gz",
+            "size": 319976693
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00209-of-01024.json.gz",
+            "size": 319550585
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00210-of-01024.json.gz",
+            "size": 319574289
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00211-of-01024.json.gz",
+            "size": 320615302
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00212-of-01024.json.gz",
+            "size": 319395225
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00213-of-01024.json.gz",
+            "size": 320131797
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00214-of-01024.json.gz",
+            "size": 320153141
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00215-of-01024.json.gz",
+            "size": 320525443
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00216-of-01024.json.gz",
+            "size": 320100146
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00217-of-01024.json.gz",
+            "size": 320688377
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00218-of-01024.json.gz",
+            "size": 318896471
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00219-of-01024.json.gz",
+            "size": 319298204
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00220-of-01024.json.gz",
+            "size": 317757045
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00221-of-01024.json.gz",
+            "size": 318568870
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00222-of-01024.json.gz",
+            "size": 319096912
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00223-of-01024.json.gz",
+            "size": 319350414
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00224-of-01024.json.gz",
+            "size": 319007151
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00225-of-01024.json.gz",
+            "size": 319502985
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00226-of-01024.json.gz",
+            "size": 317983607
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00227-of-01024.json.gz",
+            "size": 320199564
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00228-of-01024.json.gz",
+            "size": 318852183
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00229-of-01024.json.gz",
+            "size": 319407418
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00230-of-01024.json.gz",
+            "size": 320787790
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00231-of-01024.json.gz",
+            "size": 318220053
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00232-of-01024.json.gz",
+            "size": 319702777
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00233-of-01024.json.gz",
+            "size": 319154465
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00234-of-01024.json.gz",
+            "size": 319846160
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00235-of-01024.json.gz",
+            "size": 317722912
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00236-of-01024.json.gz",
+            "size": 318593592
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00237-of-01024.json.gz",
+            "size": 318902831
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00238-of-01024.json.gz",
+            "size": 318696723
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00239-of-01024.json.gz",
+            "size": 318321822
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00240-of-01024.json.gz",
+            "size": 318992553
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00241-of-01024.json.gz",
+            "size": 319345185
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00242-of-01024.json.gz",
+            "size": 320108156
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00243-of-01024.json.gz",
+            "size": 319855563
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00244-of-01024.json.gz",
+            "size": 318966332
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00245-of-01024.json.gz",
+            "size": 319541864
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00246-of-01024.json.gz",
+            "size": 318530369
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00247-of-01024.json.gz",
+            "size": 319496627
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00248-of-01024.json.gz",
+            "size": 319132981
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00249-of-01024.json.gz",
+            "size": 318529093
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00250-of-01024.json.gz",
+            "size": 318248903
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00251-of-01024.json.gz",
+            "size": 319184870
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00252-of-01024.json.gz",
+            "size": 319631399
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00253-of-01024.json.gz",
+            "size": 318275716
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00254-of-01024.json.gz",
+            "size": 318638865
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00255-of-01024.json.gz",
+            "size": 319640339
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00256-of-01024.json.gz",
+            "size": 320353593
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00257-of-01024.json.gz",
+            "size": 318165587
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00258-of-01024.json.gz",
+            "size": 318003534
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00259-of-01024.json.gz",
+            "size": 318990454
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00260-of-01024.json.gz",
+            "size": 319514850
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00261-of-01024.json.gz",
+            "size": 318747661
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00262-of-01024.json.gz",
+            "size": 319868329
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00263-of-01024.json.gz",
+            "size": 319268788
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00264-of-01024.json.gz",
+            "size": 319270640
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00265-of-01024.json.gz",
+            "size": 318744354
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00266-of-01024.json.gz",
+            "size": 318518406
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00267-of-01024.json.gz",
+            "size": 318921711
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00268-of-01024.json.gz",
+            "size": 317786222
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00269-of-01024.json.gz",
+            "size": 319004956
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00270-of-01024.json.gz",
+            "size": 319175186
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00271-of-01024.json.gz",
+            "size": 319785821
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00272-of-01024.json.gz",
+            "size": 318933435
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00273-of-01024.json.gz",
+            "size": 318456664
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00274-of-01024.json.gz",
+            "size": 318418161
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00275-of-01024.json.gz",
+            "size": 318437784
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00276-of-01024.json.gz",
+            "size": 318470946
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00277-of-01024.json.gz",
+            "size": 319580624
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00278-of-01024.json.gz",
+            "size": 319619699
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00279-of-01024.json.gz",
+            "size": 319344020
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00280-of-01024.json.gz",
+            "size": 318997864
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00281-of-01024.json.gz",
+            "size": 318718146
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00282-of-01024.json.gz",
+            "size": 318434530
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00283-of-01024.json.gz",
+            "size": 319317663
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00284-of-01024.json.gz",
+            "size": 318957832
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00285-of-01024.json.gz",
+            "size": 318643283
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00286-of-01024.json.gz",
+            "size": 318064839
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00287-of-01024.json.gz",
+            "size": 320328448
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00288-of-01024.json.gz",
+            "size": 319559271
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00289-of-01024.json.gz",
+            "size": 318786822
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00290-of-01024.json.gz",
+            "size": 320634782
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00291-of-01024.json.gz",
+            "size": 318746713
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00292-of-01024.json.gz",
+            "size": 320049630
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00293-of-01024.json.gz",
+            "size": 319966146
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00294-of-01024.json.gz",
+            "size": 318805332
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00295-of-01024.json.gz",
+            "size": 318898465
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00296-of-01024.json.gz",
+            "size": 319406630
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00297-of-01024.json.gz",
+            "size": 320312971
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00298-of-01024.json.gz",
+            "size": 320660744
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00299-of-01024.json.gz",
+            "size": 319848186
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00300-of-01024.json.gz",
+            "size": 319647278
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00301-of-01024.json.gz",
+            "size": 319080252
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00302-of-01024.json.gz",
+            "size": 320028246
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00303-of-01024.json.gz",
+            "size": 319388787
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00304-of-01024.json.gz",
+            "size": 318627831
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00305-of-01024.json.gz",
+            "size": 318148428
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00306-of-01024.json.gz",
+            "size": 319451712
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00307-of-01024.json.gz",
+            "size": 319026244
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00308-of-01024.json.gz",
+            "size": 318447454
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00309-of-01024.json.gz",
+            "size": 318147676
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00310-of-01024.json.gz",
+            "size": 318930650
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00311-of-01024.json.gz",
+            "size": 319955339
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00312-of-01024.json.gz",
+            "size": 318554567
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00313-of-01024.json.gz",
+            "size": 318978931
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00314-of-01024.json.gz",
+            "size": 318158197
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00315-of-01024.json.gz",
+            "size": 319744521
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00316-of-01024.json.gz",
+            "size": 319861527
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00317-of-01024.json.gz",
+            "size": 319286030
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00318-of-01024.json.gz",
+            "size": 319054871
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00319-of-01024.json.gz",
+            "size": 319943810
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00320-of-01024.json.gz",
+            "size": 320037211
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00321-of-01024.json.gz",
+            "size": 318584237
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00322-of-01024.json.gz",
+            "size": 319686632
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00323-of-01024.json.gz",
+            "size": 319834993
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00324-of-01024.json.gz",
+            "size": 319243057
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00325-of-01024.json.gz",
+            "size": 318569583
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00326-of-01024.json.gz",
+            "size": 319175980
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00327-of-01024.json.gz",
+            "size": 319892298
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00328-of-01024.json.gz",
+            "size": 318004026
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00329-of-01024.json.gz",
+            "size": 319066225
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00330-of-01024.json.gz",
+            "size": 319268288
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00331-of-01024.json.gz",
+            "size": 319131311
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00332-of-01024.json.gz",
+            "size": 318827508
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00333-of-01024.json.gz",
+            "size": 320572240
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00334-of-01024.json.gz",
+            "size": 318121862
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00335-of-01024.json.gz",
+            "size": 318692168
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00336-of-01024.json.gz",
+            "size": 319479902
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00337-of-01024.json.gz",
+            "size": 319987407
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00338-of-01024.json.gz",
+            "size": 319051086
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00339-of-01024.json.gz",
+            "size": 319473192
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00340-of-01024.json.gz",
+            "size": 318423485
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00341-of-01024.json.gz",
+            "size": 320087690
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00342-of-01024.json.gz",
+            "size": 319767100
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00343-of-01024.json.gz",
+            "size": 318389429
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00344-of-01024.json.gz",
+            "size": 319117212
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00345-of-01024.json.gz",
+            "size": 318504232
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00346-of-01024.json.gz",
+            "size": 316721169
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00347-of-01024.json.gz",
+            "size": 319007736
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00348-of-01024.json.gz",
+            "size": 320167918
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00349-of-01024.json.gz",
+            "size": 319901226
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00350-of-01024.json.gz",
+            "size": 318999223
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00351-of-01024.json.gz",
+            "size": 318935410
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00352-of-01024.json.gz",
+            "size": 318655907
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00353-of-01024.json.gz",
+            "size": 320619683
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00354-of-01024.json.gz",
+            "size": 319352400
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00355-of-01024.json.gz",
+            "size": 318868462
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00356-of-01024.json.gz",
+            "size": 318903295
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00357-of-01024.json.gz",
+            "size": 318881446
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00358-of-01024.json.gz",
+            "size": 318521100
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00359-of-01024.json.gz",
+            "size": 317796778
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00360-of-01024.json.gz",
+            "size": 319502919
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00361-of-01024.json.gz",
+            "size": 318595505
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00362-of-01024.json.gz",
+            "size": 318851572
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00363-of-01024.json.gz",
+            "size": 318555337
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00364-of-01024.json.gz",
+            "size": 318641145
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00365-of-01024.json.gz",
+            "size": 319212614
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00366-of-01024.json.gz",
+            "size": 319336585
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00367-of-01024.json.gz",
+            "size": 319161263
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00368-of-01024.json.gz",
+            "size": 317911640
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00369-of-01024.json.gz",
+            "size": 319585031
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00370-of-01024.json.gz",
+            "size": 318345879
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00371-of-01024.json.gz",
+            "size": 318996184
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00372-of-01024.json.gz",
+            "size": 317989343
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00373-of-01024.json.gz",
+            "size": 319770759
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00374-of-01024.json.gz",
+            "size": 319212902
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00375-of-01024.json.gz",
+            "size": 318968029
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00376-of-01024.json.gz",
+            "size": 318685188
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00377-of-01024.json.gz",
+            "size": 319291982
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00378-of-01024.json.gz",
+            "size": 319259094
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00379-of-01024.json.gz",
+            "size": 320228224
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00380-of-01024.json.gz",
+            "size": 319738339
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00381-of-01024.json.gz",
+            "size": 319210620
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00382-of-01024.json.gz",
+            "size": 319810275
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00383-of-01024.json.gz",
+            "size": 319190426
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00384-of-01024.json.gz",
+            "size": 318501845
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00385-of-01024.json.gz",
+            "size": 319530458
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00386-of-01024.json.gz",
+            "size": 318938980
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00387-of-01024.json.gz",
+            "size": 319207426
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00388-of-01024.json.gz",
+            "size": 319835376
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00389-of-01024.json.gz",
+            "size": 319346837
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00390-of-01024.json.gz",
+            "size": 318632301
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00391-of-01024.json.gz",
+            "size": 319066082
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00392-of-01024.json.gz",
+            "size": 318356286
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00393-of-01024.json.gz",
+            "size": 318048288
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00394-of-01024.json.gz",
+            "size": 319444683
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00395-of-01024.json.gz",
+            "size": 318353166
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00396-of-01024.json.gz",
+            "size": 319960396
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00397-of-01024.json.gz",
+            "size": 319030577
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00398-of-01024.json.gz",
+            "size": 317664320
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00399-of-01024.json.gz",
+            "size": 319623875
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00400-of-01024.json.gz",
+            "size": 318840274
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00401-of-01024.json.gz",
+            "size": 318336377
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00402-of-01024.json.gz",
+            "size": 319270185
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00403-of-01024.json.gz",
+            "size": 318038520
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00404-of-01024.json.gz",
+            "size": 320933185
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00405-of-01024.json.gz",
+            "size": 317694827
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00406-of-01024.json.gz",
+            "size": 317937468
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00407-of-01024.json.gz",
+            "size": 320226074
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00408-of-01024.json.gz",
+            "size": 318613788
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00409-of-01024.json.gz",
+            "size": 319212414
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00410-of-01024.json.gz",
+            "size": 319023647
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00411-of-01024.json.gz",
+            "size": 318408922
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00412-of-01024.json.gz",
+            "size": 317166932
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00413-of-01024.json.gz",
+            "size": 318519121
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00414-of-01024.json.gz",
+            "size": 317417235
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00415-of-01024.json.gz",
+            "size": 319690993
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00416-of-01024.json.gz",
+            "size": 319466518
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00417-of-01024.json.gz",
+            "size": 319694381
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00418-of-01024.json.gz",
+            "size": 319048918
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00419-of-01024.json.gz",
+            "size": 319791424
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00420-of-01024.json.gz",
+            "size": 318060925
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00421-of-01024.json.gz",
+            "size": 319328927
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00422-of-01024.json.gz",
+            "size": 320065363
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00423-of-01024.json.gz",
+            "size": 319349887
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00424-of-01024.json.gz",
+            "size": 317515288
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00425-of-01024.json.gz",
+            "size": 319092219
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00426-of-01024.json.gz",
+            "size": 318421245
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00427-of-01024.json.gz",
+            "size": 317847935
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00428-of-01024.json.gz",
+            "size": 318822008
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00429-of-01024.json.gz",
+            "size": 318507684
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00430-of-01024.json.gz",
+            "size": 319042136
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00431-of-01024.json.gz",
+            "size": 318925124
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00432-of-01024.json.gz",
+            "size": 318680251
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00433-of-01024.json.gz",
+            "size": 317822797
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00434-of-01024.json.gz",
+            "size": 320094364
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00435-of-01024.json.gz",
+            "size": 319008936
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00436-of-01024.json.gz",
+            "size": 319023456
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00437-of-01024.json.gz",
+            "size": 319484997
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00438-of-01024.json.gz",
+            "size": 320319141
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00439-of-01024.json.gz",
+            "size": 318410397
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00440-of-01024.json.gz",
+            "size": 319447470
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00441-of-01024.json.gz",
+            "size": 317582955
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00442-of-01024.json.gz",
+            "size": 319592118
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00443-of-01024.json.gz",
+            "size": 318104403
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00444-of-01024.json.gz",
+            "size": 318547808
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00445-of-01024.json.gz",
+            "size": 320463920
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00446-of-01024.json.gz",
+            "size": 319583221
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00447-of-01024.json.gz",
+            "size": 319546881
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00448-of-01024.json.gz",
+            "size": 320234711
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00449-of-01024.json.gz",
+            "size": 320043698
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00450-of-01024.json.gz",
+            "size": 318033740
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00451-of-01024.json.gz",
+            "size": 318549622
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00452-of-01024.json.gz",
+            "size": 319317230
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00453-of-01024.json.gz",
+            "size": 318952561
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00454-of-01024.json.gz",
+            "size": 317545286
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00455-of-01024.json.gz",
+            "size": 318975631
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00456-of-01024.json.gz",
+            "size": 320016575
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00457-of-01024.json.gz",
+            "size": 318236935
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00458-of-01024.json.gz",
+            "size": 318495925
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00459-of-01024.json.gz",
+            "size": 318956821
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00460-of-01024.json.gz",
+            "size": 318968681
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00461-of-01024.json.gz",
+            "size": 320810761
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00462-of-01024.json.gz",
+            "size": 320154899
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00463-of-01024.json.gz",
+            "size": 319247449
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00464-of-01024.json.gz",
+            "size": 318150152
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00465-of-01024.json.gz",
+            "size": 320342803
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00466-of-01024.json.gz",
+            "size": 318619029
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00467-of-01024.json.gz",
+            "size": 317677227
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00468-of-01024.json.gz",
+            "size": 320038217
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00469-of-01024.json.gz",
+            "size": 318359701
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00470-of-01024.json.gz",
+            "size": 319329235
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00471-of-01024.json.gz",
+            "size": 318792779
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00472-of-01024.json.gz",
+            "size": 319552622
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00473-of-01024.json.gz",
+            "size": 319466828
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00474-of-01024.json.gz",
+            "size": 320014669
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00475-of-01024.json.gz",
+            "size": 320379280
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00476-of-01024.json.gz",
+            "size": 318820301
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00477-of-01024.json.gz",
+            "size": 320577830
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00478-of-01024.json.gz",
+            "size": 319593908
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00479-of-01024.json.gz",
+            "size": 319728825
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00480-of-01024.json.gz",
+            "size": 319903674
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00481-of-01024.json.gz",
+            "size": 319998409
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00482-of-01024.json.gz",
+            "size": 319047238
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00483-of-01024.json.gz",
+            "size": 318775875
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00484-of-01024.json.gz",
+            "size": 319190491
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00485-of-01024.json.gz",
+            "size": 318974502
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00486-of-01024.json.gz",
+            "size": 318599424
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00487-of-01024.json.gz",
+            "size": 318958015
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00488-of-01024.json.gz",
+            "size": 320205671
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00489-of-01024.json.gz",
+            "size": 319193967
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00490-of-01024.json.gz",
+            "size": 319833603
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00491-of-01024.json.gz",
+            "size": 318912982
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00492-of-01024.json.gz",
+            "size": 320057824
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00493-of-01024.json.gz",
+            "size": 317967559
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00494-of-01024.json.gz",
+            "size": 320426917
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00495-of-01024.json.gz",
+            "size": 319528392
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00496-of-01024.json.gz",
+            "size": 317570766
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00497-of-01024.json.gz",
+            "size": 319154838
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00498-of-01024.json.gz",
+            "size": 317955368
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00499-of-01024.json.gz",
+            "size": 318286671
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00500-of-01024.json.gz",
+            "size": 318510936
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00501-of-01024.json.gz",
+            "size": 319611074
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00502-of-01024.json.gz",
+            "size": 318630954
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00503-of-01024.json.gz",
+            "size": 318253198
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00504-of-01024.json.gz",
+            "size": 319497151
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00505-of-01024.json.gz",
+            "size": 317498965
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00506-of-01024.json.gz",
+            "size": 319684193
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00507-of-01024.json.gz",
+            "size": 318394726
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00508-of-01024.json.gz",
+            "size": 319013108
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00509-of-01024.json.gz",
+            "size": 319832758
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00510-of-01024.json.gz",
+            "size": 318762241
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00511-of-01024.json.gz",
+            "size": 319240643
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00512-of-01024.json.gz",
+            "size": 318353376
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00513-of-01024.json.gz",
+            "size": 317653011
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00514-of-01024.json.gz",
+            "size": 319391160
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00515-of-01024.json.gz",
+            "size": 317994258
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00516-of-01024.json.gz",
+            "size": 318786801
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00517-of-01024.json.gz",
+            "size": 320010732
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00518-of-01024.json.gz",
+            "size": 318681019
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00519-of-01024.json.gz",
+            "size": 319951543
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00520-of-01024.json.gz",
+            "size": 317948056
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00521-of-01024.json.gz",
+            "size": 317993802
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00522-of-01024.json.gz",
+            "size": 320189449
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00523-of-01024.json.gz",
+            "size": 320443871
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00524-of-01024.json.gz",
+            "size": 318192840
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00525-of-01024.json.gz",
+            "size": 319294602
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00526-of-01024.json.gz",
+            "size": 319783465
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00527-of-01024.json.gz",
+            "size": 317240081
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00528-of-01024.json.gz",
+            "size": 318320694
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00529-of-01024.json.gz",
+            "size": 318391515
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00530-of-01024.json.gz",
+            "size": 318473966
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00531-of-01024.json.gz",
+            "size": 319463272
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00532-of-01024.json.gz",
+            "size": 318228175
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00533-of-01024.json.gz",
+            "size": 318966937
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00534-of-01024.json.gz",
+            "size": 318968162
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00535-of-01024.json.gz",
+            "size": 319253588
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00536-of-01024.json.gz",
+            "size": 319662526
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00537-of-01024.json.gz",
+            "size": 319177095
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00538-of-01024.json.gz",
+            "size": 320109104
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00539-of-01024.json.gz",
+            "size": 320600564
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00540-of-01024.json.gz",
+            "size": 319993281
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00541-of-01024.json.gz",
+            "size": 318256020
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00542-of-01024.json.gz",
+            "size": 318843744
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00543-of-01024.json.gz",
+            "size": 320482002
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00544-of-01024.json.gz",
+            "size": 319059260
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00545-of-01024.json.gz",
+            "size": 317874034
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00546-of-01024.json.gz",
+            "size": 319891407
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00547-of-01024.json.gz",
+            "size": 319361268
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00548-of-01024.json.gz",
+            "size": 318360761
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00549-of-01024.json.gz",
+            "size": 317320452
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00550-of-01024.json.gz",
+            "size": 319017444
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00551-of-01024.json.gz",
+            "size": 319118159
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00552-of-01024.json.gz",
+            "size": 320058125
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00553-of-01024.json.gz",
+            "size": 319220671
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00554-of-01024.json.gz",
+            "size": 318858928
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00555-of-01024.json.gz",
+            "size": 320490725
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00556-of-01024.json.gz",
+            "size": 319863694
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00557-of-01024.json.gz",
+            "size": 318940362
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00558-of-01024.json.gz",
+            "size": 319797786
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00559-of-01024.json.gz",
+            "size": 320156705
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00560-of-01024.json.gz",
+            "size": 318346216
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00561-of-01024.json.gz",
+            "size": 319571572
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00562-of-01024.json.gz",
+            "size": 319453711
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00563-of-01024.json.gz",
+            "size": 318990092
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00564-of-01024.json.gz",
+            "size": 319491917
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00565-of-01024.json.gz",
+            "size": 318756269
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00566-of-01024.json.gz",
+            "size": 318461036
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00567-of-01024.json.gz",
+            "size": 319625728
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00568-of-01024.json.gz",
+            "size": 318428567
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00569-of-01024.json.gz",
+            "size": 320114923
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00570-of-01024.json.gz",
+            "size": 319148416
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00571-of-01024.json.gz",
+            "size": 318223973
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00572-of-01024.json.gz",
+            "size": 318322508
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00573-of-01024.json.gz",
+            "size": 319203246
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00574-of-01024.json.gz",
+            "size": 318397937
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00575-of-01024.json.gz",
+            "size": 319183651
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00576-of-01024.json.gz",
+            "size": 318690625
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00577-of-01024.json.gz",
+            "size": 317926085
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00578-of-01024.json.gz",
+            "size": 319190472
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00579-of-01024.json.gz",
+            "size": 318958744
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00580-of-01024.json.gz",
+            "size": 319893900
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00581-of-01024.json.gz",
+            "size": 320109861
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00582-of-01024.json.gz",
+            "size": 319238177
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00583-of-01024.json.gz",
+            "size": 319375634
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00584-of-01024.json.gz",
+            "size": 318596018
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00585-of-01024.json.gz",
+            "size": 320156294
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00586-of-01024.json.gz",
+            "size": 318716838
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00587-of-01024.json.gz",
+            "size": 320247814
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00588-of-01024.json.gz",
+            "size": 319546079
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00589-of-01024.json.gz",
+            "size": 319771959
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00590-of-01024.json.gz",
+            "size": 318926571
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00591-of-01024.json.gz",
+            "size": 319669791
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00592-of-01024.json.gz",
+            "size": 320393142
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00593-of-01024.json.gz",
+            "size": 320977171
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00594-of-01024.json.gz",
+            "size": 318211092
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00595-of-01024.json.gz",
+            "size": 318978629
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00596-of-01024.json.gz",
+            "size": 318573003
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00597-of-01024.json.gz",
+            "size": 318931514
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00598-of-01024.json.gz",
+            "size": 319002677
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00599-of-01024.json.gz",
+            "size": 319637870
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00600-of-01024.json.gz",
+            "size": 318099852
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00601-of-01024.json.gz",
+            "size": 319136069
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00602-of-01024.json.gz",
+            "size": 319369121
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00603-of-01024.json.gz",
+            "size": 319499076
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00604-of-01024.json.gz",
+            "size": 319132921
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00605-of-01024.json.gz",
+            "size": 319315562
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00606-of-01024.json.gz",
+            "size": 319223528
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00607-of-01024.json.gz",
+            "size": 319326218
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00608-of-01024.json.gz",
+            "size": 319393715
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00609-of-01024.json.gz",
+            "size": 319554192
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00610-of-01024.json.gz",
+            "size": 319786301
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00611-of-01024.json.gz",
+            "size": 319356910
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00612-of-01024.json.gz",
+            "size": 318780229
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00613-of-01024.json.gz",
+            "size": 320190496
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00614-of-01024.json.gz",
+            "size": 320245862
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00615-of-01024.json.gz",
+            "size": 316874605
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00616-of-01024.json.gz",
+            "size": 320237707
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00617-of-01024.json.gz",
+            "size": 319739365
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00618-of-01024.json.gz",
+            "size": 318634299
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00619-of-01024.json.gz",
+            "size": 319086471
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00620-of-01024.json.gz",
+            "size": 320665446
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00621-of-01024.json.gz",
+            "size": 318576410
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00622-of-01024.json.gz",
+            "size": 320053075
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00623-of-01024.json.gz",
+            "size": 320045187
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00624-of-01024.json.gz",
+            "size": 320136842
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00625-of-01024.json.gz",
+            "size": 317314201
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00626-of-01024.json.gz",
+            "size": 320219970
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00627-of-01024.json.gz",
+            "size": 320083102
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00628-of-01024.json.gz",
+            "size": 320386844
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00629-of-01024.json.gz",
+            "size": 319476643
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00630-of-01024.json.gz",
+            "size": 317961579
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00631-of-01024.json.gz",
+            "size": 318952266
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00632-of-01024.json.gz",
+            "size": 318261820
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00633-of-01024.json.gz",
+            "size": 319748854
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00634-of-01024.json.gz",
+            "size": 317806530
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00635-of-01024.json.gz",
+            "size": 320313573
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00636-of-01024.json.gz",
+            "size": 318151690
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00637-of-01024.json.gz",
+            "size": 318665365
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00638-of-01024.json.gz",
+            "size": 318521250
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00639-of-01024.json.gz",
+            "size": 319997068
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00640-of-01024.json.gz",
+            "size": 319355927
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00641-of-01024.json.gz",
+            "size": 319002081
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00642-of-01024.json.gz",
+            "size": 317689465
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00643-of-01024.json.gz",
+            "size": 317523344
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00644-of-01024.json.gz",
+            "size": 318876813
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00645-of-01024.json.gz",
+            "size": 319981258
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00646-of-01024.json.gz",
+            "size": 319624889
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00647-of-01024.json.gz",
+            "size": 319240920
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00648-of-01024.json.gz",
+            "size": 317305623
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00649-of-01024.json.gz",
+            "size": 318998755
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00650-of-01024.json.gz",
+            "size": 319612451
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00651-of-01024.json.gz",
+            "size": 319098081
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00652-of-01024.json.gz",
+            "size": 317107981
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00653-of-01024.json.gz",
+            "size": 319623884
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00654-of-01024.json.gz",
+            "size": 319055728
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00655-of-01024.json.gz",
+            "size": 318539829
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00656-of-01024.json.gz",
+            "size": 319970377
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00657-of-01024.json.gz",
+            "size": 318548629
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00658-of-01024.json.gz",
+            "size": 319845984
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00659-of-01024.json.gz",
+            "size": 318887872
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00660-of-01024.json.gz",
+            "size": 319854892
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00661-of-01024.json.gz",
+            "size": 317599289
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00662-of-01024.json.gz",
+            "size": 318138720
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00663-of-01024.json.gz",
+            "size": 318110835
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00664-of-01024.json.gz",
+            "size": 318996945
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00665-of-01024.json.gz",
+            "size": 320612903
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00666-of-01024.json.gz",
+            "size": 319241006
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00667-of-01024.json.gz",
+            "size": 319650665
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00668-of-01024.json.gz",
+            "size": 319198651
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00669-of-01024.json.gz",
+            "size": 319363200
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00670-of-01024.json.gz",
+            "size": 320079826
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00671-of-01024.json.gz",
+            "size": 319494773
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00672-of-01024.json.gz",
+            "size": 318304853
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00673-of-01024.json.gz",
+            "size": 319031236
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00674-of-01024.json.gz",
+            "size": 318647345
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00675-of-01024.json.gz",
+            "size": 318313871
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00676-of-01024.json.gz",
+            "size": 318858652
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00677-of-01024.json.gz",
+            "size": 319236091
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00678-of-01024.json.gz",
+            "size": 318996096
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00679-of-01024.json.gz",
+            "size": 319915466
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00680-of-01024.json.gz",
+            "size": 318537417
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00681-of-01024.json.gz",
+            "size": 320181225
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00682-of-01024.json.gz",
+            "size": 319087756
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00683-of-01024.json.gz",
+            "size": 320019766
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00684-of-01024.json.gz",
+            "size": 318814245
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00685-of-01024.json.gz",
+            "size": 318586686
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00686-of-01024.json.gz",
+            "size": 319648436
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00687-of-01024.json.gz",
+            "size": 318909835
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00688-of-01024.json.gz",
+            "size": 319381735
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00689-of-01024.json.gz",
+            "size": 318995026
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00690-of-01024.json.gz",
+            "size": 320745318
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00691-of-01024.json.gz",
+            "size": 318575084
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00692-of-01024.json.gz",
+            "size": 320651368
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00693-of-01024.json.gz",
+            "size": 318429145
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00694-of-01024.json.gz",
+            "size": 319562061
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00695-of-01024.json.gz",
+            "size": 318298964
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00696-of-01024.json.gz",
+            "size": 317473664
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00697-of-01024.json.gz",
+            "size": 318839008
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00698-of-01024.json.gz",
+            "size": 318288032
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00699-of-01024.json.gz",
+            "size": 318696527
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00700-of-01024.json.gz",
+            "size": 318900366
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00701-of-01024.json.gz",
+            "size": 318901212
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00702-of-01024.json.gz",
+            "size": 318913325
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00703-of-01024.json.gz",
+            "size": 318730274
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00704-of-01024.json.gz",
+            "size": 320112232
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00705-of-01024.json.gz",
+            "size": 319643559
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00706-of-01024.json.gz",
+            "size": 319941519
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00707-of-01024.json.gz",
+            "size": 317628508
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00708-of-01024.json.gz",
+            "size": 318863059
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00709-of-01024.json.gz",
+            "size": 318412651
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00710-of-01024.json.gz",
+            "size": 318631334
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00711-of-01024.json.gz",
+            "size": 320587866
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00712-of-01024.json.gz",
+            "size": 318191204
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00713-of-01024.json.gz",
+            "size": 319472539
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00714-of-01024.json.gz",
+            "size": 320196397
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00715-of-01024.json.gz",
+            "size": 320075706
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00716-of-01024.json.gz",
+            "size": 318736413
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00717-of-01024.json.gz",
+            "size": 317351537
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00718-of-01024.json.gz",
+            "size": 318017965
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00719-of-01024.json.gz",
+            "size": 318124432
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00720-of-01024.json.gz",
+            "size": 318235852
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00721-of-01024.json.gz",
+            "size": 318817834
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00722-of-01024.json.gz",
+            "size": 318553851
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00723-of-01024.json.gz",
+            "size": 320174720
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00724-of-01024.json.gz",
+            "size": 317805413
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00725-of-01024.json.gz",
+            "size": 319460597
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00726-of-01024.json.gz",
+            "size": 320934004
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00727-of-01024.json.gz",
+            "size": 318393879
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00728-of-01024.json.gz",
+            "size": 318826577
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00729-of-01024.json.gz",
+            "size": 320390067
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00730-of-01024.json.gz",
+            "size": 318156386
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00731-of-01024.json.gz",
+            "size": 320013543
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00732-of-01024.json.gz",
+            "size": 318753697
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00733-of-01024.json.gz",
+            "size": 318640706
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00734-of-01024.json.gz",
+            "size": 319447398
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00735-of-01024.json.gz",
+            "size": 319868149
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00736-of-01024.json.gz",
+            "size": 318404586
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00737-of-01024.json.gz",
+            "size": 319915151
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00738-of-01024.json.gz",
+            "size": 319709793
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00739-of-01024.json.gz",
+            "size": 319789716
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00740-of-01024.json.gz",
+            "size": 319102226
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00741-of-01024.json.gz",
+            "size": 318717589
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00742-of-01024.json.gz",
+            "size": 319456536
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00743-of-01024.json.gz",
+            "size": 318641730
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00744-of-01024.json.gz",
+            "size": 320264992
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00745-of-01024.json.gz",
+            "size": 318665967
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00746-of-01024.json.gz",
+            "size": 320005833
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00747-of-01024.json.gz",
+            "size": 318575441
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00748-of-01024.json.gz",
+            "size": 319266882
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00749-of-01024.json.gz",
+            "size": 320205042
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00750-of-01024.json.gz",
+            "size": 319198252
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00751-of-01024.json.gz",
+            "size": 317855407
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00752-of-01024.json.gz",
+            "size": 320283992
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00753-of-01024.json.gz",
+            "size": 321030653
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00754-of-01024.json.gz",
+            "size": 319059779
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00755-of-01024.json.gz",
+            "size": 317737268
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00756-of-01024.json.gz",
+            "size": 317293218
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00757-of-01024.json.gz",
+            "size": 319529375
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00758-of-01024.json.gz",
+            "size": 319297548
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00759-of-01024.json.gz",
+            "size": 318154496
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00760-of-01024.json.gz",
+            "size": 319386997
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00761-of-01024.json.gz",
+            "size": 320035555
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00762-of-01024.json.gz",
+            "size": 318099583
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00763-of-01024.json.gz",
+            "size": 318354409
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00764-of-01024.json.gz",
+            "size": 319181291
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00765-of-01024.json.gz",
+            "size": 318147738
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00766-of-01024.json.gz",
+            "size": 317964368
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00767-of-01024.json.gz",
+            "size": 318750919
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00768-of-01024.json.gz",
+            "size": 318978892
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00769-of-01024.json.gz",
+            "size": 319386097
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00770-of-01024.json.gz",
+            "size": 319623528
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00771-of-01024.json.gz",
+            "size": 318911381
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00772-of-01024.json.gz",
+            "size": 319386949
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00773-of-01024.json.gz",
+            "size": 319962599
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00774-of-01024.json.gz",
+            "size": 320370991
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00775-of-01024.json.gz",
+            "size": 320433220
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00776-of-01024.json.gz",
+            "size": 318809986
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00777-of-01024.json.gz",
+            "size": 319617796
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00778-of-01024.json.gz",
+            "size": 318039278
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00779-of-01024.json.gz",
+            "size": 319078058
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00780-of-01024.json.gz",
+            "size": 317637428
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00781-of-01024.json.gz",
+            "size": 318792407
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00782-of-01024.json.gz",
+            "size": 319081289
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00783-of-01024.json.gz",
+            "size": 318663257
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00784-of-01024.json.gz",
+            "size": 319687102
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00785-of-01024.json.gz",
+            "size": 318909034
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00786-of-01024.json.gz",
+            "size": 319213094
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00787-of-01024.json.gz",
+            "size": 318335621
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00788-of-01024.json.gz",
+            "size": 319444037
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00789-of-01024.json.gz",
+            "size": 317955670
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00790-of-01024.json.gz",
+            "size": 319033823
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00791-of-01024.json.gz",
+            "size": 319366402
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00792-of-01024.json.gz",
+            "size": 319218667
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00793-of-01024.json.gz",
+            "size": 318865241
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00794-of-01024.json.gz",
+            "size": 319384084
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00795-of-01024.json.gz",
+            "size": 317654308
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00796-of-01024.json.gz",
+            "size": 319298258
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00797-of-01024.json.gz",
+            "size": 320048871
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00798-of-01024.json.gz",
+            "size": 319291246
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00799-of-01024.json.gz",
+            "size": 319175282
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00800-of-01024.json.gz",
+            "size": 316687275
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00801-of-01024.json.gz",
+            "size": 318710698
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00802-of-01024.json.gz",
+            "size": 318914381
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00803-of-01024.json.gz",
+            "size": 319111424
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00804-of-01024.json.gz",
+            "size": 318186018
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00805-of-01024.json.gz",
+            "size": 320382848
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00806-of-01024.json.gz",
+            "size": 319508172
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00807-of-01024.json.gz",
+            "size": 319995091
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00808-of-01024.json.gz",
+            "size": 319880961
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00809-of-01024.json.gz",
+            "size": 317100774
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00810-of-01024.json.gz",
+            "size": 319625750
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00811-of-01024.json.gz",
+            "size": 318375975
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00812-of-01024.json.gz",
+            "size": 319663092
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00813-of-01024.json.gz",
+            "size": 319094357
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00814-of-01024.json.gz",
+            "size": 319521327
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00815-of-01024.json.gz",
+            "size": 319098749
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00816-of-01024.json.gz",
+            "size": 320377295
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00817-of-01024.json.gz",
+            "size": 319007451
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00818-of-01024.json.gz",
+            "size": 319609737
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00819-of-01024.json.gz",
+            "size": 319164157
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00820-of-01024.json.gz",
+            "size": 320181073
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00821-of-01024.json.gz",
+            "size": 320949305
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00822-of-01024.json.gz",
+            "size": 318392521
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00823-of-01024.json.gz",
+            "size": 318526893
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00824-of-01024.json.gz",
+            "size": 318640792
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00825-of-01024.json.gz",
+            "size": 319524026
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00826-of-01024.json.gz",
+            "size": 318469810
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00827-of-01024.json.gz",
+            "size": 319391185
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00828-of-01024.json.gz",
+            "size": 319625277
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00829-of-01024.json.gz",
+            "size": 320001237
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00830-of-01024.json.gz",
+            "size": 319240468
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00831-of-01024.json.gz",
+            "size": 319174603
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00832-of-01024.json.gz",
+            "size": 318909883
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00833-of-01024.json.gz",
+            "size": 319095835
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00834-of-01024.json.gz",
+            "size": 318319786
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00835-of-01024.json.gz",
+            "size": 319959334
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00836-of-01024.json.gz",
+            "size": 317642779
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00837-of-01024.json.gz",
+            "size": 320687986
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00838-of-01024.json.gz",
+            "size": 319802866
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00839-of-01024.json.gz",
+            "size": 318621894
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00840-of-01024.json.gz",
+            "size": 319757379
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00841-of-01024.json.gz",
+            "size": 318779722
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00842-of-01024.json.gz",
+            "size": 318692591
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00843-of-01024.json.gz",
+            "size": 318944616
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00844-of-01024.json.gz",
+            "size": 319392887
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00845-of-01024.json.gz",
+            "size": 319215311
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00846-of-01024.json.gz",
+            "size": 318129297
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00847-of-01024.json.gz",
+            "size": 318134095
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00848-of-01024.json.gz",
+            "size": 318521356
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00849-of-01024.json.gz",
+            "size": 319541694
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00850-of-01024.json.gz",
+            "size": 318861613
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00851-of-01024.json.gz",
+            "size": 319356648
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00852-of-01024.json.gz",
+            "size": 319662372
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00853-of-01024.json.gz",
+            "size": 317625507
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00854-of-01024.json.gz",
+            "size": 319665550
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00855-of-01024.json.gz",
+            "size": 319059897
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00856-of-01024.json.gz",
+            "size": 319243991
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00857-of-01024.json.gz",
+            "size": 318546680
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00858-of-01024.json.gz",
+            "size": 318306547
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00859-of-01024.json.gz",
+            "size": 319088302
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00860-of-01024.json.gz",
+            "size": 319704792
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00861-of-01024.json.gz",
+            "size": 318444445
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00862-of-01024.json.gz",
+            "size": 318606300
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00863-of-01024.json.gz",
+            "size": 319273730
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00864-of-01024.json.gz",
+            "size": 318143165
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00865-of-01024.json.gz",
+            "size": 319041356
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00866-of-01024.json.gz",
+            "size": 319758401
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00867-of-01024.json.gz",
+            "size": 318991336
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00868-of-01024.json.gz",
+            "size": 319984390
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00869-of-01024.json.gz",
+            "size": 319462888
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00870-of-01024.json.gz",
+            "size": 318426018
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00871-of-01024.json.gz",
+            "size": 320233396
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00872-of-01024.json.gz",
+            "size": 319570251
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00873-of-01024.json.gz",
+            "size": 318755978
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00874-of-01024.json.gz",
+            "size": 318986904
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00875-of-01024.json.gz",
+            "size": 319116193
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00876-of-01024.json.gz",
+            "size": 320829257
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00877-of-01024.json.gz",
+            "size": 320082625
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00878-of-01024.json.gz",
+            "size": 318964554
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00879-of-01024.json.gz",
+            "size": 318699617
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00880-of-01024.json.gz",
+            "size": 318723630
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00881-of-01024.json.gz",
+            "size": 319839271
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00882-of-01024.json.gz",
+            "size": 317773196
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00883-of-01024.json.gz",
+            "size": 320262049
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00884-of-01024.json.gz",
+            "size": 319146213
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00885-of-01024.json.gz",
+            "size": 319022605
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00886-of-01024.json.gz",
+            "size": 318624429
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00887-of-01024.json.gz",
+            "size": 318733911
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00888-of-01024.json.gz",
+            "size": 319926754
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00889-of-01024.json.gz",
+            "size": 319085344
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00890-of-01024.json.gz",
+            "size": 319838671
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00891-of-01024.json.gz",
+            "size": 318169092
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00892-of-01024.json.gz",
+            "size": 319662776
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00893-of-01024.json.gz",
+            "size": 319541919
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00894-of-01024.json.gz",
+            "size": 319528897
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00895-of-01024.json.gz",
+            "size": 317548307
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00896-of-01024.json.gz",
+            "size": 320278601
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00897-of-01024.json.gz",
+            "size": 320161831
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00898-of-01024.json.gz",
+            "size": 319341305
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00899-of-01024.json.gz",
+            "size": 319658969
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00900-of-01024.json.gz",
+            "size": 317494627
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00901-of-01024.json.gz",
+            "size": 319683481
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00902-of-01024.json.gz",
+            "size": 320228529
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00903-of-01024.json.gz",
+            "size": 318961279
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00904-of-01024.json.gz",
+            "size": 319926290
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00905-of-01024.json.gz",
+            "size": 317982280
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00906-of-01024.json.gz",
+            "size": 319012210
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00907-of-01024.json.gz",
+            "size": 318515420
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00908-of-01024.json.gz",
+            "size": 319286320
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00909-of-01024.json.gz",
+            "size": 319938295
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00910-of-01024.json.gz",
+            "size": 318423425
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00911-of-01024.json.gz",
+            "size": 319578185
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00912-of-01024.json.gz",
+            "size": 319154715
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00913-of-01024.json.gz",
+            "size": 319011218
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00914-of-01024.json.gz",
+            "size": 320027387
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00915-of-01024.json.gz",
+            "size": 320280632
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00916-of-01024.json.gz",
+            "size": 319278877
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00917-of-01024.json.gz",
+            "size": 319616831
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00918-of-01024.json.gz",
+            "size": 318635363
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00919-of-01024.json.gz",
+            "size": 318885096
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00920-of-01024.json.gz",
+            "size": 319228627
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00921-of-01024.json.gz",
+            "size": 319557114
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00922-of-01024.json.gz",
+            "size": 319356053
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00923-of-01024.json.gz",
+            "size": 319766600
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00924-of-01024.json.gz",
+            "size": 319733540
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00925-of-01024.json.gz",
+            "size": 318944357
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00926-of-01024.json.gz",
+            "size": 320276135
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00927-of-01024.json.gz",
+            "size": 319181837
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00928-of-01024.json.gz",
+            "size": 318966114
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00929-of-01024.json.gz",
+            "size": 320087917
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00930-of-01024.json.gz",
+            "size": 318921677
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00931-of-01024.json.gz",
+            "size": 318978028
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00932-of-01024.json.gz",
+            "size": 318627424
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00933-of-01024.json.gz",
+            "size": 320226802
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00934-of-01024.json.gz",
+            "size": 319908526
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00935-of-01024.json.gz",
+            "size": 318941663
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00936-of-01024.json.gz",
+            "size": 318430860
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00937-of-01024.json.gz",
+            "size": 318008229
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00938-of-01024.json.gz",
+            "size": 319099506
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00939-of-01024.json.gz",
+            "size": 320457851
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00940-of-01024.json.gz",
+            "size": 320607829
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00941-of-01024.json.gz",
+            "size": 318923471
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00942-of-01024.json.gz",
+            "size": 319880902
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00943-of-01024.json.gz",
+            "size": 319079341
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00944-of-01024.json.gz",
+            "size": 319436318
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00945-of-01024.json.gz",
+            "size": 318998098
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00946-of-01024.json.gz",
+            "size": 321951470
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00947-of-01024.json.gz",
+            "size": 318689631
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00948-of-01024.json.gz",
+            "size": 320347661
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00949-of-01024.json.gz",
+            "size": 318054841
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00950-of-01024.json.gz",
+            "size": 319722042
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00951-of-01024.json.gz",
+            "size": 318315382
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00952-of-01024.json.gz",
+            "size": 319247792
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00953-of-01024.json.gz",
+            "size": 318411551
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00954-of-01024.json.gz",
+            "size": 318809810
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00955-of-01024.json.gz",
+            "size": 319761211
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00956-of-01024.json.gz",
+            "size": 319255736
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00957-of-01024.json.gz",
+            "size": 319504417
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00958-of-01024.json.gz",
+            "size": 319066016
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00959-of-01024.json.gz",
+            "size": 319887940
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00960-of-01024.json.gz",
+            "size": 318051437
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00961-of-01024.json.gz",
+            "size": 318373291
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00962-of-01024.json.gz",
+            "size": 318572513
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00963-of-01024.json.gz",
+            "size": 319488084
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00964-of-01024.json.gz",
+            "size": 318905670
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00965-of-01024.json.gz",
+            "size": 319452844
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00966-of-01024.json.gz",
+            "size": 319334588
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00967-of-01024.json.gz",
+            "size": 317872396
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00968-of-01024.json.gz",
+            "size": 318988069
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00969-of-01024.json.gz",
+            "size": 318324244
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00970-of-01024.json.gz",
+            "size": 319494164
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00971-of-01024.json.gz",
+            "size": 318714665
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00972-of-01024.json.gz",
+            "size": 319518275
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00973-of-01024.json.gz",
+            "size": 318092574
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00974-of-01024.json.gz",
+            "size": 318555677
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00975-of-01024.json.gz",
+            "size": 319045215
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00976-of-01024.json.gz",
+            "size": 319172031
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00977-of-01024.json.gz",
+            "size": 318650530
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00978-of-01024.json.gz",
+            "size": 318609909
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00979-of-01024.json.gz",
+            "size": 318881197
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00980-of-01024.json.gz",
+            "size": 318506081
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00981-of-01024.json.gz",
+            "size": 320000305
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00982-of-01024.json.gz",
+            "size": 319959158
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00983-of-01024.json.gz",
+            "size": 318921242
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00984-of-01024.json.gz",
+            "size": 319577980
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00985-of-01024.json.gz",
+            "size": 319812101
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00986-of-01024.json.gz",
+            "size": 319582409
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00987-of-01024.json.gz",
+            "size": 319957581
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00988-of-01024.json.gz",
+            "size": 320346479
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00989-of-01024.json.gz",
+            "size": 318546717
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00990-of-01024.json.gz",
+            "size": 319606761
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00991-of-01024.json.gz",
+            "size": 319117521
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00992-of-01024.json.gz",
+            "size": 317781551
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00993-of-01024.json.gz",
+            "size": 319341839
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00994-of-01024.json.gz",
+            "size": 320357337
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00995-of-01024.json.gz",
+            "size": 317824612
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00996-of-01024.json.gz",
+            "size": 320453890
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00997-of-01024.json.gz",
+            "size": 319469732
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00998-of-01024.json.gz",
+            "size": 319562604
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.00999-of-01024.json.gz",
+            "size": 318895764
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01000-of-01024.json.gz",
+            "size": 317697031
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01001-of-01024.json.gz",
+            "size": 318915840
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01002-of-01024.json.gz",
+            "size": 317811256
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01003-of-01024.json.gz",
+            "size": 318605529
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01004-of-01024.json.gz",
+            "size": 319379897
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01005-of-01024.json.gz",
+            "size": 319515177
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01006-of-01024.json.gz",
+            "size": 320078217
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01007-of-01024.json.gz",
+            "size": 318526753
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01008-of-01024.json.gz",
+            "size": 319407137
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01009-of-01024.json.gz",
+            "size": 319763066
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01010-of-01024.json.gz",
+            "size": 318653930
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01011-of-01024.json.gz",
+            "size": 320037079
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01012-of-01024.json.gz",
+            "size": 319753418
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01013-of-01024.json.gz",
+            "size": 318657671
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01014-of-01024.json.gz",
+            "size": 318028602
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01015-of-01024.json.gz",
+            "size": 319164504
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01016-of-01024.json.gz",
+            "size": 318474894
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01017-of-01024.json.gz",
+            "size": 319516762
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01018-of-01024.json.gz",
+            "size": 319433935
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01019-of-01024.json.gz",
+            "size": 320305440
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01020-of-01024.json.gz",
+            "size": 317445661
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01021-of-01024.json.gz",
+            "size": 318134525
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01022-of-01024.json.gz",
+            "size": 319809162
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-train.01023-of-01024.json.gz",
+            "size": 318155801
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00000-of-00008.json.gz",
+            "size": 40471190
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00001-of-00008.json.gz",
+            "size": 40675053
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00002-of-00008.json.gz",
+            "size": 41175078
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00003-of-00008.json.gz",
+            "size": 40728516
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00004-of-00008.json.gz",
+            "size": 40920200
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00005-of-00008.json.gz",
+            "size": 40921460
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00006-of-00008.json.gz",
+            "size": 40549809
+        },
+        {
+            "action": "upload",
+            "key": "upload/c4-en/c4-validation.00007-of-00008.json.gz",
+            "size": 40446172
+        }
+    ]
+}

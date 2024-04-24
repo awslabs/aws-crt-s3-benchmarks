@@ -192,8 +192,8 @@ class S3BenchmarksStack(Stack):
         commands_user_data.add_commands('mkdir /nvme')
         commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
 
-        self.per_instance_launch_template_with_user_data = ec2.LaunchTemplate(
-            self, f"PerInstanceLaunchTemplateWithUserData",
+        self.per_instance_launch_template_with_nvme_storage = ec2.LaunchTemplate(
+            self, f"PerInstanceLaunchTemplateWithNVMeStorage",
             user_data=multipart_user_data,
         )
 
@@ -216,7 +216,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
-            launch_template=self.per_instance_launch_template_with_user_data if instance_type.use_nvme_storage else self.per_instance_launch_template,
+            launch_template=self.per_instance_launch_template_with_nvme_storage if instance_type.use_nvme_storage else self.per_instance_launch_template,
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),

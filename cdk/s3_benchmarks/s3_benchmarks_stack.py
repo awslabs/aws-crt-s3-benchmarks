@@ -165,23 +165,6 @@ class S3BenchmarksStack(Stack):
             effect=iam.Effect.ALLOW,
         ))
 
-        # User data to format and bind the volume
-        # Create a new MultipartUserData instance
-        multipart_user_data = ec2.MultipartUserData()
-
-        # Create a new UserData instance for Linux
-        commands_user_data = ec2.UserData.for_linux()
-
-        # Add the commands user data as a part of the multipart user data
-        # The add_user_data_part method is equivalent to adding a user data part with shell script commands
-        multipart_user_data.add_user_data_part(
-            commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
-
-        # Adding commands to the multipart user data, which in turn adds them to the commands user data
-        commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands('mkdir /nvme')
-        commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
-
         # Per-instance jobs needs more than the default 30GiB storage.
         # Use a "launch template" to customize this, see:
         # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
@@ -196,15 +179,21 @@ class S3BenchmarksStack(Stack):
             )],
         )
 
+        # Use a "launch template" to formart and bind the nvme storage
+        multipart_user_data = ec2.MultipartUserData()
+        commands_user_data = ec2.UserData.for_linux()
+        multipart_user_data.add_user_data_part(
+            commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
+
+        # Format and bind the nvme volume
+        # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvmen1
+        # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
+        commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
+        commands_user_data.add_commands('mkdir /nvme')
+        commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
+
         self.per_instance_launch_template_with_user_data = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithUserData",
-            block_devices=[ec2.BlockDevice(
-                device_name='/dev/xvda',
-                volume=ec2.BlockDeviceVolume.ebs(
-                    volume_size=PER_INSTANCE_STORAGE_GiB,
-                    volume_type=ec2.EbsDeviceVolumeType.GP3,
-                ),
-            )],
             user_data=multipart_user_data,
         )
 
@@ -227,7 +216,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
-            launch_template=self.per_instance_launch_template if instance_type.nvme_storage is None else self.per_instance_launch_template_with_user_data,
+            launch_template=self.per_instance_launch_template_with_user_data if instance_type.use_nvme_storage else self.per_instance_launch_template,
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -261,7 +250,7 @@ class S3BenchmarksStack(Stack):
             ],
             job_role=self.per_instance_job_role,
             volumes=[batch.EcsVolume.host(container_path="/nvme", host_path="/nvme",
-                                          name="nvme")] if instance_type.nvme_storage is not None else None,
+                                          name="nvme")] if instance_type.use_nvme_storage else None,
         )
 
         job_defn = batch.EcsJobDefinition(

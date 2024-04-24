@@ -4,6 +4,7 @@ Do not import ANY libraries that aren't part of the std library.
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -14,7 +15,7 @@ class InstanceType:
     mem_GiB: float
     bandwidth_Gbps: float
     quota_code: str
-    nvme_storage: str = None
+    nvme_storage: Optional[str] = None
 
     def resource_name(self):
         return f"S3Benchmarks-PerInstance-{self.id.replace('.', '-')}"

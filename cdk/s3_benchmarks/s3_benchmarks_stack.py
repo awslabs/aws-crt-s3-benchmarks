@@ -142,7 +142,7 @@ class S3BenchmarksStack(Stack):
         # per-instance-job can do whatever it wants to the buckets
         for bucket in self.bucket_names:
             if s3_benchmarks.is_s3express_bucket(bucket):
-                bucket_arn = f"arn: {self.partition}: s3express: {self.region}: {self.account}: bucket/{bucket}"
+                bucket_arn = f"arn:{self.partition}:s3express:{self.region}:{self.account}:bucket/{bucket}"
                 service = "s3express"
             else:
                 bucket_arn = f"arn:{self.partition}:s3:::{bucket}"

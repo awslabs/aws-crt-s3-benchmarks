@@ -179,7 +179,7 @@ class S3BenchmarksStack(Stack):
             )],
         )
 
-        # Use a "launch template" to formart and bind the NVMe storage
+        # Use a "launch template" to format and bind the NVMe storage
         multipart_user_data = ec2.MultipartUserData()
         commands_user_data = ec2.UserData.for_linux()
         multipart_user_data.add_user_data_part(

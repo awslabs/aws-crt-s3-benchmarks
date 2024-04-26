@@ -208,7 +208,7 @@ class S3BenchmarksStack(Stack):
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
         # "c5n.18xlarge" -> "c5n-18xlarge"
-        id_with_hyphens = instance_type.id.replace('.', '-')
+        id_with_hyphens = instance_type.id.replace('.', '-') +'-'+ instance_type.storage_type.value
 
         ec2_instance_type = ec2.InstanceType(instance_type.id)
 

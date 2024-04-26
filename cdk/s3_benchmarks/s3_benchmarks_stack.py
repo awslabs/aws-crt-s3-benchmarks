@@ -19,6 +19,7 @@ import subprocess
 from typing import Optional
 
 import s3_benchmarks
+from s3_benchmarks import StorageType
 
 
 @dataclass
@@ -165,36 +166,40 @@ class S3BenchmarksStack(Stack):
             effect=iam.Effect.ALLOW,
         ))
 
-        # Per-instance jobs needs more than the default 30GiB storage.
-        # Use a "launch template" to customize this, see:
+        # Use a "launch template" to customize storage, see:
         # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
-        self.per_instance_launch_template = ec2.LaunchTemplate(
-            self, f"PerInstanceLaunchTemplate",
+        self.per_instance_launch_templates = {}
+
+        # Per-instance jobs needs more than the default 30GiB storage.
+        self.per_instance_launch_templates[StorageType.EBS] = ec2.LaunchTemplate(
+            self, f"PerInstanceLaunchTemplateWithEBS",
             block_devices=[ec2.BlockDevice(
                 device_name='/dev/xvda',
                 volume=ec2.BlockDeviceVolume.ebs(
                     volume_size=PER_INSTANCE_STORAGE_GiB,
                     volume_type=ec2.EbsDeviceVolumeType.GP3,
                 ),
+
             )],
+            # user_data=ec2.UserData.for_linux().add_commands(f"mkdir {s3_benchmarks.WORK_BASE_DIR}")
         )
 
-        # Use a "launch template" to format and bind the NVMe storage
-        multipart_user_data = ec2.MultipartUserData()
-        commands_user_data = ec2.UserData.for_linux()
-        multipart_user_data.add_user_data_part(
-            commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
-
-        # Format and bind the NVMe volume
+        # Format and bind the instance storage volume
         # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
-        commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands('mkdir /nvme')
-        commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
+        multipart_user_data = ec2.MultipartUserData()
+        instance_storage_user_data = ec2.UserData.for_linux()
+        multipart_user_data.add_user_data_part(
+            instance_storage_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
+        instance_storage_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
+        instance_storage_user_data.add_commands('mkdir /work')
+        instance_storage_user_data.add_commands('mount /dev/nvme1n1 /work')
 
-        self.per_instance_launch_template_with_nvme_storage = ec2.LaunchTemplate(
-            self, f"PerInstanceLaunchTemplateWithNVMeStorage",
-            user_data=multipart_user_data,
+        # f"mkdir {s3_benchmarks.WORK_BASE_DIR}",
+        # f"mount /dev/nvme1n1 {s3_benchmarks.WORK_BASE_DIR}");
+        self.per_instance_launch_templates[StorageType.INSTANCE_STORAGE] = ec2.LaunchTemplate(
+            self, f"PerInstanceLaunchTemplateWithInstanceStorage",
+            user_data=multipart_user_data
         )
 
         # Now create the actual jobs...
@@ -203,7 +208,7 @@ class S3BenchmarksStack(Stack):
 
     def _define_per_instance_batch_job(self, instance_type: s3_benchmarks.InstanceType):
         # "c5n.18xlarge" -> "c5n-18xlarge"
-        id_with_hyphens = instance_type.id.replace('.', '-')
+        id_with_hyphens = instance_type.id.replace('.', '-') +'-'+ instance_type.storage_type.value
 
         ec2_instance_type = ec2.InstanceType(instance_type.id)
 
@@ -216,7 +221,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
-            launch_template=self.per_instance_launch_template_with_nvme_storage if instance_type.use_nvme_storage else self.per_instance_launch_template,
+            launch_template=self.per_instance_launch_templates[instance_type.storage_type],
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -249,8 +254,8 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
-            volumes=[batch.EcsVolume.host(container_path="/nvme", host_path="/nvme",
-                                          name="nvme")] if instance_type.use_nvme_storage else None,
+            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.WORK_BASE_DIR, host_path=s3_benchmarks.WORK_BASE_DIR,
+                                          name="work_base_dir")],
         )
 
         job_defn = batch.EcsJobDefinition(

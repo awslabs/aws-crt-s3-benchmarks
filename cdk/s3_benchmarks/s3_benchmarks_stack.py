@@ -164,11 +164,11 @@ class S3BenchmarksStack(Stack):
             },
             effect=iam.Effect.ALLOW,
         ))
-
+        self.per_instance_launch_templates = {}
         # Per-instance jobs needs more than the default 30GiB storage.
         # Use a "launch template" to customize this, see:
         # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
-        self.per_instance_launch_template = ec2.LaunchTemplate(
+        self.per_instance_launch_templates[s3_benchmarks.StorageType.EBS] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplate",
             block_devices=[ec2.BlockDevice(
                 device_name='/dev/xvda',
@@ -192,7 +192,7 @@ class S3BenchmarksStack(Stack):
         commands_user_data.add_commands('mkdir /nvme')
         commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
 
-        self.per_instance_launch_template_with_nvme_storage = ec2.LaunchTemplate(
+        self.per_instance_launch_templates[s3_benchmarks.StorageType.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",
             user_data=multipart_user_data,
         )
@@ -216,7 +216,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
-            launch_template=self.per_instance_launch_template_with_nvme_storage if instance_type.use_nvme_storage else self.per_instance_launch_template,
+            launch_template=self.per_instance_launch_templates[instance_type.storage_type],
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -250,7 +250,7 @@ class S3BenchmarksStack(Stack):
             ],
             job_role=self.per_instance_job_role,
             volumes=[batch.EcsVolume.host(container_path="/nvme", host_path="/nvme",
-                                          name="nvme")] if instance_type.use_nvme_storage else None,
+                                          name="nvme")] if instance_type.storage_type == s3_benchmarks.StorageType.INSTANCE_STORAGE else None,
         )
 
         job_defn = batch.EcsJobDefinition(

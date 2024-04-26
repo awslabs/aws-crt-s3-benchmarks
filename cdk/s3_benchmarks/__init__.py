@@ -62,6 +62,9 @@ PER_INSTANCE_JOB_TIMEOUT_HOURS = 8.0
 ORCHESTRATOR_JOB_TIMEOUT_HOURS = 12.0
 
 
+S3_BENCHMARKS_WORK_BASE_DIR = "/work"
+
+
 def is_s3express_bucket(bucket: str) -> bool:
     return bucket.endswith('--x-s3')
 

@@ -189,8 +189,8 @@ class S3BenchmarksStack(Stack):
         # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands('mkdir /nvme')
-        commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
+        commands_user_data.add_commands(f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
+        commands_user_data.add_commands(f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
 
         self.per_instance_launch_templates[s3_benchmarks.StorageType.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",
@@ -249,8 +249,8 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
-            volumes=[batch.EcsVolume.host(container_path="/nvme", host_path="/nvme",
-                                          name="nvme")] if instance_type.storage_type == s3_benchmarks.StorageType.INSTANCE_STORAGE else None,
+            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, host_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR,
+                                          name="work")] if instance_type.storage_type == s3_benchmarks.StorageType.INSTANCE_STORAGE else None,
         )
 
         job_defn = batch.EcsJobDefinition(

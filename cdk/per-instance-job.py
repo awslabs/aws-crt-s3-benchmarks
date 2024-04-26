@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
-    temp_dir_base = "/nvme" if instance_type.storage_type == s3_benchmarks.StorageType.INSTANCE_STORAGE else None
+    temp_dir_base = s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR if instance_type.storage_type == s3_benchmarks.StorageType.INSTANCE_STORAGE else None
     print(f"base_dir:{temp_dir_base}")
 
     # cd into tmp working dir

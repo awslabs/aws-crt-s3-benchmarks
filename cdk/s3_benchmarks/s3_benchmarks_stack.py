@@ -33,7 +33,7 @@ class S3ClientProps:
 # - These defaults are what the Canary runs.
 # - (TODO) A dashboard is set up to view these instance-type/s3-client/workload combinations.
 DEFAULT_INSTANCE_TYPES = [
-    'c5n.18xlarge',
+    'm6idn.24xlarge',
 ]
 
 # The "default" set of S3 clients to benchmark.
@@ -54,16 +54,16 @@ DEFAULT_S3_CLIENTS = {
 # This isn't everything in workloads/, it's a reasonable spread
 # of use cases that won't take TOO long to run.
 DEFAULT_WORKLOADS = [
-    'download-max-throughput',  # how fast can we theoretically go?
-    'upload-max-throughput',
-    'download-30GiB-1x',  # very big file
-    'upload-30GiB-1x',
-    'download-5GiB-1x',  # moderately big file
-    'upload-5GiB-1x',
+    # 'download-max-throughput',  # how fast can we theoretically go?
+    # 'upload-max-throughput',
+    # 'download-30GiB-1x',  # very big file
+    # 'upload-30GiB-1x',
+    # 'download-5GiB-1x',  # moderately big file
+    # 'upload-5GiB-1x',
     'download-5GiB-1x-ram',  # no disk access to slow us down
-    'upload-5GiB-1x-ram',
-    'download-256KiB-10_000x',  # lots of small files
-    'upload-256KiB-10_000x',
+    # 'upload-5GiB-1x-ram',
+    # 'download-256KiB-10_000x',  # lots of small files
+    # 'upload-256KiB-10_000x',
 ]
 
 PER_INSTANCE_STORAGE_GiB = 500
@@ -189,8 +189,8 @@ class S3BenchmarksStack(Stack):
         # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands('mkdir /nvme')
-        commands_user_data.add_commands('mount /dev/nvme1n1 /nvme')
+        commands_user_data.add_commands('mkdir /workdir')
+        commands_user_data.add_commands('mount /dev/nvme1n1 /workdir')
 
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",
@@ -250,7 +250,7 @@ class S3BenchmarksStack(Stack):
             ],
             job_role=self.per_instance_job_role,
             volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, host_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR,
-                                          name="nvme")] if instance_type.storage_configuration == s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE else None,
+                                          name="workdir")] if instance_type.storage_configuration == s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE else None,
         )
 
         job_defn = batch.EcsJobDefinition(
@@ -261,8 +261,8 @@ class S3BenchmarksStack(Stack):
             timeout=cdk.Duration.hours(
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
             parameters={
-                "branch": "main",
-                "buckets": ','.join(self.bucket_names),
+                "branch": "new-instance-type5",
+                "buckets": self.bucket_names[0],
                 "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },

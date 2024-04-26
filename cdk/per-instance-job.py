@@ -66,15 +66,17 @@ if __name__ == '__main__':
 
     # show file system disk space usage
     run(['df', '-Th'])
-    run(['lsblk', '-f'])
 
     args = PARSER.parse_args()
 
     instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
+    temp_dir_base = "/nvme" if instance_type.use_nvme_storage else None
+    print(f"base_dir:{temp_dir_base}")
+
     # cd into tmp working dir
     tmp_dir = Path(tempfile.mkdtemp(
-        prefix='s3-benchmarks-', dir=s3_benchmarks.WORK_BASE_DIR)).absolute()
+        prefix='s3-benchmarks-', dir=temp_dir_base)).absolute()
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

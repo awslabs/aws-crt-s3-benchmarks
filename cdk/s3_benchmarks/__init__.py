@@ -4,12 +4,7 @@ Do not import ANY libraries that aren't part of the std library.
 """
 
 from dataclasses import dataclass
-from enum import Enum
-
-
-class StorageType(Enum):
-    EBS = 'EBS'
-    INSTANCE_STORAGE = 'INSTANCE_STORAGE'
+from typing import Optional
 
 
 @dataclass
@@ -20,8 +15,7 @@ class InstanceType:
     mem_GiB: float
     bandwidth_Gbps: float
     quota_code: str
-    storage_type: StorageType
-    # use_nvme_storage: bool = False
+    use_nvme_storage: bool = False
 
     def resource_name(self):
         return f"S3Benchmarks-PerInstance-{self.id.replace('.', '-')}"
@@ -39,10 +33,10 @@ def _add(instance_type: InstanceType):
 
 
 _add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
-                  bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_type=StorageType.EBS))
+                  bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES))
 
 _add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
-                  bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_type=StorageType.INSTANCE_STORAGE))
+                  bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES, use_nvme_storage=True))
 
 # Orchestrator instance type
 # How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):
@@ -51,7 +45,7 @@ _add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
 # - just FYI, EC2 has cheaper types (t4g.nano for $0.0042/hr) that Batch doesn't support
 ORCHESTRATOR_INSTANCE_TYPE = InstanceType(
     "c6g.medium", vcpu=1, mem_GiB=2,
-    bandwidth_Gbps=10, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_type=StorageType.EBS)
+    bandwidth_Gbps=10, quota_code=QUOTA_CODE_STANDARD_INSTANCES)
 
 # Timeout for job running on our slowest EC2 instance type,
 # running ALL benchmarking workloads, using ALL S3 clients.
@@ -60,9 +54,6 @@ PER_INSTANCE_JOB_TIMEOUT_HOURS = 8.0
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.
 ORCHESTRATOR_JOB_TIMEOUT_HOURS = 12.0
-
-
-WORK_BASE_DIR = "/work"
 
 
 def is_s3express_bucket(bucket: str) -> bool:

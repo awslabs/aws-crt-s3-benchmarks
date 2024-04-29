@@ -255,8 +255,8 @@ class S3BenchmarksStack(Stack):
             timeout=cdk.Duration.hours(
                 s3_benchmarks.PER_INSTANCE_JOB_TIMEOUT_HOURS),
             parameters={
-                "branch": "new-instance-type5",
-                "buckets": self.bucket_names[0],
+                "branch": "main",
+                "buckets": ','.join(self.bucket_names),
                 "s3Clients": ','.join(DEFAULT_S3_CLIENTS),
                 "workloads": ','.join(DEFAULT_WORKLOADS),
             },

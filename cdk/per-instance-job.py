@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # cd into tmp working dir
     tmp_dir = Path(tempfile.mkdtemp(
-        prefix='s3-benchmarks-', dir= s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR)).absolute()
+        prefix='s3-benchmarks-', dir=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR)).absolute()
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

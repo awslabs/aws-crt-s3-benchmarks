@@ -189,8 +189,8 @@ class S3BenchmarksStack(Stack):
         # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands('mkdir /workdir')
-        commands_user_data.add_commands('mount /dev/nvme1n1 /workdir')
+        commands_user_data.add_commands(f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
+        commands_user_data.add_commands(f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
 
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",

@@ -180,22 +180,28 @@ class S3BenchmarksStack(Stack):
         )
 
         # Use a "launch template" to format and bind the NVMe storage
-        multipart_user_data = ec2.MultipartUserData()
-        commands_user_data = ec2.UserData.for_linux()
-        multipart_user_data.add_user_data_part(
-            commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
+        # multipart_user_data = ec2.MultipartUserData()
+        # commands_user_data = ec2.UserData.for_linux()
+        # multipart_user_data.add_user_data_part(
+        #     commands_user_data, content_type=ec2.MultipartBody.SHELL_SCRIPT, make_default=True)
 
         # Format and bind the NVMe volume
         # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
-        commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
-        commands_user_data.add_commands(f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
-        commands_user_data.add_commands(f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
+        # commands_user_data.add_commands('mkfs -t xfs /dev/nvme1n1')
+        # commands_user_data.add_commands(f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
+        # commands_user_data.add_commands(f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}")
 
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",
-            user_data=multipart_user_data,
+            user_data=ec2.UserData.for_linux(),
         )
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_commands(
+            'mkfs -t xfs /dev/nvme1n1',
+            f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}",
+            f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}"
+        )
+
 
         # Now create the actual jobs...
         for instance_type in s3_benchmarks.INSTANCE_TYPES.values():

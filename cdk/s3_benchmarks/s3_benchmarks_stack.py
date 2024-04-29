@@ -244,8 +244,7 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
-            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, host_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR,
-                                          name="workdir")] if instance_type.storage_configuration == s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE else None,
+            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, host_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, name="workdir")],
         )
 
         job_defn = batch.EcsJobDefinition(

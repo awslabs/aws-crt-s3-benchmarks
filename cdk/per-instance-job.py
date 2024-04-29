@@ -71,12 +71,9 @@ if __name__ == '__main__':
 
     instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
-    temp_dir_base = s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR if instance_type.storage_configuration == s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE else None
-    print(f"base_dir:{temp_dir_base}")
-
     # cd into tmp working dir
     tmp_dir = Path(tempfile.mkdtemp(
-        prefix='s3-benchmarks-', dir=temp_dir_base)).absolute()
+        prefix='s3-benchmarks-', dir= s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR)).absolute()
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

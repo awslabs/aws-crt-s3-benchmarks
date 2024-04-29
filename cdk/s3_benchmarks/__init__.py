@@ -4,11 +4,11 @@ Do not import ANY libraries that aren't part of the std library.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 from enum import Enum
 
 
 class StorageConfiguration(Enum):
+    """Storage configuration to use in the EC2 instance """
     EBS = 'EBS'
     INSTANCE_STORAGE = 'INSTANCE_STORAGE'
 

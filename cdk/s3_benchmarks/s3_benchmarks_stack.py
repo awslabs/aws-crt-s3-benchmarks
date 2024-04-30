@@ -164,6 +164,9 @@ class S3BenchmarksStack(Stack):
             },
             effect=iam.Effect.ALLOW,
         ))
+
+        # Use "launch templates" to customize the machines running per-instance jobs, see:
+        # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
         self.per_instance_launch_templates = {}
         # Per-instance jobs needs more than the default 30GiB storage.
         # Use a "launch template" to customize this, see:

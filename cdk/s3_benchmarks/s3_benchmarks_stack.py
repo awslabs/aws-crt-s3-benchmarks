@@ -180,8 +180,9 @@ class S3BenchmarksStack(Stack):
             )],
         )
 
-        # Use a "launch template" to format and bind the Instance Storage
-        # The device path format is /dev/nvme[0-26]n1. /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
+        # Per-instance jobs using Instance Storage need their ephemeral volumes formatted and bound.
+        # The device path format is /dev/nvme[0-26]n1.
+        # /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",

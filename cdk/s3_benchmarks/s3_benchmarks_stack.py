@@ -168,9 +168,7 @@ class S3BenchmarksStack(Stack):
         # Use "launch templates" to customize the machines running per-instance jobs, see:
         # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
         self.per_instance_launch_templates = {}
-        # Per-instance jobs needs more than the default 30GiB storage.
-        # Use a "launch template" to customize this, see:
-        # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
+        # Per-instance jobs using EBS need more than the default 30GiB storage.
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.EBS] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplate",
             block_devices=[ec2.BlockDevice(

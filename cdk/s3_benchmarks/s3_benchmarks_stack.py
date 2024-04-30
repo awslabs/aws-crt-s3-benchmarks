@@ -190,8 +190,8 @@ class S3BenchmarksStack(Stack):
         )
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_commands(
             'mkfs -t xfs /dev/nvme1n1',
-            f"mkdir {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}",
-            f"mount /dev/nvme1n1 {s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR}"
+            f"mkdir {s3_benchmarks.PER_INSTANCE_WORK_DIR}",
+            f"mount /dev/nvme1n1 {s3_benchmarks.PER_INSTANCE_WORK_DIR}"
         )
 
         # Now create the actual jobs...
@@ -246,8 +246,8 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
-            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR,
-                                          host_path=s3_benchmarks.S3_BENCHMARKS_WORK_BASE_DIR, name="workdir")],
+            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.PER_INSTANCE_WORK_DIR,
+                                          host_path=s3_benchmarks.PER_INSTANCE_WORK_DIR, name="workdir")],
         )
 
         job_defn = batch.EcsJobDefinition(

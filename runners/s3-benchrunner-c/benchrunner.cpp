@@ -22,6 +22,9 @@
 #include <aws/s3/s3_client.h>
 #include <nlohmann/json.hpp>
 
+#define AWS_UNSTABLE_TESTING_API
+#include <aws/testing/async_stream_tester.h>
+
 using namespace std;
 using namespace std::chrono;
 using namespace std::chrono_literals;
@@ -30,10 +33,24 @@ using json = nlohmann::json;
 struct TaskConfig;
 class Benchmark;
 
-#define USE_ASYNC_WRITES 1
-#define ASYNC_WRITE_SIZE (256 * 1024)
 
 /////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
+
+const size_t PART_SIZE = 8 * 1024 * 1024;
+
+// when uploading fom RAM, which technique to use
+enum class UploadTechnique {
+    InputStream, // use aws_input_stream
+    AsyncInputStream, // use aws_async_input_stream
+    AsyncWrite, // use aws_s3_meta_request_write()
+};
+const auto UPLOAD_TECHNIQUE = UploadTechnique::AsyncWrite;
+
+// when uploading from RAM, feed in this many bytes at a time (max)
+const size_t UPLOAD_MAX_BYTES_AT_A_TIME = SIZE_MAX;
+// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = PART_SIZE;
+// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 1 * 1024 * 1024; // 1 MiB - smaller common size from s3-mountpoint
+// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 128 * 1024; // 1 KiB  - larger common size from s3-mountpoint
 
 // 256MiB is Java Transfer Mgr V2's default
 // TODO: Investigate. At time of writing, this noticeably impacts performance.
@@ -335,7 +352,7 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     s3ClientConfig.client_bootstrap = clientBootstrap;
     s3ClientConfig.tls_connection_options = &tlsConnOpts;
     s3ClientConfig.signing_config = &signingConfig;
-    s3ClientConfig.part_size = bytesFromMiB(8);
+    s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = targetThroughputGbps;
 
     if (isS3Express)
@@ -438,7 +455,10 @@ Task::Task(Benchmark &benchmark, size_t taskI)
     addHeader(request, "Host", benchmark.endpoint);
     aws_http_message_set_request_path(request, toCursor(string("/") + config.key));
 
-    aws_input_stream *inMemoryStreamForUpload = NULL;
+    // Depending on UploadTechnique, these may or may not be used...
+    aws_input_stream *simpleInMemoryStreamForUpload = NULL;
+    aws_input_stream *actualInputStreamForUpload = NULL;
+    aws_async_input_stream *actualAsyncStreamForUpload = NULL;
 
     if (config.action == "upload")
     {
@@ -450,18 +470,41 @@ Task::Task(Benchmark &benchmark, size_t taskI)
 
         if (benchmark.config.filesOnDisk)
             options.send_filepath = toCursor(config.key);
+        else if (UPLOAD_TECHNIQUE == UploadTechnique::AsyncWrite) {
+            options.send_using_async_writes = true;
+        }
         else
         {
-#if USE_ASYNC_WRITES
-            options.send_using_async_writes = true;
-#else
-            // set up input-stream that uploads random data from a buffer
+            // set up simple input-stream that uploads random data from a buffer
             auto randomDataCursor =
                 aws_byte_cursor_from_array(benchmark.randomDataForUpload.data(), benchmark.randomDataForUpload.size());
-            auto inMemoryStreamForUpload = aws_input_stream_new_from_cursor(benchmark.alloc, &randomDataCursor);
-            aws_http_message_set_body_stream(request, inMemoryStreamForUpload);
-            aws_input_stream_release(inMemoryStreamForUpload);
-#endif
+            auto simpleInMemoryStreamForUpload = aws_input_stream_new_from_cursor(benchmark.alloc, &randomDataCursor);
+
+            // Wrap that in a "tester" stream so we can customize its behavior
+            if (UPLOAD_TECHNIQUE == UploadTechnique::InputStream)
+            {
+                aws_input_stream_tester_options actualStreamOptions;
+                AWS_ZERO_STRUCT(actualStreamOptions);
+                actualStreamOptions.source_stream = simpleInMemoryStreamForUpload;
+                actualStreamOptions.max_bytes_per_read = UPLOAD_MAX_BYTES_AT_A_TIME;
+
+                actualInputStreamForUpload = aws_input_stream_new_tester(benchmark.alloc, &actualStreamOptions);
+                aws_http_message_set_body_stream(request, actualInputStreamForUpload);
+
+            }
+            else
+            {
+                AWS_FATAL_ASSERT(UPLOAD_TECHNIQUE == UploadTechnique::AsyncInputStream);
+
+                aws_async_input_stream_tester_options actualStreamOptions;
+                AWS_ZERO_STRUCT(actualStreamOptions);
+                actualStreamOptions.base.source_stream = simpleInMemoryStreamForUpload;
+                actualStreamOptions.base.max_bytes_per_read = UPLOAD_MAX_BYTES_AT_A_TIME;
+                actualStreamOptions.completion_strategy = AWS_ASYNC_READ_COMPLETES_ON_ANOTHER_THREAD; // ???
+
+                actualAsyncStreamForUpload = aws_async_input_stream_new_tester(benchmark.alloc, &actualStreamOptions);
+                options.send_async_stream = actualAsyncStreamForUpload;
+            }
         }
     }
     else if (config.action == "download")
@@ -495,14 +538,15 @@ Task::Task(Benchmark &benchmark, size_t taskI)
     metaRequest = aws_s3_client_make_meta_request(benchmark.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
 
-#if USE_ASYNC_WRITES
-    if (config.action == "upload" && !benchmark.config.filesOnDisk)
+    if (config.action == "upload" && !benchmark.config.filesOnDisk && UPLOAD_TECHNIQUE == UploadTechnique::AsyncWrite)
     {
         Task::doAsyncWrite(this);
     }
-#endif
 
     aws_http_message_release(request);
+    aws_input_stream_release(simpleInMemoryStreamForUpload);
+    aws_input_stream_release(actualInputStreamForUpload);
+    aws_async_input_stream_release(actualAsyncStreamForUpload);
 }
 
 void Task::onFinished(
@@ -573,7 +617,7 @@ void Task::doAsyncWrite(void *user_data)
     if (bytesRemaining == 0)
         return;
 
-    size_t bytesToWrite = std::min<size_t>(ASYNC_WRITE_SIZE, bytesRemaining);
+    size_t bytesToWrite = std::min<size_t>(UPLOAD_MAX_BYTES_AT_A_TIME, bytesRemaining);
     auto data =
         aws_byte_cursor_from_array(task->benchmark.randomDataForUpload.data() + task->bytesUploaded, bytesToWrite);
     task->bytesUploaded += bytesToWrite;

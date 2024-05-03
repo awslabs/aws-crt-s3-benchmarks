@@ -47,10 +47,10 @@ enum class UploadTechnique {
 const auto UPLOAD_TECHNIQUE = UploadTechnique::AsyncWrite;
 
 // when uploading from RAM, feed in this many bytes at a time (max)
-const size_t UPLOAD_MAX_BYTES_AT_A_TIME = SIZE_MAX;
+// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = SIZE_MAX;
 // const size_t UPLOAD_MAX_BYTES_AT_A_TIME = PART_SIZE;
-// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 1 * 1024 * 1024; // 1 MiB - smaller common size from s3-mountpoint
-// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 128 * 1024; // 1 KiB  - larger common size from s3-mountpoint
+const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 1 * 1024 * 1024; // 1 MiB - smaller common size from s3-mountpoint
+// const size_t UPLOAD_MAX_BYTES_AT_A_TIME = 128 * 1024; // 128 KiB  - larger common size from s3-mountpoint
 
 // 256MiB is Java Transfer Mgr V2's default
 // TODO: Investigate. At time of writing, this noticeably impacts performance.
@@ -155,7 +155,8 @@ class Task
 
     FILE *downloadFile = NULL;
 
-    size_t bytesUploaded = 0;
+    uint64_t bytesUploaded = 0;
+    unique_ptr<thread> asyncWriteThread;
 
     static int onDownloadData(
         struct aws_s3_meta_request *meta_request,
@@ -168,7 +169,7 @@ class Task
         const struct aws_s3_meta_request_result *meta_request_result,
         void *user_data);
 
-    static void doAsyncWrite(void *user_data);
+    void doAsyncWriteFromAnotherThread();
 
   public:
     // Creates the task and begins its work
@@ -540,7 +541,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
 
     if (config.action == "upload" && !benchmark.config.filesOnDisk && UPLOAD_TECHNIQUE == UploadTechnique::AsyncWrite)
     {
-        Task::doAsyncWrite(this);
+        asyncWriteThread = make_unique<thread>(&Task::doAsyncWriteFromAnotherThread, this);
     }
 
     aws_http_message_release(request);
@@ -590,6 +591,10 @@ void Task::onFinished(
     if (task->downloadFile != NULL)
         fclose(task->downloadFile);
     aws_s3_meta_request_release(task->metaRequest);
+
+    if (task->asyncWriteThread)
+        task->asyncWriteThread->join();
+
     task->donePromise.set_value();
 }
 
@@ -610,21 +615,23 @@ int Task::onDownloadData(
     return AWS_OP_SUCCESS;
 }
 
-void Task::doAsyncWrite(void *user_data)
+void Task::doAsyncWriteFromAnotherThread()
 {
-    auto task = static_cast<Task *>(user_data);
-    size_t bytesRemaining = task->config.size - task->bytesUploaded;
-    if (bytesRemaining == 0)
-        return;
-
-    size_t bytesToWrite = std::min<size_t>(UPLOAD_MAX_BYTES_AT_A_TIME, bytesRemaining);
-    auto data =
-        aws_byte_cursor_from_array(task->benchmark.randomDataForUpload.data() + task->bytesUploaded, bytesToWrite);
-    task->bytesUploaded += bytesToWrite;
-    bool eof = task->bytesUploaded == task->config.size;
-    aws_future_void *writeFuture = aws_s3_meta_request_write(task->metaRequest, data, eof);
-    aws_future_void_register_callback(writeFuture, doAsyncWrite, task);
-    aws_future_void_release(writeFuture);
+    bool eof = false;
+    int error_code = 0;
+    while (eof == false && error_code == 0)
+    {
+        uint64_t bytesRemaining = this->config.size - this->bytesUploaded;
+        auto bytesToWrite = static_cast<size_t>(std::min(UPLOAD_MAX_BYTES_AT_A_TIME, bytesRemaining));
+        auto data =
+            aws_byte_cursor_from_array(this->benchmark.randomDataForUpload.data() + this->bytesUploaded, bytesToWrite);
+        this->bytesUploaded += bytesToWrite;
+        eof = this->bytesUploaded == this->config.size;
+        aws_future_void *writeFuture = aws_s3_meta_request_write(this->metaRequest, data, eof);
+        AWS_FATAL_ASSERT(aws_future_void_wait(writeFuture, INT64_MAX) == true);
+        error_code = aws_future_void_get_error(writeFuture);
+        aws_future_void_release(writeFuture);
+    }
 }
 
 // Print all kinds of stats about these values (median, mean, min, max, etc)

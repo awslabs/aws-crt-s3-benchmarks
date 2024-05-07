@@ -191,8 +191,8 @@ class S3BenchmarksStack(Stack):
         instance_storage_startup_shell_script = ec2.UserData.for_linux()
         instance_storage_startup_shell_script.add_commands(
             'mkfs -t xfs /dev/nvme1n1',
-            'mkdir /example_directory',  # Replace with your directory
-            'mount /dev/nvme1n1 /example_directory'
+            f"mkdir {s3_benchmarks.PER_INSTANCE_WORK_DIR}",
+            f"mount /dev/nvme1n1 {s3_benchmarks.PER_INSTANCE_WORK_DIR}"
         )
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_part(
             ec2.MultipartBody.from_user_data(instance_storage_startup_shell_script))

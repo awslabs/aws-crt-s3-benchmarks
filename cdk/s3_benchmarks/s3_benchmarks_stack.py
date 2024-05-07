@@ -194,7 +194,8 @@ class S3BenchmarksStack(Stack):
             'mkdir /example_directory',  # Replace with your directory
             'mount /dev/nvme1n1 /example_directory'
         )
-        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_part(ec2.MultipartBody.from_user_data(instance_storage_startup_shell_script))
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_part(
+            ec2.MultipartBody.from_user_data(instance_storage_startup_shell_script))
 
         # Now create the actual jobs...
         for instance_type in s3_benchmarks.INSTANCE_TYPES.values():

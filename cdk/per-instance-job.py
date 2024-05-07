@@ -65,14 +65,15 @@ if __name__ == '__main__':
     print(f"> {sys.executable} {subprocess.list2cmdline(sys.argv)}")
 
     # show file system disk space usage
-    run(['df', '-h'])
+    run(['df', '-Th'])
 
     args = PARSER.parse_args()
 
     instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
     # cd into tmp working dir
-    tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-')).absolute()
+    tmp_dir = Path(tempfile.mkdtemp(
+        prefix='s3-benchmarks-', dir=s3_benchmarks.PER_INSTANCE_WORK_DIR)).absolute()
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

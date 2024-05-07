@@ -2,7 +2,7 @@ import boto3  # type: ignore
 from datetime import datetime
 from pathlib import Path
 import re
-from typing import Optional
+from typing import Optional, List, Tuple
 from utils import get_bucket_storage_class
 
 
@@ -18,7 +18,7 @@ def report_metrics(*,
                    branch: Optional[str],
                    ):
     # parse stdout
-    throughput_per_run_Gbps = _given_stdout_get_list_throughput_per_run_in_gigabits(
+    throughput_per_run_Gbps, seconds_per_run = _give_stdout_parse_throughput_in_gigabits_and_duration_in_seconds(
         run_stdout)
     run_count = len(throughput_per_run_Gbps)
 
@@ -40,7 +40,7 @@ def report_metrics(*,
     # give each run a unique timestamp, even if it's just approximate
     approx_duration_per_run = (run_end_time - run_start_time) / run_count
 
-    for run_idx, gigabits_per_sec in enumerate(throughput_per_run_Gbps):
+    for run_idx, (gigabits_per_sec, duration) in enumerate(zip(throughput_per_run_Gbps, seconds_per_run)):
 
         # if we had multiple runs, don't report the first run,
         # since things are warming up (connection pools, file caching, etc)
@@ -58,6 +58,14 @@ def report_metrics(*,
             'Dimensions': dimensions,
         })
 
+        metric_data.append({
+            'MetricName': 'Duration',
+            'Value': duration,
+            'Unit': 'Seconds',
+            'Timestamp': approx_timestamp,
+            'Dimensions': dimensions,
+        })
+
     print('Reporting metrics...')
     cloudwatch_client = boto3.client('cloudwatch', region_name=region)
     cloudwatch_client.put_metric_data(
@@ -66,7 +74,7 @@ def report_metrics(*,
     )
 
 
-def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[float]:
+def _give_stdout_parse_throughput_in_gigabits_and_duration_in_seconds(stdout: str) -> Tuple[List[float], List[float]]:
     """
     Examine stdout from runner, and return the throughput (in gigabits/s) for each run.
 
@@ -79,14 +87,19 @@ def _given_stdout_get_list_throughput_per_run_in_gigabits(stdout: str) -> list[f
     Done!
     '''
 
-    Returns [28.847134, 28.116831, 27.612145]
+    Returns ([28.847134, 28.116831, 27.612145], [8.954437, 9.180856, 9.321967])
     """
-    pattern = re.compile(r'^Run:\d+ .* Gb/s:(\d+\.\d+)')
+    throughput_pattern = re.compile(r'^Run:\d+ .* Gb/s:(\d+\.\d+)')
+    duration_pattern = re.compile(r'^Run:\d+ Secs:(\d+\.\d+) .*')
     throughput_per_run = []
+    duration_per_run = []
+
     for line in stdout.splitlines():
-        m = pattern.match(line)
-        if not m:
-            continue
-        gigabits_per_sec = float(m.group(1))
-        throughput_per_run.append(gigabits_per_sec)
-    return throughput_per_run
+        throughput_match = throughput_pattern.match(line)
+        duration_match = duration_pattern.match(line)
+
+        if throughput_match and duration_match:
+            throughput_per_run.append(float(throughput_match.group(1)))
+            duration_per_run.append(float(duration_match.group(1)))
+
+    return throughput_per_run, duration_per_run

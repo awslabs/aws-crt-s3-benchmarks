@@ -165,10 +165,11 @@ class S3BenchmarksStack(Stack):
             effect=iam.Effect.ALLOW,
         ))
 
-        # Per-instance jobs needs more than the default 30GiB storage.
-        # Use a "launch template" to customize this, see:
+        # Use "launch templates" to customize the machines running per-instance jobs, see:
         # https://docs.aws.amazon.com/batch/latest/userguide/launch-templates.html
-        self.per_instance_launch_template = ec2.LaunchTemplate(
+        self.per_instance_launch_templates = {}
+        # Per-instance jobs using EBS need more than the default 30GiB storage.
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.EBS] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplate",
             block_devices=[ec2.BlockDevice(
                 device_name='/dev/xvda',
@@ -178,6 +179,23 @@ class S3BenchmarksStack(Stack):
                 ),
             )],
         )
+
+        # Per-instance jobs using Instance Storage need their ephemeral volumes formatted and bound.
+        # The device path format is /dev/nvme[0-26]n1.
+        # /dev/nvme0n1 will be the EBS volume and the first instance storage device path will be /dev/nvme1n1
+        # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
+            self, f"PerInstanceLaunchTemplateWithNVMeStorage",
+            user_data=ec2.MultipartUserData(),
+        )
+        instance_storage_startup_shell_script = ec2.UserData.for_linux()
+        instance_storage_startup_shell_script.add_commands(
+            'mkfs -t xfs /dev/nvme1n1',
+            f"mkdir {s3_benchmarks.PER_INSTANCE_WORK_DIR}",
+            f"mount /dev/nvme1n1 {s3_benchmarks.PER_INSTANCE_WORK_DIR}"
+        )
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_part(
+            ec2.MultipartBody.from_user_data(instance_storage_startup_shell_script))
 
         # Now create the actual jobs...
         for instance_type in s3_benchmarks.INSTANCE_TYPES.values():
@@ -198,7 +216,7 @@ class S3BenchmarksStack(Stack):
             instance_types=[ec2_instance_type],
             # prevent CDK from adding 'optimal' instance type, we only want to one type specified above
             use_optimal_instance_classes=False,
-            launch_template=self.per_instance_launch_template,
+            launch_template=self.per_instance_launch_templates[instance_type.storage_configuration],
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -231,6 +249,8 @@ class S3BenchmarksStack(Stack):
                 "--workloads", "Ref::workloads",
             ],
             job_role=self.per_instance_job_role,
+            volumes=[batch.EcsVolume.host(container_path=s3_benchmarks.PER_INSTANCE_WORK_DIR,
+                                          host_path=s3_benchmarks.PER_INSTANCE_WORK_DIR, name="workdir")],
         )
 
         job_defn = batch.EcsJobDefinition(

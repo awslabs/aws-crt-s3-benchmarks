@@ -186,13 +186,15 @@ class S3BenchmarksStack(Stack):
         # See https://docs.aws.amazon.com/ebs/latest/userguide/nvme-ebs-volumes.html
         self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE] = ec2.LaunchTemplate(
             self, f"PerInstanceLaunchTemplateWithNVMeStorage",
-            user_data=ec2.UserData.for_linux(),
+            user_data=ec2.MultipartUserData(),
         )
-        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_commands(
+        instance_storage_startup_shell_script = ec2.UserData.for_linux()
+        instance_storage_startup_shell_script.add_commands(
             'mkfs -t xfs /dev/nvme1n1',
-            f"mkdir {s3_benchmarks.PER_INSTANCE_WORK_DIR}",
-            f"mount /dev/nvme1n1 {s3_benchmarks.PER_INSTANCE_WORK_DIR}"
+            'mkdir /example_directory',  # Replace with your directory
+            'mount /dev/nvme1n1 /example_directory'
         )
+        self.per_instance_launch_templates[s3_benchmarks.StorageConfiguration.INSTANCE_STORAGE].user_data.add_part(ec2.MultipartBody.from_user_data(instance_storage_startup_shell_script))
 
         # Now create the actual jobs...
         for instance_type in s3_benchmarks.INSTANCE_TYPES.values():

@@ -46,6 +46,8 @@ enum class UploadTechnique {
 };
 const auto UPLOAD_TECHNIQUE = UploadTechnique::AsyncWrite;
 
+#define USE_POLL_WRITE 1
+
 // when uploading from RAM, feed in this many bytes at a time (max)
 // const size_t UPLOAD_MAX_BYTES_AT_A_TIME = SIZE_MAX;
 // const size_t UPLOAD_MAX_BYTES_AT_A_TIME = PART_SIZE;
@@ -617,20 +619,47 @@ int Task::onDownloadData(
 
 void Task::doAsyncWriteFromAnotherThread()
 {
-    bool eof = false;
-    int error_code = 0;
-    while (eof == false && error_code == 0)
+    bool done = false;
+    while (!done)
     {
         uint64_t bytesRemaining = this->config.size - this->bytesUploaded;
         auto bytesToWrite = static_cast<size_t>(std::min(UPLOAD_MAX_BYTES_AT_A_TIME, bytesRemaining));
         auto data =
             aws_byte_cursor_from_array(this->benchmark.randomDataForUpload.data() + this->bytesUploaded, bytesToWrite);
-        this->bytesUploaded += bytesToWrite;
-        eof = this->bytesUploaded == this->config.size;
+        bool eof = bytesToWrite == bytesRemaining;
+
+#if USE_POLL_WRITE
+        promise<void> wakerPromise;
+        auto wakerFuture = wakerPromise.get_future();
+
+        auto wakerFn = [](void *userData) {
+            auto wakerPromise = static_cast<promise<void>*>(userData);
+            wakerPromise->set_value();
+        };
+        auto writeResult = aws_s3_meta_request_poll_write(metaRequest, data, eof, wakerFn, &wakerPromise);
+        if (writeResult.is_pending)
+            wakerFuture.wait();
+        else if (writeResult.error_code != 0)
+            done = true;
+        else
+        {
+            this->bytesUploaded += writeResult.bytes_processed;
+            if ((writeResult.bytes_processed == bytesToWrite) && eof)
+                done = true;
+        }
+#else
         aws_future_void *writeFuture = aws_s3_meta_request_write(this->metaRequest, data, eof);
         AWS_FATAL_ASSERT(aws_future_void_wait(writeFuture, INT64_MAX) == true);
-        error_code = aws_future_void_get_error(writeFuture);
+        if (aws_future_void_get_error(writeFuture) != 0)
+            done = true;
+        else
+        {
+            this->bytesUploaded += bytesToWrite;
+            if (eof)
+                done = true;
+        }
         aws_future_void_release(writeFuture);
+#endif
     }
 }
 

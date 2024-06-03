@@ -2,5 +2,6 @@ boto3
 awscrt # for linting s3-benchrunner-python
 autopep8 # for code formatting
 mypy # for type checking
+psutil # process stats
 aws-cdk-lib==2.116.1  # CDK
 constructs>=10.0.0,<11.0.0  # CDK

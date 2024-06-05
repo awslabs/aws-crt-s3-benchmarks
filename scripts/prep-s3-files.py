@@ -164,9 +164,7 @@ def prep_bucket(s3, bucket: str, region: str):
                     }
                 })
         else:
-            s3.create_bucket(
-                Bucket=bucket,
-                CreateBucketConfiguration={'LocationConstraint': region})
+            s3.create_bucket(Bucket=bucket)
 
         # note: no versioning on this bucket, so we don't waste money
 

@@ -29,7 +29,7 @@ class InstanceType:
 
 # EC2 Quota: Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances
 QUOTA_CODE_STANDARD_INSTANCES = "L-1216C47A"
-
+QUOTA_CODE_DL_INSTANCES = "L-6E869C2A"
 # Instance types to run benchmarks on
 INSTANCE_TYPES: dict[str, InstanceType] = {}
 
@@ -43,6 +43,10 @@ _add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
 
 _add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
                   bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_configuration=StorageConfiguration.INSTANCE_STORAGE))
+
+_add(InstanceType("dl1.24xlarge", vcpu=96, mem_GiB=768,
+                  bandwidth_Gbps=100, quota_code=QUOTA_CODE_DL_INSTANCES, storage_configuration=StorageConfiguration.EBS))
+
 
 # Orchestrator instance type
 # How we chose c6g.medium (in Dec 2023, in us-west-2) (All of this likely different in the future):

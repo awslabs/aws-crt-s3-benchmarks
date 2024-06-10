@@ -4,8 +4,7 @@ project(s3-benchrunner-c CXX)
 
 add_executable(${PROJECT_NAME}
     BenchmarkRunner.cpp
-    CS3Runner.cpp
-    main.cpp)
+    CRunner.cpp)
 
 install(TARGETS ${PROJECT_NAME}
     DESTINATION ${CMAKE_INSTALL_BINDIR})

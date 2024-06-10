@@ -27,7 +27,7 @@ aws_byte_cursor toCursor(string_view src)
 }
 
 // Benchmark runner using aws-c-s3 directly
-class CS3BenchmarkRunner : public BenchmarkRunner
+class CRunner : public BenchmarkRunner
 {
   public:
     // CRT boilerplate
@@ -45,9 +45,9 @@ class CS3BenchmarkRunner : public BenchmarkRunner
 
   public:
     // Instantiates S3 Client, does not run the benchmark yet
-    CS3BenchmarkRunner(const BenchmarkConfig &config);
+    CRunner(const BenchmarkConfig &config);
 
-    ~CS3BenchmarkRunner() override;
+    ~CRunner() override;
 
     // A benchmark can be run repeatedly
     void run() override;
@@ -58,7 +58,7 @@ class CS3BenchmarkRunner : public BenchmarkRunner
 // A runnable task
 class Task
 {
-    CS3BenchmarkRunner &runner;
+    CRunner &runner;
     size_t taskI;
     TaskConfig &config;
     aws_s3_meta_request *metaRequest;
@@ -80,18 +80,18 @@ class Task
 
   public:
     // Creates the task and begins its work
-    Task(CS3BenchmarkRunner &runner, size_t taskI);
+    Task(CRunner &runner, size_t taskI);
 
     void waitUntilDone() { return doneFuture.wait(); }
 };
 
-std::unique_ptr<BenchmarkRunner> createCS3BenchmarkRunner(const BenchmarkConfig &config)
+std::unique_ptr<BenchmarkRunner> createCRunner(const BenchmarkConfig &config)
 {
-    return make_unique<CS3BenchmarkRunner>(config);
+    return make_unique<CRunner>(config);
 }
 
 // Instantiates S3 Client, does not run the benchmark yet
-CS3BenchmarkRunner::CS3BenchmarkRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
+CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
 {
     bool isS3Express = config.bucket.ends_with("--x-s3");
     if (isS3Express)
@@ -197,7 +197,7 @@ CS3BenchmarkRunner::CS3BenchmarkRunner(const BenchmarkConfig &config) : Benchmar
     AWS_FATAL_ASSERT(s3Client != NULL);
 }
 
-CS3BenchmarkRunner::~CS3BenchmarkRunner()
+CRunner::~CRunner()
 {
     s3Client = aws_s3_client_release(s3Client);
     credentialsProvider = aws_credentials_provider_release(credentialsProvider);
@@ -213,7 +213,7 @@ CS3BenchmarkRunner::~CS3BenchmarkRunner()
     aws_s3_library_clean_up();
 }
 
-void CS3BenchmarkRunner::run()
+void CRunner::run()
 {
     // kick off all tasks
     list<Task> runningTasks;
@@ -231,7 +231,7 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
     aws_http_message_add_header(request, header);
 }
 
-Task::Task(CS3BenchmarkRunner &runner, size_t taskI)
+Task::Task(CRunner &runner, size_t taskI)
     : runner(runner), taskI(taskI), config(runner.config.tasks[taskI]), donePromise(),
       doneFuture(donePromise.get_future())
 {
@@ -375,4 +375,17 @@ int Task::onDownloadData(
     aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
+}
+
+int main(int argc, char *argv[])
+{
+    return benchmarkRunnerMain(
+        argc,
+        argv,
+        [](string_view id, const BenchmarkConfig &config)
+        {
+            if (id == "crt-c")
+                return createCRunner(config);
+            fail("Unsupported S3_CLIENT. Options are: crt-c");
+        });
 }

@@ -12,8 +12,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SHARED_CODE_DIR})
 
 target_sources(${PROJECT_NAME} PRIVATE
     ${SHARED_CODE_DIR}/BenchmarkRunner.cpp
-    SdkClientRunner.cpp
-    SdkTransferManagerRunner.cpp
+    SdkClient.cpp
+    TransferManager.cpp
     main.cpp)
 
 install(TARGETS ${PROJECT_NAME}

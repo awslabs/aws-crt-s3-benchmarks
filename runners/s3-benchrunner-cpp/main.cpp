@@ -1,9 +1,17 @@
-#include "SdkClientRunner.h"
-#include "SdkTransferManagerRunner.h"
+#include "BenchmarkRunner.h"
 
 #include <aws/core/Aws.h>
 
 using namespace std;
+
+// Create runner that uses C++ SDK's classic S3Client
+std::unique_ptr<BenchmarkRunner> createSdkClassicClientRunner(const BenchmarkConfig &config);
+
+// Create runner that uses C++ SDK's S3CrtClient
+std::unique_ptr<BenchmarkRunner> createSdkCrtClientRunner(const BenchmarkConfig &config);
+
+// Create runner that uses C++ SDK's transfer manager
+std::unique_ptr<BenchmarkRunner> createSdkTransferManagerRunner(const BenchmarkConfig &config);
 
 int main(int argc, char *argv[])
 {

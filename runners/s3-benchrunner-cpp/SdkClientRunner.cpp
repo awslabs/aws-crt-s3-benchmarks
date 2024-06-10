@@ -75,13 +75,14 @@ template <
     class GetObjectRequestT,
     class GetObjectResultT,
     class PutObjectRequestT,
-    class PutObjectResultT>
+    class PutObjectResultT,
+    class ChecksumAlgorithmT,
+    class ChecksumModeT>
 class SdkClientRunner : public BenchmarkRunner
 {
     using GetObjectOutcomeT = Aws::Utils::Outcome<GetObjectResultT, S3ErrorT>;
     using PutObjectOutcomeT = Aws::Utils::Outcome<PutObjectResultT, S3ErrorT>;
-    using SdkClientRunnerT =
-        SdkClientRunner<S3ClientT, S3ErrorT, GetObjectRequestT, GetObjectResultT, PutObjectRequestT, PutObjectResultT>;
+    using SdkClientRunnerT = SdkClientRunner<S3ClientT, S3ErrorT, GetObjectRequestT, GetObjectResultT, PutObjectRequestT, PutObjectResultT, ChecksumAlgorithmT, ChecksumModeT>;
 
     unique_ptr<S3ClientT> client;
 
@@ -134,7 +135,16 @@ class SdkClientRunner : public BenchmarkRunner
 
                 if (!runner.config.checksum.empty())
                 {
-                    skip("TODO: checksum on upload");
+                    if (runner.config.checksum == "CRC32")
+                        request.SetChecksumAlgorithm(ChecksumAlgorithmT::CRC32);
+                    else if (runner.config.checksum == "CRC32C")
+                        request.SetChecksumAlgorithm(ChecksumAlgorithmT::CRC32C);
+                    else if (runner.config.checksum == "SHA1")
+                        request.SetChecksumAlgorithm(ChecksumAlgorithmT::SHA1);
+                    else if (runner.config.checksum == "SHA256")
+                        request.SetChecksumAlgorithm(ChecksumAlgorithmT::SHA256);
+                    else
+                        fail(string("Unknown checksum: ") + runner.config.checksum);
                 }
 
                 if (runner.config.filesOnDisk)
@@ -169,7 +179,7 @@ class SdkClientRunner : public BenchmarkRunner
 
                 if (!runner.config.checksum.empty())
                 {
-                    skip("TODO: request.SetChecksumMode(ENABLED)");
+                    request.SetChecksumMode(ChecksumModeT::ENABLED);
                 }
 
                 if (runner.config.filesOnDisk)
@@ -225,7 +235,9 @@ using SdkClassicClientRunner = SdkClientRunner<
     Aws::S3::Model::GetObjectRequest,
     Aws::S3::Model::GetObjectResult,
     Aws::S3::Model::PutObjectRequest,
-    Aws::S3::Model::PutObjectResult>;
+    Aws::S3::Model::PutObjectResult,
+    Aws::S3::Model::ChecksumAlgorithm,
+    Aws::S3::Model::ChecksumMode>;
 
 template <> void SdkClassicClientRunner::createS3Client()
 {
@@ -257,7 +269,9 @@ using SdkCrtClientRunner = SdkClientRunner<
     Aws::S3Crt::Model::GetObjectRequest,
     Aws::S3Crt::Model::GetObjectResult,
     Aws::S3Crt::Model::PutObjectRequest,
-    Aws::S3Crt::Model::PutObjectResult>;
+    Aws::S3Crt::Model::PutObjectResult,
+    Aws::S3Crt::Model::ChecksumAlgorithm,
+    Aws::S3Crt::Model::ChecksumMode>;
 
 template <> void SdkCrtClientRunner::createS3Client()
 {

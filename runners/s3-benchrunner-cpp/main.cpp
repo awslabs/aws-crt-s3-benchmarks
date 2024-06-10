@@ -8,6 +8,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     Aws::SDKOptions sdkOptions;
+    sdkOptions.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
     Aws::InitAPI(sdkOptions);
 
     int exitCode = benchmarkRunnerMain(
@@ -24,8 +25,7 @@ int main(int argc, char *argv[])
             fail("Unsupported S3_CLIENT. Options are: sdk-cpp-tm-classic, sdk-cpp-client-classic, sdk-cpp-client-crt");
         });
 
-    if (exitCode == 0)
-        Aws::ShutdownAPI(sdkOptions);
+    Aws::ShutdownAPI(sdkOptions);
 
     return exitCode;
 }

@@ -2,7 +2,6 @@
 
 #include <future>
 #include <list>
-#include <random>
 
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
@@ -40,9 +39,6 @@ class CS3BenchmarkRunner : public BenchmarkRunner
     aws_tls_ctx *tlsCtx = NULL;
     aws_credentials_provider *credentialsProvider = NULL;
     aws_s3_client *s3Client = NULL;
-
-    // if uploading, and filesOnDisk is false, then upload this
-    vector<uint8_t> randomDataForUpload;
 
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     string endpoint;
@@ -199,27 +195,6 @@ CS3BenchmarkRunner::CS3BenchmarkRunner(const BenchmarkConfig &config) : Benchmar
 
     s3Client = aws_s3_client_new(alloc, &s3ClientConfig);
     AWS_FATAL_ASSERT(s3Client != NULL);
-
-    // If we're uploading, and not using files on disk,
-    // then generate an in-memory buffer of random data to upload.
-    // All uploads will use this same buffer, so make it big enough for the largest file.
-    if (!config.filesOnDisk)
-    {
-        for (auto &&task : config.tasks)
-        {
-            if (task.action == "upload")
-            {
-                if (task.size > randomDataForUpload.size())
-                {
-                    size_t prevSize = randomDataForUpload.size();
-                    randomDataForUpload.resize(task.size);
-
-                    independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-                    generate(randomDataForUpload.begin() + prevSize, randomDataForUpload.end(), randEngine);
-                }
-            }
-        }
-    }
 }
 
 CS3BenchmarkRunner::~CS3BenchmarkRunner()

@@ -13,12 +13,55 @@
 
 using namespace std;
 
-// lol, this does nothing with the data
-// we'll override the bare minimum of basic_streambuf functions, to make it seem like it's "working"
-class DownloadToRamNullBuf : public basic_streambuf<Aws::IOStream::char_type, Aws::IOStream::traits_type>
+// streambuf used in download-to-ram tests
+// it simply discards the downloaded data
+class DownloadToRamNullBuf : public streambuf
 {
   protected:
-    int_type overflow(int_type c) override { return traits_type::not_eof(c); }
+    // discard single put characters
+    int_type overflow(int_type c) override
+    {
+        // return any value except EOF
+        return traits_type::not_eof(c);
+    }
+
+    // discard multiple put characters
+    streamsize xsputn(const char* s, streamsize n) override
+    {
+        // return number of bytes "written"
+        return n;
+    }
+};
+
+// streambuf used in upload-from-ram tests
+// it reads from a pre-existing vector of bytes
+class UploadFromRamBuf : public streambuf
+{
+  public:
+    UploadFromRamBuf(vector<uint8_t> &src) : streambuf()
+    {
+        char *begin = reinterpret_cast<char *>(src.data());
+        char *end = begin + src.size();
+        setg(begin, begin/*next*/, end);
+    }
+  protected:
+    streampos seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which) override {
+        if (which == ios_base::in) { // Only handle input mode
+            if (way == ios_base::beg) {
+                setg(eback(), eback() + off, egptr());
+            } else if (way == ios_base::cur) {
+                setg(eback(), gptr() + off, egptr());
+            } else if (way == ios_base::end) {
+                setg(eback(), egptr() + off, egptr());
+            }
+            return gptr() - eback(); // Return the new position
+        }
+        return pos_type(off_type(-1)); // Seeking not supported for output mode
+    }
+
+    streampos seekpos(streampos sp, ios_base::openmode which) override {
+        return seekoff(sp - pos_type(off_type(0)), ios_base::beg, which);
+    }
 };
 
 // Benchmark runner for aws-sdk-cpp's S3 clients.
@@ -72,7 +115,8 @@ class SdkClientRunner : public BenchmarkRunner
         TaskConfig &taskConfig;
         promise<void> donePromise;
         future<void> doneFuture;
-        DownloadToRamNullBuf downloadToRamNullBuf;
+        unique_ptr<DownloadToRamNullBuf> downloadToRamNullBuf;
+        unique_ptr<UploadFromRamBuf> uploadFromRamBuf;
 
       public:
         // The Task's constructor begins its work (once it acquires from the semaphore).
@@ -103,14 +147,16 @@ class SdkClientRunner : public BenchmarkRunner
                 }
                 else
                 {
-                    skip("TODO: upload from ram");
+                    this->uploadFromRamBuf = make_unique<UploadFromRamBuf>(runner.randomDataForUpload);
+                    auto inputData = make_shared<Aws::IOStream>(this->uploadFromRamBuf.get());
+                    request.SetBody(inputData);
                 }
 
                 auto onPutObjectFinished = [this](
                                                const S3ClientT *,
                                                const PutObjectRequestT &,
                                                PutObjectOutcomeT outcome,
-                                               const std::shared_ptr<const Aws::Client::AsyncCallerContext> &)
+                                               const shared_ptr<const Aws::Client::AsyncCallerContext> &)
                 { this->onFinished(outcome); };
 
                 runner.client->PutObjectAsync(request, onPutObjectFinished, nullptr);
@@ -129,18 +175,19 @@ class SdkClientRunner : public BenchmarkRunner
                 if (runner.config.filesOnDisk)
                 {
                     request.SetResponseStreamFactory(
-                        [this]() { return new Aws::FStream(this->taskConfig.key, std::ios_base::out); });
+                        [this]() { return new Aws::FStream(this->taskConfig.key, ios_base::out); });
                 }
                 else
                 {
-                    request.SetResponseStreamFactory([this] { return new Aws::IOStream(&this->downloadToRamNullBuf); });
+                    this->downloadToRamNullBuf = make_unique<DownloadToRamNullBuf>();
+                    request.SetResponseStreamFactory([this] { return new Aws::IOStream(this->downloadToRamNullBuf.get()); });
                 }
 
                 auto onGetObjectFinished = [this](
                                                const S3ClientT *,
                                                const GetObjectRequestT &,
                                                GetObjectOutcomeT outcome,
-                                               const std::shared_ptr<const Aws::Client::AsyncCallerContext> &)
+                                               const shared_ptr<const Aws::Client::AsyncCallerContext> &)
                 { this->onFinished(outcome); };
 
                 runner.client->GetObjectAsync(request, onGetObjectFinished, nullptr);
@@ -156,10 +203,10 @@ class SdkClientRunner : public BenchmarkRunner
         {
             if (!outcome.IsSuccess())
             {
-                std::cout << "Task[" << this->taskI << "] failed. action:" << this->taskConfig.action
+                cout << "Task[" << this->taskI << "] failed. action:" << this->taskConfig.action
                           << " key:" << this->taskConfig.key << endl
                           << outcome.GetError() << endl;
-                fail("GetObject failed");
+                fail("Request failed");
             }
 
             this->concurrencySemaphore.release();

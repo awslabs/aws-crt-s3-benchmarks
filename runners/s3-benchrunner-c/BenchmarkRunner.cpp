@@ -1,7 +1,9 @@
 #include "BenchmarkRunner.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <random>
 
 #include <aws/common/system_resource_util.h>
 
@@ -14,10 +16,13 @@ using json = nlohmann::json;
 struct TaskConfig;
 class Benchmark;
 
+#include <thread>
+
 // exit due to failure
 [[noreturn]] void fail(string_view msg)
 {
     cerr << "FAIL - " << msg << endl;
+    std::this_thread::sleep_for(2000ms);
     _Exit(255);
 }
 
@@ -118,7 +123,23 @@ uint64_t BenchmarkConfig::bytesPerRun() const
 }
 
 // Instantiates S3 Client, does not run the benchmark yet
-BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config) {}
+BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
+{
+    // If we're uploading, and not using files on disk,
+    // then generate an in-memory buffer of random data to upload.
+    // All uploads will use this same buffer, so make it big enough for the largest file.
+    if (!config.filesOnDisk)
+    {
+        size_t maxUploadSize = 0;
+        for (auto &&task : config.tasks)
+            if (task.action == "upload")
+                maxUploadSize = std::max(maxUploadSize, (size_t)task.size);
+
+        randomDataForUpload.resize(maxUploadSize);
+        independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
+        generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);
+    }
+}
 
 BenchmarkRunner::~BenchmarkRunner() = default;
 

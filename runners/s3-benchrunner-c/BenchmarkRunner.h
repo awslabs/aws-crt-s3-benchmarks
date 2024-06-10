@@ -61,9 +61,13 @@ struct TaskConfig
 // Base class for runnable benchmark
 class BenchmarkRunner
 {
-  public:
+  protected:
     BenchmarkConfig config;
 
+    // if uploading, and filesOnDisk is false, then upload this
+    std::vector<uint8_t> randomDataForUpload;
+
+  public:
     BenchmarkRunner(const BenchmarkConfig &config);
     virtual ~BenchmarkRunner();
 

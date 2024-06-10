@@ -8,7 +8,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     Aws::SDKOptions sdkOptions;
-    sdkOptions.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
+    sdkOptions.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Error;
     Aws::InitAPI(sdkOptions);
 
     int exitCode = benchmarkRunnerMain(

@@ -158,20 +158,32 @@ class SdkClientRunner : public BenchmarkRunner
                     else
                         fail(string("Unknown checksum: ") + runner.config.checksum);
                 }
+                else
+                {
+                    // NOTE: as of June 2024 this runner is SLOWER when no checksum is set.
+                    // The SDK falls back to sending Content-MD5 in a header and there's no way to turn this off,
+                    // see: https://github.com/aws/aws-sdk-cpp/issues/2933
+                    // This is slow for several reasons:
+                    // 1) MD5 is slower than algorithms like CRC32 (and obviously slower than no checksum).
+                    // 2) The data must read twice (since we're using headers instead of trailers,
+                    //    we can't get away with calculating the checksum and sending the data in a single read).
+                    // 3) The SDK currently calculates MD5 synchronously even for PutObjectAsync() calls,
+                    //    so the main thread becomes the bottleneck if there are many files in a workload.
+                }
 
                 if (runner.config.filesOnDisk)
                 {
-                    auto inputData = make_shared<Aws::FStream>(taskConfig.key, ios_base::in | ios_base::binary);
-                    if (!*inputData)
+                    auto streamForUpload = make_shared<Aws::FStream>(taskConfig.key, ios_base::in | ios_base::binary);
+                    if (!*streamForUpload)
                         fail(string("Failed to open file: ") + taskConfig.key);
 
-                    request.SetBody(inputData);
+                    request.SetBody(streamForUpload);
                 }
                 else
                 {
                     this->uploadFromRamBuf = make_unique<UploadFromRamBuf>(runner.randomDataForUpload);
-                    auto inputData = make_shared<Aws::IOStream>(this->uploadFromRamBuf.get());
-                    request.SetBody(inputData);
+                    auto streamForUpload = make_shared<Aws::IOStream>(this->uploadFromRamBuf.get());
+                    request.SetBody(streamForUpload);
                 }
 
                 auto onPutObjectFinished = [this](

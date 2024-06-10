@@ -16,13 +16,10 @@ using json = nlohmann::json;
 struct TaskConfig;
 class Benchmark;
 
-#include <thread>
-
 // exit due to failure
 [[noreturn]] void fail(string_view msg)
 {
     cerr << "FAIL - " << msg << endl;
-    std::this_thread::sleep_for(2000ms);
     _Exit(255);
 }
 

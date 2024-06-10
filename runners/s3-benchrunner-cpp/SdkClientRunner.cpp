@@ -26,7 +26,7 @@ class DownloadToRamNullBuf : public streambuf
     }
 
     // discard multiple put characters
-    streamsize xsputn(const char* s, streamsize n) override
+    streamsize xsputn(const char *s, streamsize n) override
     {
         // return number of bytes "written"
         return n;
@@ -42,24 +42,28 @@ class UploadFromRamBuf : public streambuf
     {
         char *begin = reinterpret_cast<char *>(src.data());
         char *end = begin + src.size();
-        setg(begin, begin/*next*/, end);
-    }
-  protected:
-    streampos seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which) override {
-        if (which == ios_base::in) { // Only handle input mode
-            if (way == ios_base::beg) {
-                setg(eback(), eback() + off, egptr());
-            } else if (way == ios_base::cur) {
-                setg(eback(), gptr() + off, egptr());
-            } else if (way == ios_base::end) {
-                setg(eback(), egptr() + off, egptr());
-            }
-            return gptr() - eback(); // Return the new position
-        }
-        return pos_type(off_type(-1)); // Seeking not supported for output mode
+        setg(begin, begin /*next*/, end);
     }
 
-    streampos seekpos(streampos sp, ios_base::openmode which) override {
+  protected:
+    streampos seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which) override
+    {
+         // Only handle input mode
+        if (which != ios_base::in)
+            return pos_type(off_type(-1)); // Seeking not supported for output mode
+
+        if (way == ios_base::beg)
+            setg(eback(), eback() + off, egptr());
+        else if (way == ios_base::cur)
+            setg(eback(), gptr() + off, egptr());
+        else if (way == ios_base::end)
+            setg(eback(), egptr() + off, egptr());
+
+        return gptr() - eback(); // Return the new position
+    }
+
+    streampos seekpos(streampos sp, ios_base::openmode which) override
+    {
         return seekoff(sp - pos_type(off_type(0)), ios_base::beg, which);
     }
 };
@@ -82,7 +86,15 @@ class SdkClientRunner : public BenchmarkRunner
 {
     using GetObjectOutcomeT = Aws::Utils::Outcome<GetObjectResultT, S3ErrorT>;
     using PutObjectOutcomeT = Aws::Utils::Outcome<PutObjectResultT, S3ErrorT>;
-    using SdkClientRunnerT = SdkClientRunner<S3ClientT, S3ErrorT, GetObjectRequestT, GetObjectResultT, PutObjectRequestT, PutObjectResultT, ChecksumAlgorithmT, ChecksumModeT>;
+    using SdkClientRunnerT = SdkClientRunner<
+        S3ClientT,
+        S3ErrorT,
+        GetObjectRequestT,
+        GetObjectResultT,
+        PutObjectRequestT,
+        PutObjectResultT,
+        ChecksumAlgorithmT,
+        ChecksumModeT>;
 
     unique_ptr<S3ClientT> client;
 
@@ -184,13 +196,14 @@ class SdkClientRunner : public BenchmarkRunner
 
                 if (runner.config.filesOnDisk)
                 {
-                    request.SetResponseStreamFactory(
-                        [this]() { return new Aws::FStream(this->taskConfig.key, ios_base::out); });
+                    request.SetResponseStreamFactory([this]()
+                                                     { return new Aws::FStream(this->taskConfig.key, ios_base::out); });
                 }
                 else
                 {
                     this->downloadToRamNullBuf = make_unique<DownloadToRamNullBuf>();
-                    request.SetResponseStreamFactory([this] { return new Aws::IOStream(this->downloadToRamNullBuf.get()); });
+                    request.SetResponseStreamFactory([this]
+                                                     { return new Aws::IOStream(this->downloadToRamNullBuf.get()); });
                 }
 
                 auto onGetObjectFinished = [this](
@@ -214,8 +227,8 @@ class SdkClientRunner : public BenchmarkRunner
             if (!outcome.IsSuccess())
             {
                 cout << "Task[" << this->taskI << "] failed. action:" << this->taskConfig.action
-                          << " key:" << this->taskConfig.key << endl
-                          << outcome.GetError() << endl;
+                     << " key:" << this->taskConfig.key << endl
+                     << outcome.GetError() << endl;
                 fail("Request failed");
             }
 

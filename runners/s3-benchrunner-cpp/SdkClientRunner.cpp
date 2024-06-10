@@ -48,7 +48,7 @@ class UploadFromRamBuf : public streambuf
   protected:
     streampos seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which) override
     {
-         // Only handle input mode
+        // Only handle input mode
         if (which != ios_base::in)
             return pos_type(off_type(-1)); // Seeking not supported for output mode
 

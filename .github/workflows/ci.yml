@@ -24,6 +24,9 @@ jobs:
     - name: Lint s3-benchrunner-c
       run: python scripts/lint.py c
 
+    - name: Lint s3-benchrunner-cpp
+      run: python scripts/lint.py cpp
+
     - name: Lint s3-benchrunner-java
       run: python scripts/lint.py java
 
@@ -36,9 +39,11 @@ jobs:
   Build:
     runs-on: ubuntu-22.04 # latest at time of writing
     strategy:
+      fail-fast: false
       matrix:
         runner:
           - c
+          - cpp
           - java
           - python
     steps:
@@ -48,12 +53,16 @@ jobs:
       with:
         python-version: '3.9' # default version on Amazon Linux 2023
 
-    - uses: actions/setup-java@v3
+    - run: python -m pip install -r scripts/requirements.txt
+
+    - if: matrix.runner == 'java'
+      uses: actions/setup-java@v3
       with:
         distribution: 'corretto'
         java-version: '17' # default version on Amazon Linux 2023
 
-    - run: python -m pip install -r scripts/requirements.txt
+    - if: matrix.runner == 'cpp'
+      run: sudo apt update && sudo apt install libcurl4-openssl-dev
 
     - name: Build
       run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

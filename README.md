@@ -79,9 +79,12 @@ Here are the IDs used for various S3 Clients, and the runner you must build to b
 | `cli-classic` | [AWS CLI v2](https://github.com/aws/aws-cli/tree/v2) with pure-python transfer manager | `python` | [runners/s3-benchrunner-python](runners/s3-benchrunner-python/) |
 | `crt-java` | [aws-crt-java](https://github.com/awslabs/aws-crt-java/) | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
 | `sdk-java-client-crt` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with CRT based S3AsyncClient | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
+| `sdk-java-client-classic` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with pure-java S3AsyncClient | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
 | `sdk-java-tm-crt` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with CRT based S3TransferManager | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
-| `sdk-java-client-classic` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with NON-CRT based S3AsyncClient | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
-| `sdk-java-tm-classic` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with NON-CRT based S3TransferManager | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
+| `sdk-java-tm-classic` | [aws-sdk-java-v2](https://github.com/aws/aws-sdk-java-v2/) with pure-java S3TransferManager | `java` | [runners/s3-benchrunner-java](runners/s3-benchrunner-java/) |
+| `sdk-cpp-client-crt` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with S3CrtClient | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
+| `sdk-cpp-client-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) S3Client | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
+| `sdk-cpp-tm-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) TransferManager | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
 
 ### Build a Runner
 

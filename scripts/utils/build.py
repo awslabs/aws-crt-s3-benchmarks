@@ -10,7 +10,7 @@ from typing import Optional
 from utils import fetch_git_repo, run, RUNNERS
 
 
-def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
+def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, config_extra: list[str] = []):
 
     config_cmd = ['cmake',
                   '-S', str(src_dir),
@@ -26,15 +26,7 @@ def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path):
                  '--target', 'install',
                  ]
 
-    if src_dir.name == 'aws-lc':
-        config_cmd += ['-DDISABLE_GO=ON',
-                       '-DBUILD_LIBSSL=OFF',
-                       '-DDISABLE_PERL=ON',
-                       ]
-
-    if src_dir.name != 's3-benchrunner-c':
-        # runner doesn't have tests
-        config_cmd += ['-DBUILD_TESTING=OFF']
+    config_cmd += config_extra
 
     run(config_cmd)
     run(build_cmd)
@@ -70,7 +62,14 @@ def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
                        preferred_branch=branch)
 
         build_dir = work_dir/f"{dep_name}-build"
-        _build_cmake_proj(src_dir, build_dir, install_dir)
+
+        config_extra = ['-DBUILD_TESTING=OFF']
+        if dep_name == 'aws-lc':
+            config_extra += ['-DDISABLE_GO=ON',
+                             '-DBUILD_LIBSSL=OFF',
+                             '-DDISABLE_PERL=ON']
+
+        _build_cmake_proj(src_dir, build_dir, install_dir, config_extra)
 
     # build s3-benchrunner-c
     _build_cmake_proj(src_dir=RUNNERS['c'].dir,
@@ -79,6 +78,32 @@ def _build_c(work_dir: Path, branch: Optional[str]) -> list[str]:
 
     # return runner cmd
     return [str(install_dir/'bin/s3-benchrunner-c')]
+
+
+def _build_cpp(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build s3-benchrunner-cpp"""
+
+    install_dir = work_dir/'install'
+
+    # build C++ SDK
+    fetch_git_repo(url='https://github.com/aws/aws-sdk-cpp.git',
+                   dir=work_dir/'aws-sdk-cpp',
+                   preferred_branch=branch)
+    _build_cmake_proj(
+        src_dir=work_dir/'aws-sdk-cpp',
+        build_dir=work_dir/'aws-sdk-cpp-build',
+        install_dir=install_dir,
+        config_extra=['-DBUILD_SHARED_LIBS=OFF',
+                      '-DENABLE_TESTING=OFF',
+                      '-DBUILD_ONLY=s3-crt;transfer'])
+
+    # build s3-benchrunner-cpp
+    _build_cmake_proj(src_dir=RUNNERS['cpp'].dir,
+                      build_dir=work_dir/'s3-benchrunner-cpp-build',
+                      install_dir=install_dir)
+
+    # return runner cmd
+    return [str(install_dir/'bin/s3-benchrunner-cpp')]
 
 
 def _fetch_and_install_python_repo(
@@ -209,6 +234,7 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
     # get build function by name, and call it
     build_functions = {
         'c': _build_c,
+        'cpp': _build_cpp,
         'python': _build_python,
         'java': _build_java,
     }

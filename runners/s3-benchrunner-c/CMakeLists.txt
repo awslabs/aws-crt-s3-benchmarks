@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.22)
 cmake_policy(VERSION 3.22...3.24)
 project(s3-benchrunner-c CXX)
 
-add_executable(${PROJECT_NAME} benchrunner.cpp)
+add_executable(${PROJECT_NAME}
+    BenchmarkRunner.cpp
+    CRunner.cpp)
 
 install(TARGETS ${PROJECT_NAME}
     DESTINATION ${CMAKE_INSTALL_BINDIR})

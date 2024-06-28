@@ -11,6 +11,7 @@
 
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
+#include <aws/common/array_list.h>
 #include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
@@ -480,10 +481,21 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         checksumConfig.validate_response_checksum = true;
         options.checksum_config = &checksumConfig;
     }
+    
+    struct aws_array_list interface_names_list;
+    aws_array_list_init_dynamic(&interface_names_list, benchmark.alloc, 3, sizeof(struct aws_byte_cursor));
+    struct aws_byte_cursor ens32 = aws_byte_cursor_from_c_str("ens32");
+    struct aws_byte_cursor ens64 = aws_byte_cursor_from_c_str("ens64");
+    //struct aws_byte_cursor ens96 = aws_byte_cursor_from_c_str("ens96");
+    aws_array_list_push_back(&interface_names_list, &ens32);
+    aws_array_list_push_back(&interface_names_list, &ens64);
+    //aws_array_list_push_back(&interface_names_list, &ens96);
 
+    options.network_interface_names_list = &interface_names_list;
     metaRequest = aws_s3_client_make_meta_request(benchmark.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
 
+    aws_array_list_clean_up(&interface_names_list);
     aws_http_message_release(request);
 }
 

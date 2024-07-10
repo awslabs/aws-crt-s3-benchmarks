@@ -10,8 +10,8 @@
 #include <vector>
 
 #include <aws/auth/credentials.h>
-#include <aws/common/string.h>
 #include <aws/common/array_list.h>
+#include <aws/common/string.h>
 #include <aws/common/system_resource_util.h>
 #include <aws/http/connection.h>
 #include <aws/http/request_response.h>
@@ -142,6 +142,11 @@ class Task
         uint64_t range_start,
         void *user_data);
 
+    static void onTelemetry(
+        struct aws_s3_meta_request *meta_request,
+        struct aws_s3_request_metrics *metrics,
+        void *user_data);
+
     static void onFinished(
         struct aws_s3_meta_request *meta_request,
         const struct aws_s3_meta_request_result *meta_request_result,
@@ -173,6 +178,8 @@ class Benchmark
     aws_credentials_provider *credentialsProvider = NULL;
     aws_s3_client *s3Client = NULL;
 
+    FILE *csvFile = NULL;
+
     // if uploading, and filesOnDisk is false, then upload this
     vector<uint8_t> randomDataForUpload;
 
@@ -186,7 +193,7 @@ class Benchmark
     ~Benchmark();
 
     // A benchmark can be run repeatedly
-    void run();
+    void run(int runI);
 
     friend class Task;
 };
@@ -353,7 +360,8 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     // httpMonitoringOpts.allowable_throughput_failure_interval_milliseconds = 750;
     // s3ClientConfig.monitoring_options = &httpMonitoringOpts;
 
-    struct aws_byte_cursor *interface_names_array = (struct aws_byte_cursor *) aws_mem_calloc(alloc, 4, sizeof(struct aws_byte_cursor));
+    struct aws_byte_cursor *interface_names_array =
+        (struct aws_byte_cursor *)aws_mem_calloc(alloc, 4, sizeof(struct aws_byte_cursor));
     interface_names_array[0] = aws_byte_cursor_from_c_str("ens32");
     interface_names_array[1] = aws_byte_cursor_from_c_str("ens64");
     interface_names_array[2] = aws_byte_cursor_from_c_str("ens96");
@@ -364,7 +372,6 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
     s3Client = aws_s3_client_new(alloc, &s3ClientConfig);
     AWS_FATAL_ASSERT(s3Client != NULL);
     aws_mem_release(alloc, interface_names_array);
-
 
     // If we're uploading, and not using files on disk,
     // then generate an in-memory buffer of random data to upload.
@@ -404,8 +411,16 @@ Benchmark::~Benchmark()
     aws_s3_library_clean_up();
 }
 
-void Benchmark::run()
+void Benchmark::run(int runI)
 {
+    std::string file_path = "telemetry_" + std::to_string(runI) + ".csv";
+    this->csvFile = fopen(file_path.c_str(), "w");
+    fprintf(this->csvFile, "request_id,start_time,end_time,total_duration,"
+                            "send_start_time,send_end_time,sending_duration,"
+                            "receive_start_time,receive_end_time,receiving_duration,"
+                            "response_status,request_path_query,host_address,"
+                            "ip_address,connection_id,thread_id,stream_id,"
+                            "operation_name,request_type\n");
     // kick off all tasks
     list<Task> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
@@ -414,6 +429,7 @@ void Benchmark::run()
     // wait until all tasks are done
     for (auto &&task : runningTasks)
         task.waitUntilDone();
+    fclose(this->csvFile);
 }
 
 void addHeader(aws_http_message *request, string_view name, string_view value)
@@ -492,6 +508,7 @@ Task::Task(Benchmark &benchmark, size_t taskI)
         options.checksum_config = &checksumConfig;
     }
 
+    options.telemetry_callback = Task::onTelemetry;
     metaRequest = aws_s3_client_make_meta_request(benchmark.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
 
@@ -557,6 +574,79 @@ int Task::onDownloadData(
     aws_s3_meta_request_increment_read_window(meta_request, body->len);
 
     return AWS_OP_SUCCESS;
+}
+
+void Task::onTelemetry(
+    struct aws_s3_meta_request *meta_request,
+    struct aws_s3_request_metrics *metrics,
+    void *user_data)
+{
+    int error_code = aws_s3_request_metrics_get_error_code(metrics);
+    if (error_code != 0)
+    {
+        return;
+    }
+
+    Task *task = static_cast<Task *>(user_data);
+
+    // Variables to hold the metric values
+    const struct aws_string *request_id = nullptr;
+    uint64_t start_time, end_time, total_duration;
+    uint64_t send_start_time, send_end_time, sending_duration;
+    uint64_t receive_start_time, receive_end_time, receiving_duration;
+    int response_status;
+    const struct aws_string *request_path_query = nullptr;
+    const struct aws_string *host_address = nullptr;
+    const struct aws_string *ip_address = nullptr;
+    size_t connection_id;
+    aws_thread_id_t thread_id;
+    uint32_t stream_id;
+    const struct aws_string *operation_name = nullptr;
+    enum aws_s3_request_type request_type;
+
+    // Retrieve metrics
+    aws_s3_request_metrics_get_request_id(metrics, &request_id);
+    aws_s3_request_metrics_get_start_timestamp_ns(metrics, &start_time);
+    aws_s3_request_metrics_get_end_timestamp_ns(metrics, &end_time);
+    aws_s3_request_metrics_get_total_duration_ns(metrics, &total_duration);
+    aws_s3_request_metrics_get_send_start_timestamp_ns(metrics, &send_start_time);
+    aws_s3_request_metrics_get_send_end_timestamp_ns(metrics, &send_end_time);
+    aws_s3_request_metrics_get_sending_duration_ns(metrics, &sending_duration);
+    aws_s3_request_metrics_get_receive_start_timestamp_ns(metrics, &receive_start_time);
+    aws_s3_request_metrics_get_receive_end_timestamp_ns(metrics, &receive_end_time);
+    aws_s3_request_metrics_get_receiving_duration_ns(metrics, &receiving_duration);
+    aws_s3_request_metrics_get_response_status_code(metrics, &response_status);
+    aws_s3_request_metrics_get_request_path_query(metrics, &request_path_query);
+    aws_s3_request_metrics_get_host_address(metrics, &host_address);
+    aws_s3_request_metrics_get_ip_address(metrics, &ip_address);
+    aws_s3_request_metrics_get_connection_id(metrics, &connection_id);
+    aws_s3_request_metrics_get_thread_id(metrics, &thread_id);
+    aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
+    aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
+    aws_s3_request_metrics_get_request_type(metrics, &request_type);
+    // Write the metrics data
+
+    // Convert durations from ns to ms
+    uint64_t total_duration_ms = total_duration / 1000000;
+    uint64_t sending_duration_ms = sending_duration / 1000000;
+    uint64_t receiving_duration_ms = receiving_duration / 1000000;
+    // Write the metrics data
+    fprintf(task->benchmark.csvFile, 
+            "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
+            aws_string_c_str(request_id), start_time, end_time, total_duration_ms, 
+            send_start_time, send_end_time, sending_duration_ms, 
+            receive_start_time, receive_end_time, receiving_duration_ms, 
+            response_status, aws_string_c_str(request_path_query), 
+            aws_string_c_str(host_address), aws_string_c_str(ip_address), 
+            connection_id, thread_id, stream_id, 
+            aws_string_c_str(operation_name), request_type);
+
+    // Destroy aws_string objects
+//    aws_string_destroy(request_id);
+//    aws_string_destroy(request_path_query);
+//    aws_string_destroy(host_address);
+//    aws_string_destroy(ip_address);
+//    aws_string_destroy(operation_name);
 }
 
 // Print all kinds of stats about these values (median, mean, min, max, etc)
@@ -646,7 +736,7 @@ int main(int argc, char *argv[])
     {
         auto runStart = high_resolution_clock::now();
 
-        benchmark.run();
+        benchmark.run(runI);
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();

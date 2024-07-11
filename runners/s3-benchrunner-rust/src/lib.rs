@@ -13,7 +13,7 @@ pub struct BenchmarkConfig {
     pub workload: WorkloadConfig,
     pub bucket: String,
     pub region: String,
-    pub target_throughput_gigabits_per_sec: f64,
+    pub target_throughput_gigabits: f64,
 }
 
 /// From the workload's JSON file
@@ -37,12 +37,13 @@ pub struct TaskConfig {
     pub size: u64,
 }
 
+/// All benchmark configuration (combination of json workload and command line args)
 impl BenchmarkConfig {
     pub fn new(
         workload_path: &str,
         bucket: &str,
         region: &str,
-        target_throughput_gigabits_per_sec: f64,
+        target_throughput_gigabits: f64,
     ) -> Self {
         let json_file = File::open(workload_path).unwrap_or_else(|err| {
             panic!("Failed opening '{workload_path}' - {err}");
@@ -72,7 +73,28 @@ impl BenchmarkConfig {
             workload,
             bucket: bucket.to_string(),
             region: region.to_string(),
-            target_throughput_gigabits_per_sec,
+            target_throughput_gigabits,
         }
+    }
+}
+
+pub trait BenchmarkRunner {
+    fn run(&self);
+}
+
+/// Benchmark runner using aws-s3-transfer-manager
+pub struct TransferManagerRunner<'a> {
+    config: &'a BenchmarkConfig,
+}
+
+impl<'a> TransferManagerRunner<'a> {
+    pub fn new(config: &BenchmarkConfig) -> TransferManagerRunner {
+        TransferManagerRunner { config }
+    }
+}
+
+impl<'a> BenchmarkRunner for TransferManagerRunner<'a> {
+    fn run(&self) {
+        // TODO: actually run the workload
     }
 }

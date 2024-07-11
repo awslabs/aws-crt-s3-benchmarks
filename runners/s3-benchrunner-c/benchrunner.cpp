@@ -8,6 +8,7 @@
 #include <random>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 #include <aws/auth/credentials.h>
 #include <aws/common/array_list.h>
@@ -188,7 +189,7 @@ class Benchmark
 
   public:
     // Instantiates S3 Client, does not run the benchmark yet
-    Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps);
+    Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps, int runI);
 
     ~Benchmark();
 
@@ -254,7 +255,7 @@ uint64_t BenchmarkConfig::bytesPerRun() const
 }
 
 // Instantiates S3 Client, does not run the benchmark yet
-Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps)
+Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_view region, double targetThroughputGbps,int runI)
 {
     this->config = config;
     this->bucket = bucket;
@@ -290,8 +291,9 @@ Benchmark::Benchmark(const BenchmarkConfig &config, string_view bucket, string_v
 
     struct aws_logger_standard_options logOpts;
     AWS_ZERO_STRUCT(logOpts);
-    logOpts.level = AWS_LL_ERROR;
-    logOpts.file = stderr;
+    logOpts.level = AWS_LL_DEBUG;
+    std::string file_path = "debug_" + std::to_string(runI) + ".txt";
+    logOpts.filename = file_path.c_str();
     AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
     aws_logger_set(&logger);
 
@@ -726,14 +728,13 @@ int main(int argc, char *argv[])
     string region = argv[4];
     double targetThroughputGbps = stod(argv[5]);
 
-    auto benchmark = Benchmark(config, bucket, region, targetThroughputGbps);
     uint64_t bytesPerRun = config.bytesPerRun();
+    std::vector<double> durations;
+    for (int runI = 0; runI < config.maxRepeatCount; ++runI) {
+    auto benchmark = Benchmark(config, bucket, region, targetThroughputGbps, runI);
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
-    std::vector<double> durations;
     auto appStart = high_resolution_clock::now();
-    for (int runI = 0; runI < config.maxRepeatCount; ++runI)
-    {
         auto runStart = high_resolution_clock::now();
 
         benchmark.run(runI);
@@ -749,6 +750,7 @@ int main(int argc, char *argv[])
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
         if (appDurationSecs >= 1s * config.maxRepeatSecs)
             break;
+        std::this_thread::sleep_for(std::chrono::seconds(30));
     }
 
     printStats(bytesPerRun, durations);

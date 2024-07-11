@@ -1,0 +1,30 @@
+{
+    "version": 2,
+    "comment": "",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 200,
+    "maxRepeatSecs": 120000,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload-nochecksum-prefix/100GiB-4x-1/1",
+            "size": 107374182400
+        },
+        {
+            "action": "upload",
+            "key": "upload-nochecksum-prefix/100GiB-4x-2/2",
+            "size": 107374182400
+        },
+        {
+            "action": "upload",
+            "key": "upload-nochecksum-prefix/100GiB-4x-3/3",
+            "size": 107374182400
+        },
+        {
+            "action": "upload",
+            "key": "upload-nochecksum-prefix/100GiB-4x-4/4",
+            "size": 107374182400
+        }
+    ]
+}

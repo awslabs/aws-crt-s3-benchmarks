@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "comment": "",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 200,
+    "maxRepeatSecs": 120000,
+    "tasks": [
+        {
+            "action": "download",
+            "key": "download-nochecksum-prefix/100GiB-4x-1/1",
+            "size": 107374182400
+        }
+    ]
+}

@@ -1,28 +1,46 @@
+use clap::{Parser, ValueEnum};
 use std::time::Instant;
-use std::{env, process};
 
 use s3_benchrunner_rust::{BenchmarkConfig, BenchmarkRunner, TransferManagerRunner};
 
+#[derive(Parser)]
+#[command()]
+struct Args {
+    #[arg(value_enum, help = "ID of S3 library to use")]
+    s3_client: S3ClientId,
+    #[arg(help = "Path to workload file (e.g. download-1GiB.run.json)")]
+    workload: String,
+    #[arg(help = "S3 bucket name (e.g. my-test-bucket)")]
+    bucket: String,
+    #[arg(help = "AWS Region (e.g. us-west-2)")]
+    region: String,
+    #[arg(help = "Target throughput, in gigabits per second (e.g. \"100.0\" for c5n.18xlarge)")]
+    target_throughput: f64,
+}
+
+#[derive(ValueEnum, Clone)]
+enum S3ClientId {
+    #[clap(name = "sdk-rust-tm", help = "use aws-s3-transfer-manager crate")]
+    TransferManager,
+    // TODO:
+    // #[clap(name="sdk-rust-client", help="use aws-sdk-s3 crate")]
+    // SdkClient,
+}
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
 
-    let [_, s3_client_id, workload, bucket, region, target_throughput_gigabits] = &args[..] else {
-        eprintln!("usage: s3-benchrunner-rust S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
-        process::exit(1);
-    };
-
-    let target_throughput_gigabits: f64 = target_throughput_gigabits
-        .parse()
-        .expect("TARGET_THROUGHPUT should be a gigabits-per-sec float");
-
-    let config = BenchmarkConfig::new(workload, bucket, region, target_throughput_gigabits);
+    let config = BenchmarkConfig::new(
+        &args.workload,
+        &args.bucket,
+        &args.region,
+        args.target_throughput,
+    );
 
     // create appropriate benchmark runner
-    let runner: Box<dyn BenchmarkRunner> = match s3_client_id.as_str() {
-        "sdk-rust-tm" => Box::new(TransferManagerRunner::new(config)),
-        _ => panic!("Unknown S3_CLIENT: {s3_client_id}"),
+    let runner: Box<dyn BenchmarkRunner> = match args.s3_client {
+        S3ClientId::TransferManager => Box::new(TransferManagerRunner::new(config)),
     };
-
     let workload = &runner.config().workload;
     let bytes_per_run: u64 = workload.tasks.iter().map(|x| x.size).sum();
     let gigabits_per_run = ((bytes_per_run * 8) as f64) / 1_000_000_000.0;

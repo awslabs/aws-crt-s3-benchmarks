@@ -19,16 +19,17 @@ fn main() {
 
     // create appropriate benchmark runner
     let runner: Box<dyn BenchmarkRunner> = match s3_client_id.as_str() {
-        "sdk-rust-tm" => Box::new(TransferManagerRunner::new(&config)),
+        "sdk-rust-tm" => Box::new(TransferManagerRunner::new(config)),
         _ => panic!("Unknown S3_CLIENT: {s3_client_id}"),
     };
 
-    let bytes_per_run: u64 = config.workload.tasks.iter().map(|x| x.size).sum();
+    let workload = &runner.config().workload;
+    let bytes_per_run: u64 = workload.tasks.iter().map(|x| x.size).sum();
     let gigabits_per_run = ((bytes_per_run * 8) as f64) / 1_000_000_000.0;
 
     // repeat benchmark until we exceed max_repeat_count or max_repeat_secs
     let app_start = Instant::now();
-    for run_i in 0..config.workload.max_repeat_count {
+    for run_i in 0..workload.max_repeat_count {
         let run_start = Instant::now();
 
         runner.run();
@@ -43,7 +44,7 @@ fn main() {
 
         // break out if we've exceeded max_repeat_secs
         let app_secs = (Instant::now() - app_start).as_secs_f64();
-        if app_secs >= config.workload.max_repeat_secs as f64 {
+        if app_secs >= workload.max_repeat_secs as f64 {
             break;
         }
     }

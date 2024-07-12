@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use std::{fs::File, io::BufReader, process};
 
+mod transfer_manager;
+pub use transfer_manager::TransferManagerRunner;
+
 fn exit_with_skip_code(msg: &str) -> ! {
     eprintln!("Skipping benchmark - {msg}");
     process::exit(123)
@@ -80,21 +83,5 @@ impl BenchmarkConfig {
 
 pub trait BenchmarkRunner {
     fn run(&self);
-}
-
-/// Benchmark runner using aws-s3-transfer-manager
-pub struct TransferManagerRunner<'a> {
-    config: &'a BenchmarkConfig,
-}
-
-impl<'a> TransferManagerRunner<'a> {
-    pub fn new(config: &BenchmarkConfig) -> TransferManagerRunner {
-        TransferManagerRunner { config }
-    }
-}
-
-impl<'a> BenchmarkRunner for TransferManagerRunner<'a> {
-    fn run(&self) {
-        // TODO: actually run the workload
-    }
+    fn config(&self) -> &BenchmarkConfig;
 }

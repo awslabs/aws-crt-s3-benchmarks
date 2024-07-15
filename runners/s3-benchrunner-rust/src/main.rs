@@ -1,7 +1,9 @@
 use clap::{Parser, ValueEnum};
 use std::time::Instant;
 
-use s3_benchrunner_rust::{BenchmarkConfig, BenchmarkRunner, TransferManagerRunner};
+use s3_benchrunner_rust::{
+    bytes_to_gigabits, BenchmarkConfig, BenchmarkRunner, TransferManagerRunner,
+};
 
 #[derive(Parser)]
 #[command()]
@@ -43,7 +45,7 @@ fn main() {
     };
     let workload = &runner.config().workload;
     let bytes_per_run: u64 = workload.tasks.iter().map(|x| x.size).sum();
-    let gigabits_per_run = ((bytes_per_run * 8) as f64) / 1_000_000_000.0;
+    let gigabits_per_run = bytes_to_gigabits(bytes_per_run);
 
     // repeat benchmark until we exceed max_repeat_count or max_repeat_secs
     let app_start = Instant::now();
@@ -52,7 +54,7 @@ fn main() {
 
         runner.run();
 
-        let run_secs = (Instant::now() - run_start).as_secs_f64();
+        let run_secs = run_start.elapsed().as_secs_f64();
         println!(
             "Run:{} Secs:{:.6} Gb/s:{:.6}",
             run_i + 1,
@@ -61,8 +63,7 @@ fn main() {
         );
 
         // break out if we've exceeded max_repeat_secs
-        let app_secs = (Instant::now() - app_start).as_secs_f64();
-        if app_secs >= workload.max_repeat_secs as f64 {
+        if app_start.elapsed().as_secs_f64() >= workload.max_repeat_secs {
             break;
         }
     }

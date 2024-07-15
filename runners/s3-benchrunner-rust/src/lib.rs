@@ -9,6 +9,11 @@ fn exit_with_skip_code(msg: &str) -> ! {
     process::exit(123)
 }
 
+pub fn bytes_to_gigabits(bytes: u64) -> f64 {
+    let bits = bytes * 8;
+    (bits as f64) / 1_000_000_000.0
+}
+
 /// All configuration for a benchmark runner.
 /// Includes values from workload json file, and from the command line
 #[derive(Debug)]
@@ -16,18 +21,18 @@ pub struct BenchmarkConfig {
     pub workload: WorkloadConfig,
     pub bucket: String,
     pub region: String,
-    pub target_throughput_gigabits: f64,
+    pub target_throughput_gigabits_per_sec: f64,
 }
 
 /// From the workload's JSON file
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkloadConfig {
-    pub version: i32,
+    pub version: u32,
     pub files_on_disk: bool,
-    pub checksum: Option<String>,
-    pub max_repeat_count: i32,
-    pub max_repeat_secs: i32,
+    pub checksum: Option<ChecksumAlgorithm>,
+    pub max_repeat_count: u32,
+    pub max_repeat_secs: f64,
     pub tasks: Vec<TaskConfig>,
 }
 
@@ -35,9 +40,24 @@ pub struct WorkloadConfig {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskConfig {
-    pub action: String,
+    pub action: TaskAction,
     pub key: String,
     pub size: u64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TaskAction {
+    Download,
+    Upload,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum ChecksumAlgorithm {
+    CRC32,
+    CRC32C,
+    SHA1,
+    SHA256,
 }
 
 /// All benchmark configuration (combination of json workload and command line args)
@@ -46,11 +66,11 @@ impl BenchmarkConfig {
         workload_path: &str,
         bucket: &str,
         region: &str,
-        target_throughput_gigabits: f64,
+        target_throughput_gigabits_per_sec: f64,
     ) -> Self {
-        let json_file = File::open(workload_path).unwrap_or_else(|err| {
-            panic!("Failed opening '{workload_path}' - {err}");
-        });
+        let json_file =
+            File::open(workload_path).expect(&format!("Failed opening '{workload_path}'"));
+
         let json_reader = BufReader::new(json_file);
 
         // exit with skip code if workload has different version
@@ -76,7 +96,7 @@ impl BenchmarkConfig {
             workload,
             bucket: bucket.to_string(),
             region: region.to_string(),
-            target_throughput_gigabits,
+            target_throughput_gigabits_per_sec,
         }
     }
 }

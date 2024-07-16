@@ -1,12 +1,19 @@
+use anyhow::Context;
 use serde::Deserialize;
-use std::{fs::File, io::BufReader, process};
+use std::{fs::File, io::BufReader};
 
 mod transfer_manager;
 pub use transfer_manager::TransferManagerRunner;
 
-fn exit_with_skip_code(msg: &str) -> ! {
-    eprintln!("Skipping benchmark - {msg}");
-    process::exit(123)
+pub type Result<T> = std::result::Result<T, RunnerError>;
+
+#[derive(thiserror::Error, Debug)]
+pub enum RunnerError {
+    #[error("skipping benchmark - {0}")]
+    SkipBenchmark(String),
+
+    #[error(transparent)]
+    Fail(#[from] anyhow::Error),
 }
 
 pub fn bytes_to_gigabits(bytes: u64) -> f64 {
@@ -45,6 +52,7 @@ pub struct TaskConfig {
     pub size: u64,
 }
 
+/// Possible values for the "action" field of the workload's JSON file
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TaskAction {
@@ -52,6 +60,7 @@ pub enum TaskAction {
     Upload,
 }
 
+/// Possible values for the "checksum" field of the workload's JSON file
 #[derive(Debug, Deserialize)]
 pub enum ChecksumAlgorithm {
     CRC32,
@@ -67,37 +76,36 @@ impl BenchmarkConfig {
         bucket: &str,
         region: &str,
         target_throughput_gigabits_per_sec: f64,
-    ) -> Self {
-        let json_file =
-            File::open(workload_path).expect(&format!("Failed opening '{workload_path}'"));
+    ) -> Result<Self> {
+        let json_file = File::open(workload_path)
+            .with_context(|| format!("Failed opening '{workload_path}'"))?;
 
         let json_reader = BufReader::new(json_file);
 
         // exit with skip code if workload has different version
         // which may materialize as a "data" error, because it no longer matches our structs
-        let workload: WorkloadConfig = serde_json::from_reader(json_reader).unwrap_or_else(|err| {
-            if err.is_data() {
-                exit_with_skip_code(&format!(
-                    "Can't parse '{workload_path}'. Different version maybe? - {err}"
-                ));
-            } else {
-                panic!("Failed parsing json from '{workload_path}' - {err}")
+        let workload: WorkloadConfig = match serde_json::from_reader(json_reader) {
+            Ok(workload) => workload,
+            Err(e) => {
+                return Err(RunnerError::SkipBenchmark(format!(
+                    "Can't parse '{workload_path}'. Different version maybe? - {e}"
+                )))
             }
-        });
-
-        if workload.version != 2 {
-            exit_with_skip_code(&format!(
-                "Workload version not supported: {}",
-                workload.version
-            ));
         };
 
-        BenchmarkConfig {
+        if workload.version != 2 {
+            return Err(RunnerError::SkipBenchmark(format!(
+                "Workload version not supported: {}",
+                workload.version
+            )));
+        };
+
+        Ok(BenchmarkConfig {
             workload,
             bucket: bucket.to_string(),
             region: region.to_string(),
             target_throughput_gigabits_per_sec,
-        }
+        })
     }
 }
 

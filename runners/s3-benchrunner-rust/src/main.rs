@@ -1,8 +1,9 @@
 use clap::{Parser, ValueEnum};
+use std::process::exit;
 use std::time::Instant;
 
 use s3_benchrunner_rust::{
-    bytes_to_gigabits, BenchmarkConfig, BenchmarkRunner, TransferManagerRunner,
+    bytes_to_gigabits, BenchmarkConfig, BenchmarkRunner, Result, RunnerError, TransferManagerRunner,
 };
 
 #[derive(Parser)]
@@ -32,12 +33,25 @@ enum S3ClientId {
 fn main() {
     let args = Args::parse();
 
+    match execute(&args) {
+        Err(RunnerError::Fail(e)) => {
+            panic!("{e:?}");
+        }
+        Err(RunnerError::SkipBenchmark(msg)) => {
+            eprintln!("Skipping benchmark - {msg}");
+            exit(123);
+        }
+        Ok(()) => (),
+    }
+}
+
+fn execute(args: &Args) -> Result<()> {
     let config = BenchmarkConfig::new(
         &args.workload,
         &args.bucket,
         &args.region,
         args.target_throughput,
-    );
+    )?;
 
     // create appropriate benchmark runner
     let runner: Box<dyn BenchmarkRunner> = match args.s3_client {
@@ -67,4 +81,6 @@ fn main() {
             break;
         }
     }
+
+    Ok(())
 }

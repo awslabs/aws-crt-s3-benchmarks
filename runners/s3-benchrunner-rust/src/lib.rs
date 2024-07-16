@@ -9,6 +9,8 @@ pub type Result<T> = std::result::Result<T, RunnerError>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum RunnerError {
+    /// Used when the runner knows it can't run a workload.
+    /// It's not the user's fault, it's not a bug.
     #[error("skipping benchmark - {0}")]
     SkipBenchmark(String),
 

@@ -33,7 +33,7 @@ enum S3ClientId {
 fn main() {
     let args = Args::parse();
 
-    match execute(&args) {
+    match run_benchmark(&args) {
         Err(RunnerError::Fail(e)) => {
             panic!("{e:?}");
         }
@@ -45,7 +45,7 @@ fn main() {
     }
 }
 
-fn execute(args: &Args) -> Result<()> {
+fn run_benchmark(args: &Args) -> Result<()> {
     let config = BenchmarkConfig::new(
         &args.workload,
         &args.bucket,

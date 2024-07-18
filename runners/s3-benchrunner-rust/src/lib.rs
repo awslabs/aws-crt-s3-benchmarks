@@ -1,4 +1,5 @@
 use anyhow::Context;
+use async_trait::async_trait;
 use serde::Deserialize;
 use std::{fs::File, io::BufReader};
 
@@ -6,6 +7,9 @@ mod transfer_manager;
 pub use transfer_manager::TransferManagerRunner;
 
 pub type Result<T> = std::result::Result<T, RunnerError>;
+
+pub const MEBIBYTE: u64 = 1024 * 1024;
+pub const PART_SIZE: u64 = 8 * MEBIBYTE;
 
 #[derive(thiserror::Error, Debug)]
 pub enum RunnerError {
@@ -111,7 +115,8 @@ impl BenchmarkConfig {
     }
 }
 
-pub trait BenchmarkRunner {
-    fn run(&self);
+#[async_trait]
+pub trait RunBenchmark {
+    async fn run(&self) -> Result<()>;
     fn config(&self) -> &BenchmarkConfig;
 }

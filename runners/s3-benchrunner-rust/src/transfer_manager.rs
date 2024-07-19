@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
 use aws_s3_transfer_manager::download::Downloader;
 use aws_sdk_s3::{operation::get_object::builders::GetObjectInputBuilder, types::ChecksumMode};
+use futures::future::join_all;
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
@@ -16,17 +17,32 @@ pub struct TransferManagerRunner {
 
 impl TransferManagerRunner {
     pub async fn new(config: BenchmarkConfig) -> TransferManagerRunner {
-        let sdk_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+        let sdk_config = aws_config::defaults(BehaviorVersion::latest())
             .region(Region::new(config.region.clone()))
             .load()
             .await;
 
+        // Blugh, the user shouldn't need to manually configure concurrency like this.
+        let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
+        let per_object_concurrency = (total_concurrency / config.workload.tasks.len()).max(1);
+
         let downloader = Downloader::builder()
             .sdk_config(sdk_config)
             .target_part_size(PART_SIZE)
+            .concurrency(per_object_concurrency)
             .build();
 
         TransferManagerRunner { config, downloader }
+    }
+
+    async fn run_task(&self, task_i: usize) -> Result<()> {
+        let task_config: &TaskConfig = &self.config.workload.tasks[task_i];
+        match task_config.action {
+            TaskAction::Download => self.download(task_config).await,
+            TaskAction::Upload => Err(RunnerError::SkipBenchmark(format!(
+                "upload not yet implemented"
+            ))),
+        }
     }
 
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
@@ -65,15 +81,13 @@ impl TransferManagerRunner {
 #[async_trait]
 impl RunBenchmark for TransferManagerRunner {
     async fn run(&self) -> Result<()> {
-        // TODO: run tasks concurrently
-        for task_config in self.config.workload.tasks.iter() {
-            match task_config.action {
-                TaskAction::Download => self.download(task_config).await?,
-                TaskAction::Upload => {
-                    return Err(RunnerError::SkipBenchmark(
-                        "Upload not yet supported".to_string(),
-                    ));
-                }
+        // submit all uploads/downloads concurrently
+        let futures = (0..self.config.workload.tasks.len()).map(|i| self.run_task(i));
+
+        // join_all() will stop immediately if anything fails
+        for result in join_all(futures).await {
+            if let Err(e) = result {
+                return Err(e);
             }
         }
 
@@ -83,4 +97,13 @@ impl RunBenchmark for TransferManagerRunner {
     fn config(&self) -> &BenchmarkConfig {
         &self.config
     }
+}
+
+/// Calculate the best concurrency, given target throughput.
+/// This is based on aws-c-s3's math for determining max-http-connections, circa July 2024:
+/// https://github.com/awslabs/aws-c-s3/blob/94e3342c12833c519900516edd2e85c78dc1639d/source/s3_client.c#L57-L69
+/// These are magic numbers that seem to work well for large-object workloads.
+fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
+    let concurrency = target_throughput_gigabits_per_sec * 2.5;
+    (concurrency as usize).max(10)
 }

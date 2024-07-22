@@ -3,7 +3,8 @@ use std::process::exit;
 use std::time::Instant;
 
 use s3_benchrunner_rust::{
-    bytes_to_gigabits, BenchmarkConfig, Result, RunBenchmark, RunnerError, TransferManagerRunner,
+    bytes_to_gigabits, prepare_run, BenchmarkConfig, Result, RunBenchmark, RunnerError,
+    TransferManagerRunner,
 };
 
 #[derive(Parser)]
@@ -72,6 +73,8 @@ async fn async_main(args: &Args) -> Result<()> {
     // repeat benchmark until we exceed max_repeat_count or max_repeat_secs
     let app_start = Instant::now();
     for run_i in 0..workload.max_repeat_count {
+        prepare_run(workload)?;
+
         let run_start = Instant::now();
 
         runner.run().await?;

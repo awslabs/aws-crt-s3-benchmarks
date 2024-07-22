@@ -1,7 +1,7 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use serde::Deserialize;
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, path::Path};
 
 mod transfer_manager;
 pub use transfer_manager::TransferManagerRunner;
@@ -119,4 +119,36 @@ impl BenchmarkConfig {
 pub trait RunBenchmark {
     async fn run(&self) -> Result<()>;
     fn config(&self) -> &BenchmarkConfig;
+}
+
+// Do prep work between runs, before timers starts (e.g. create intermediate directories)
+pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
+    if workload.files_on_disk {
+        for task_config in &workload.tasks {
+            let filepath = Path::new(&task_config.key);
+            match task_config.action {
+                TaskAction::Download => {
+                    if filepath.exists() {
+                        // delete pre-existing file, in case overwrite is slower than original write.
+                        std::fs::remove_file(filepath).with_context(|| {
+                            format!("failed removing file from previous run: {filepath:?}")
+                        })?;
+                    } else if let Some(dir) = filepath.parent() {
+                        // ensure directory already exists
+                        if !dir.exists() {
+                            std::fs::create_dir(dir)
+                                .with_context(|| format!("failed creating directory: {dir:?}"))?;
+                        }
+                    }
+                }
+                TaskAction::Upload => {
+                    if !filepath.is_file() {
+                        return Err(RunnerError::Fail(anyhow!("file not found: {filepath:?}")));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

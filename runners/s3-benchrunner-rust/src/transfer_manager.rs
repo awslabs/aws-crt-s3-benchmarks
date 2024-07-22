@@ -1,8 +1,10 @@
+use std::{fs::File, io::Write};
+
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
 use aws_s3_transfer_manager::download::Downloader;
-use aws_sdk_s3::{operation::get_object::builders::GetObjectInputBuilder, types::ChecksumMode};
+use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
 use futures::future::join_all;
 
 use crate::{
@@ -37,6 +39,13 @@ impl TransferManagerRunner {
 
     async fn run_task(&self, task_i: usize) -> Result<()> {
         let task_config: &TaskConfig = &self.config.workload.tasks[task_i];
+
+        if self.config.workload.checksum.is_some() {
+            return Err(RunnerError::SkipBenchmark(format!(
+                "checksums not yet implemented"
+            )));
+        }
+
         match task_config.action {
             TaskAction::Download => self.download(task_config).await,
             TaskAction::Upload => Err(RunnerError::SkipBenchmark(format!(
@@ -46,30 +55,41 @@ impl TransferManagerRunner {
     }
 
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
-        let checksum_mode = if self.config.workload.checksum.is_some() {
-            Some(ChecksumMode::Enabled)
+        let key = &task_config.key;
+
+        let input = GetObjectInputBuilder::default()
+            .bucket(&self.config.bucket)
+            .key(key);
+
+        let mut download_handle = self
+            .downloader
+            .download(input.into())
+            .await
+            .with_context(|| format!("failed starting download: {key}"))?;
+
+        // if files_on_disk, open file for writing
+        let mut dest_file: Option<File> = if self.config.workload.files_on_disk {
+            let file = File::create(key).with_context(|| format!("failed creating file: {key}"))?;
+            Some(file)
         } else {
             None
         };
 
-        let input = GetObjectInputBuilder::default()
-            .bucket(&self.config.bucket)
-            .key(&task_config.key)
-            .set_checksum_mode(checksum_mode);
-
-        let mut handle = self
-            .downloader
-            .download(input.into())
-            .await
-            .with_context(|| "download failed")?;
-
         let mut total_size: u64 = 0;
-        while let Some(chunk_result) = handle.body.next().await {
-            let chunk = chunk_result.with_context(|| "next body failed")?;
+        while let Some(chunk_result) = download_handle.body.next().await {
+            let chunk =
+                chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
+
             for segment in chunk.into_segments() {
+                // if files_on_disk, write to file
+                if let Some(dest_file) = &mut dest_file {
+                    dest_file
+                        .write_all(&segment)
+                        .with_context(|| format!("failed writing file: {key}"))?;
+                }
+
                 total_size += segment.len() as u64;
             }
-            // TODO: write to disk
         }
 
         assert_eq!(total_size, task_config.size);
@@ -84,7 +104,9 @@ impl RunBenchmark for TransferManagerRunner {
         // submit all uploads/downloads concurrently
         let futures = (0..self.config.workload.tasks.len()).map(|i| self.run_task(i));
 
-        // join_all() will stop immediately if anything fails
+        // If any uploads/downloads fails, we consider this benchmark run to be a failure,
+        // and want execution to stop as soon as possible.
+        // join_all() helps here: if any future fails, the rest are cancelled.
         for result in join_all(futures).await {
             if let Err(e) = result {
                 return Err(e);

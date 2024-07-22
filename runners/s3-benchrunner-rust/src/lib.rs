@@ -134,13 +134,14 @@ pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
                             format!("failed removing file from previous run: {filepath:?}")
                         })?;
                     } else if let Some(dir) = filepath.parent() {
-                        // ensure directory already exists
+                        // create directory if necessary
                         if !dir.exists() {
                             std::fs::create_dir(dir)
                                 .with_context(|| format!("failed creating directory: {dir:?}"))?;
                         }
                     }
                 }
+
                 TaskAction::Upload => {
                     if !filepath.is_file() {
                         return Err(RunnerError::Fail(anyhow!("file not found: {filepath:?}")));

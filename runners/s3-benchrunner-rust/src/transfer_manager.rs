@@ -3,7 +3,10 @@ use std::{fs::File, io::Write};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
-use aws_s3_transfer_manager::download::Downloader;
+use aws_s3_transfer_manager::{
+    download::Downloader,
+    types::{ConcurrencySetting, PartSize},
+};
 use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
 use futures::future::join_all;
 
@@ -26,12 +29,13 @@ impl TransferManagerRunner {
 
         // Blugh, the user shouldn't need to manually configure concurrency like this.
         let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
-        let per_object_concurrency = (total_concurrency / config.workload.tasks.len()).max(1);
+        let num_objects = config.workload.tasks.len();
+        let concurrency_per_object = (total_concurrency / num_objects).max(1);
 
         let downloader = Downloader::builder()
             .sdk_config(sdk_config)
-            .target_part_size(PART_SIZE)
-            .concurrency(per_object_concurrency)
+            .part_size(PartSize::Target(PART_SIZE))
+            .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
             .build();
 
         TransferManagerRunner { config, downloader }
@@ -67,7 +71,7 @@ impl TransferManagerRunner {
             .await
             .with_context(|| format!("failed starting download: {key}"))?;
 
-        // if files_on_disk, open file for writing
+        // if files_on_disk: open file for writing
         let mut dest_file: Option<File> = if self.config.workload.files_on_disk {
             let file = File::create(key).with_context(|| format!("failed creating file: {key}"))?;
             Some(file)
@@ -81,7 +85,7 @@ impl TransferManagerRunner {
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
 
             for segment in chunk.into_segments() {
-                // if files_on_disk, write to file
+                // if files_on_disk: write to file
                 if let Some(dest_file) = &mut dest_file {
                     dest_file
                         .write_all(&segment)
@@ -104,9 +108,8 @@ impl RunBenchmark for TransferManagerRunner {
         // submit all uploads/downloads concurrently
         let futures = (0..self.config.workload.tasks.len()).map(|i| self.run_task(i));
 
-        // If any uploads/downloads fails, we consider this benchmark run to be a failure,
-        // and want execution to stop as soon as possible.
-        // join_all() helps here: if any future fails, the rest are cancelled.
+        // If any future fails, join_all() will stop evaluating the rest.
+        // That's good, we want it to fail fast if anything goes wrong.
         for result in join_all(futures).await {
             if let Err(e) = result {
                 return Err(e);
@@ -124,7 +127,7 @@ impl RunBenchmark for TransferManagerRunner {
 /// Calculate the best concurrency, given target throughput.
 /// This is based on aws-c-s3's math for determining max-http-connections, circa July 2024:
 /// https://github.com/awslabs/aws-c-s3/blob/94e3342c12833c519900516edd2e85c78dc1639d/source/s3_client.c#L57-L69
-/// These are magic numbers that seem to work well for large-object workloads.
+/// These are magic numbers work well for large-object workloads.
 fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
     let concurrency = target_throughput_gigabits_per_sec * 2.5;
     (concurrency as usize).max(10)

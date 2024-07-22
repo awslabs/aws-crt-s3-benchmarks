@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import urllib.request
 
 from utils import run
 
@@ -21,3 +22,14 @@ run(['dnf', 'install', '-y',
      'java-17-amazon-corretto-devel',  # for building s3-benchrunner-java
      'python3-devel',  # for building aws-crt-python
      ])
+
+# install rust via rustup.sh
+# (the version in dnf is too old, in July 2024 it was the 1+ year old rust 1.68)
+rustup_url = 'https://sh.rustup.rs'
+print(f'downloading: {rustup_url}...')
+rustup_text = urllib.request.urlopen(rustup_url).read().decode()
+rustup_filepath = '/tmp/rustup.sh'
+with open(rustup_filepath, 'w') as f:
+    f.write(rustup_text)
+
+run(['sh', rustup_filepath])

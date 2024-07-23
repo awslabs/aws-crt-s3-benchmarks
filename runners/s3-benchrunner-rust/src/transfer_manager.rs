@@ -1,5 +1,3 @@
-use std::{fs::File, io::Write};
-
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
@@ -9,6 +7,8 @@ use aws_s3_transfer_manager::{
 };
 use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
 use futures::future::join_all;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
@@ -72,14 +72,16 @@ impl TransferManagerRunner {
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
-        let mut dest_file: Option<File> = if self.config.workload.files_on_disk {
-            let file = File::create(key).with_context(|| format!("failed creating file: {key}"))?;
+        let mut dest_file = if self.config.workload.files_on_disk {
+            let file = File::create(key)
+                .await
+                .with_context(|| format!("failed creating file: {key}"))?;
             Some(file)
         } else {
             None
         };
 
-        let mut total_size: u64 = 0;
+        let mut total_size = 0u64;
         while let Some(chunk_result) = download_handle.body.next().await {
             let chunk =
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
@@ -89,6 +91,7 @@ impl TransferManagerRunner {
                 if let Some(dest_file) = &mut dest_file {
                     dest_file
                         .write_all(&segment)
+                        .await
                         .with_context(|| format!("failed writing file: {key}"))?;
                 }
 
@@ -110,11 +113,10 @@ impl RunBenchmark for TransferManagerRunner {
 
         // If any future fails, join_all() will stop evaluating the rest.
         // That's good, we want it to fail fast if anything goes wrong.
-        for result in join_all(futures).await {
-            if let Err(e) = result {
-                return Err(e);
-            }
-        }
+        join_all(futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<()>>>()?;
 
         Ok(())
     }

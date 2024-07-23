@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import shutil
 import urllib.request
 
 from utils import run
@@ -8,8 +9,13 @@ parser = argparse.ArgumentParser(
     description="Install tools needed to build and run. Assumes we're on Amazon Linux 2023")
 args = parser.parse_args()
 
+# ensure sudo is installed (it's not on the canary docker image),
+# so we can issue the same "sudo dnf install ..." commands, whether this script
+# is running on a docker image or a dev machine
+if not shutil.which('sudo'):
+    run(['dnf', 'install', '-y', 'sudo'])
 
-run(['dnf', 'install', '-y',
+run(['sudo', 'dnf', 'install', '-y',
      'git',
      'python3-pip',  # for installing python packages
      'cmake',  # for building aws-c-***
@@ -25,6 +31,7 @@ run(['dnf', 'install', '-y',
 
 # install rust via rustup.sh
 # (the version in dnf is too old, in July 2024 it was the 1+ year old rust 1.68)
+# do NOT use sudo with rustup
 rustup_url = 'https://sh.rustup.rs'
 print(f'downloading: {rustup_url}...')
 rustup_text = urllib.request.urlopen(rustup_url).read().decode()
@@ -32,4 +39,4 @@ rustup_filepath = '/tmp/rustup.sh'
 with open(rustup_filepath, 'w') as f:
     f.write(rustup_text)
 
-run(['sh', rustup_filepath])
+run(['sh', rustup_filepath, '-y'])

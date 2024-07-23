@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
@@ -6,16 +8,21 @@ use aws_s3_transfer_manager::{
     types::{ConcurrencySetting, PartSize},
 };
 use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
-use futures::future::join_all;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::task::JoinSet;
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
 };
 
 /// Benchmark runner using aws-s3-transfer-manager
+#[derive(Clone)]
 pub struct TransferManagerRunner {
+    handle: Arc<Handle>,
+}
+
+struct Handle {
     config: BenchmarkConfig,
     downloader: Downloader,
 }
@@ -38,13 +45,15 @@ impl TransferManagerRunner {
             .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
             .build();
 
-        TransferManagerRunner { config, downloader }
+        TransferManagerRunner {
+            handle: Arc::new(Handle { config, downloader }),
+        }
     }
 
-    async fn run_task(&self, task_i: usize) -> Result<()> {
-        let task_config: &TaskConfig = &self.config.workload.tasks[task_i];
+    async fn run_task(self, task_i: usize) -> Result<()> {
+        let task_config = &self.config().workload.tasks[task_i];
 
-        if self.config.workload.checksum.is_some() {
+        if self.config().workload.checksum.is_some() {
             return Err(RunnerError::SkipBenchmark(format!(
                 "checksums not yet implemented"
             )));
@@ -62,17 +71,18 @@ impl TransferManagerRunner {
         let key = &task_config.key;
 
         let input = GetObjectInputBuilder::default()
-            .bucket(&self.config.bucket)
+            .bucket(&self.config().bucket)
             .key(key);
 
         let mut download_handle = self
+            .handle
             .downloader
             .download(input.into())
             .await
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
-        let mut dest_file = if self.config.workload.files_on_disk {
+        let mut dest_file = if self.config().workload.files_on_disk {
             let file = File::create(key)
                 .await
                 .with_context(|| format!("failed creating file: {key}"))?;
@@ -108,21 +118,24 @@ impl TransferManagerRunner {
 #[async_trait]
 impl RunBenchmark for TransferManagerRunner {
     async fn run(&self) -> Result<()> {
-        // submit all uploads/downloads concurrently
-        let futures = (0..self.config.workload.tasks.len()).map(|i| self.run_task(i));
+        // Spawn concurrent tasks for all uploads/downloads.
+        // We want the benchmark to fail fast if anything goes wrong,
+        // so we're using a JoinSet.
+        let mut task_set: JoinSet<std::result::Result<(), RunnerError>> = JoinSet::new();
+        for i in 0..self.config().workload.tasks.len() {
+            task_set.spawn(self.clone().run_task(i));
+        }
 
-        // If any future fails, join_all() will stop evaluating the rest.
-        // That's good, we want it to fail fast if anything goes wrong.
-        join_all(futures)
-            .await
-            .into_iter()
-            .collect::<Result<Vec<()>>>()?;
+        while let Some(join_result) = task_set.join_next().await {
+            let task_result = join_result.unwrap();
+            task_result?;
+        }
 
         Ok(())
     }
 
     fn config(&self) -> &BenchmarkConfig {
-        &self.config
+        &self.handle.config
     }
 }
 

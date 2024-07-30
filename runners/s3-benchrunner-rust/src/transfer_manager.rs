@@ -3,11 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
-use aws_s3_transfer_manager::{
-    download::Downloader,
-    types::{ConcurrencySetting, PartSize},
-};
-use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
+use aws_s3_transfer_manager::types::{ConcurrencySetting, PartSize};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
@@ -24,7 +20,8 @@ pub struct TransferManagerRunner {
 
 struct Handle {
     config: BenchmarkConfig,
-    downloader: Downloader,
+    // TODO: Should I name this tm_client to make it clear what client it is?
+    client: aws_s3_transfer_manager::Client,
 }
 
 impl TransferManagerRunner {
@@ -39,14 +36,17 @@ impl TransferManagerRunner {
         let num_objects = config.workload.tasks.len();
         let concurrency_per_object = (total_concurrency / num_objects).max(1);
 
-        let downloader = Downloader::builder()
-            .sdk_config(sdk_config)
-            .part_size(PartSize::Target(PART_SIZE))
+        let s3_client = aws_sdk_s3::Client::new(&sdk_config); 
+        let tm_config = aws_s3_transfer_manager::Config::builder()
             .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
+            .part_size(PartSize::Target(PART_SIZE))
+            .client(s3_client)
             .build();
 
+        let tm_client = aws_s3_transfer_manager::Client::new(tm_config);
+
         TransferManagerRunner {
-            handle: Arc::new(Handle { config, downloader }),
+            handle: Arc::new(Handle { config, client: tm_client }),
         }
     }
 
@@ -70,16 +70,12 @@ impl TransferManagerRunner {
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
         let key = &task_config.key;
 
-        let input = GetObjectInputBuilder::default()
+        let mut download_handle = self.handle.client.download()
             .bucket(&self.config().bucket)
-            .key(key);
-
-        let mut download_handle = self
-            .handle
-            .downloader
-            .download(input.into())
+            .key(key)
+            .send()
             .await
-            .with_context(|| format!("failed starting download: {key}"))?;
+            .with_context(|| format!("failed downloading: {key}"))?;
 
         // if files_on_disk: open file for writing
         let mut dest_file = if self.config().workload.files_on_disk {

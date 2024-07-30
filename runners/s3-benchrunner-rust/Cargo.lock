@@ -209,7 +209,7 @@ dependencies = [
 [[package]]
 name = "aws-s3-transfer-manager"
 version = "0.1.0"
-source = "git+ssh://git@github.com/awslabs/aws-s3-transfer-manager-rs.git?branch=main#fc227cc4d8bfe099ee6543581862a306da143c8c"
+source = "git+ssh://git@github.com/awslabs/aws-s3-transfer-manager-rs.git?rev=d085949e930b0ef99031c0fd33c24d6c68fac4dd#d085949e930b0ef99031c0fd33c24d6c68fac4dd"
 dependencies = [
  "async-channel",
  "async-trait",

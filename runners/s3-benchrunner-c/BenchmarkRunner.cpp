@@ -5,6 +5,8 @@
 #include <iostream>
 #include <random>
 
+#include <stdio.h>
+
 #include <aws/common/system_resource_util.h>
 
 #include <nlohmann/json.hpp>
@@ -227,12 +229,13 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
         benchmark->run();
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
+
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
         fflush(stderr);
         printf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
-
+        remove("download/30GiB-1x/1");
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;
         if (appDurationSecs >= 1s * config.maxRepeatSecs)

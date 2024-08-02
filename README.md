@@ -85,6 +85,7 @@ Here are the IDs used for various S3 Clients, and the runner you must build to b
 | `sdk-cpp-client-crt` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with S3CrtClient | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
 | `sdk-cpp-client-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) S3Client | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
 | `sdk-cpp-tm-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) TransferManager | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
+| `sdk-rust-tm` | [aws-s3-transfer-manager-rs](https://github.com/awslabs/aws-s3-transfer-manager-rs/) | `rust` | [runners/s3-benchrunner-rust](runners/s3-benchrunner-rust/) |
 
 ### Build a Runner
 

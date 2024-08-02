@@ -39,3 +39,5 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 ```
+
+See further instructions [here](../../README.md#run-a-benchmark).

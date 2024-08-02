@@ -15,11 +15,14 @@
 #include <aws/io/tls_channel_handler.h>
 #include <aws/s3/s3_client.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 using namespace std;
 
 // 256MiB is Java Transfer Mgr V2's default
 // TODO: Investigate. At time of writing, this noticeably impacts performance.
-#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
+#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB SIZE_MAX
 
 aws_byte_cursor toCursor(string_view src)
 {
@@ -65,7 +68,7 @@ class Task
     promise<void> donePromise;
     future<void> doneFuture;
 
-    FILE *downloadFile = NULL;
+    int downloadFile = -1;
 
     static int onDownloadData(
         struct aws_s3_meta_request *meta_request,
@@ -282,8 +285,11 @@ Task::Task(CRunner &runner, size_t taskI)
 
         if (runner.config.filesOnDisk)
         {
-            downloadFile = fopen(config.key.c_str(), "wb");
-            AWS_FATAL_ASSERT(downloadFile != NULL);
+            downloadFile = open(config.key.c_str(), O_RDWR | O_NONBLOCK | O_CREAT, 0666);
+            if (downloadFile == -1)
+            {
+                fail(string("Failed to open file with errno:") + std::to_string(errno));
+            }
 
             options.body_callback = Task::onDownloadData;
         }
@@ -353,9 +359,13 @@ void Task::onFinished(
         fail("S3MetaRequest failed");
     }
 
+    if (fsync(task->downloadFile) == -1)
+    {
+        fail("Could not sync the file to disk");
+    }
     // clean up task
-    if (task->downloadFile != NULL)
-        fclose(task->downloadFile);
+    if (task->downloadFile != -1)
+        close(task->downloadFile);
     aws_s3_meta_request_release(task->metaRequest);
     task->donePromise.set_value();
 }
@@ -368,7 +378,7 @@ int Task::onDownloadData(
 {
     auto *task = static_cast<Task *>(user_data);
 
-    size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
+    size_t written = pwrite(task->downloadFile, body->ptr, body->len, range_start);
     AWS_FATAL_ASSERT(written == body->len);
 
     // Increment read window so data will continue downloading

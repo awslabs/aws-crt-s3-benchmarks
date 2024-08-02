@@ -235,6 +235,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
         fflush(stderr);
         printf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
+        /* TODO: properly remove the existing file */
         remove("download/30GiB-1x/1");
         // break out if we've exceeded maxRepeatSecs
         duration<double> appDurationSecs = high_resolution_clock::now() - appStart;

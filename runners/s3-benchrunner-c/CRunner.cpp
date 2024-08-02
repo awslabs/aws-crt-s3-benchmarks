@@ -16,14 +16,6 @@
 #include <aws/s3/s3_client.h>
 
 #include <fcntl.h>
-#include <math.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <time.h>
 #include <unistd.h>
 
 using namespace std;
@@ -294,7 +286,10 @@ Task::Task(CRunner &runner, size_t taskI)
         if (runner.config.filesOnDisk)
         {
             downloadFile = open(config.key.c_str(), O_RDWR | O_NONBLOCK | O_CREAT, 0666);
-            printf("Task[%zu] downloadFile:%d\n", taskI, downloadFile);
+            if (downloadFile == -1)
+            {
+                fail(string("Failed to open file with errno:") + std::to_string(errno));
+            }
 
             options.body_callback = Task::onDownloadData;
         }
@@ -383,10 +378,7 @@ int Task::onDownloadData(
 {
     auto *task = static_cast<Task *>(user_data);
 
-    size_t written = pwrite64(task->downloadFile, body->ptr, body->len, range_start);
-    // printf("Downloaded %zu bytes\n", written);
-    // printf("last error %d\n", errno);
-    // size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
+    size_t written = pwrite(task->downloadFile, body->ptr, body->len, range_start);
     AWS_FATAL_ASSERT(written == body->len);
 
     // Increment read window so data will continue downloading

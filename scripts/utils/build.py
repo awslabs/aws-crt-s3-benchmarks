@@ -218,6 +218,21 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     return ['java', '-jar', str(jar_path)]
 
 
+def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build s3-benchrunner-rust"""
+    runner_src = RUNNERS['rust'].dir
+    os.chdir(runner_src)
+
+    if branch:
+        print("WARNING: rust runner doesn't currently support --branch")
+
+    # Build runner
+    run(['cargo', 'build', '--release'])
+
+    # return runner cmd
+    return [str(runner_src/'target/release/s3-benchrunner-rust')]
+
+
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
     """
     Build s3-benchrunner-<lang> and its dependencies.
@@ -237,6 +252,7 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'cpp': _build_cpp,
         'python': _build_python,
         'java': _build_java,
+        'rust': _build_rust,
     }
     build_fn = build_functions[lang]
 

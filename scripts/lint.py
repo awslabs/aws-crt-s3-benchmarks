@@ -65,6 +65,12 @@ def _lint_java():
     run(['mvn', 'formatter:validate'])
 
 
+def _lint_rust():
+    runner_dir = RUNNERS['rust'].dir
+    os.chdir(runner_dir)
+    run(['cargo', 'fmt', '--check'])
+
+
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
@@ -74,6 +80,7 @@ if __name__ == '__main__':
         'cpp': _lint_cpp,
         'python': _lint_python,
         'java': _lint_java,
+        'rust': _lint_rust,
     }
     lint_fn = lint_functions[args.lang]
     lint_fn()

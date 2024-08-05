@@ -120,7 +120,7 @@ impl TransferManagerRunner {
         let key = &task_config.key;
 
         let stream = match self.config().workload.files_on_disk {
-            true=> InputStream::from_path(key).with_context(|| "Failed to create stream")?,
+            true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
             false => {
                 // TODO: What is a better way to do this?
                 let mut data = Vec::new();
@@ -144,7 +144,6 @@ impl TransferManagerRunner {
 
         Ok(())
     }
-
 }
 
 #[async_trait]

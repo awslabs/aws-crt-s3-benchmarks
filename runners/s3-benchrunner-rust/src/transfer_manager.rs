@@ -4,10 +4,9 @@ use anyhow::Context;
 use async_trait::async_trait;
 use aws_config::{self, BehaviorVersion, Region};
 use aws_s3_transfer_manager::{
-    download::Downloader,
+    io::InputStream,
     types::{ConcurrencySetting, PartSize},
 };
-use aws_sdk_s3::operation::get_object::builders::GetObjectInputBuilder;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
@@ -24,7 +23,7 @@ pub struct TransferManagerRunner {
 
 struct Handle {
     config: BenchmarkConfig,
-    downloader: Downloader,
+    transfer_manager: aws_s3_transfer_manager::Client,
 }
 
 impl TransferManagerRunner {
@@ -39,14 +38,20 @@ impl TransferManagerRunner {
         let num_objects = config.workload.tasks.len();
         let concurrency_per_object = (total_concurrency / num_objects).max(1);
 
-        let downloader = Downloader::builder()
-            .sdk_config(sdk_config)
-            .part_size(PartSize::Target(PART_SIZE))
+        let s3_client = aws_sdk_s3::Client::new(&sdk_config);
+        let tm_config = aws_s3_transfer_manager::Config::builder()
             .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
+            .part_size(PartSize::Target(PART_SIZE))
+            .client(s3_client)
             .build();
 
+        let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
+
         TransferManagerRunner {
-            handle: Arc::new(Handle { config, downloader }),
+            handle: Arc::new(Handle {
+                config,
+                transfer_manager,
+            }),
         }
     }
 
@@ -54,32 +59,29 @@ impl TransferManagerRunner {
         let task_config = &self.config().workload.tasks[task_i];
 
         if self.config().workload.checksum.is_some() {
-            return Err(RunnerError::SkipBenchmark(format!(
-                "checksums not yet implemented"
-            )));
+            return Err(RunnerError::SkipBenchmark(
+                "checksums not yet implemented".to_string(),
+            ));
         }
 
         match task_config.action {
             TaskAction::Download => self.download(task_config).await,
-            TaskAction::Upload => Err(RunnerError::SkipBenchmark(format!(
-                "upload not yet implemented"
-            ))),
+            TaskAction::Upload => self.upload(task_config).await,
         }
     }
 
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
         let key = &task_config.key;
 
-        let input = GetObjectInputBuilder::default()
-            .bucket(&self.config().bucket)
-            .key(key);
-
         let mut download_handle = self
             .handle
-            .downloader
-            .download(input.into())
+            .transfer_manager
+            .download()
+            .bucket(&self.config().bucket)
+            .key(key)
+            .send()
             .await
-            .with_context(|| format!("failed starting download: {key}"))?;
+            .with_context(|| format!("failed downloading: {key}"))?;
 
         // if files_on_disk: open file for writing
         let mut dest_file = if self.config().workload.files_on_disk {
@@ -110,6 +112,35 @@ impl TransferManagerRunner {
         }
 
         assert_eq!(total_size, task_config.size);
+
+        Ok(())
+    }
+
+    async fn upload(&self, task_config: &TaskConfig) -> Result<()> {
+        let key = &task_config.key;
+
+        let stream = match self.config().workload.files_on_disk {
+            true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
+            false => {
+                // TODO: What is a better way to do this?
+                let mut data = Vec::new();
+                data.resize_with(task_config.size.try_into().unwrap(), Default::default);
+                data.into()
+            }
+        };
+
+        self.handle
+            .transfer_manager
+            .upload()
+            .bucket(&self.config().bucket)
+            .key(key)
+            .body(stream)
+            .send()
+            .await
+            .with_context(|| format!("failed starting upload: {key}"))?
+            .join()
+            .await
+            .with_context(|| format!("failed uploading: {key}"))?;
 
         Ok(())
     }

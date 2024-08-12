@@ -13,7 +13,10 @@ use tokio::task::JoinSet;
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
+
 };
+use bytes::Bytes;
+
 
 /// Benchmark runner using aws-s3-transfer-manager
 #[derive(Clone)]
@@ -24,7 +27,7 @@ pub struct TransferManagerRunner {
 struct Handle {
     config: BenchmarkConfig,
     transfer_manager: aws_s3_transfer_manager::Client,
-    random_data_for_upload:&'static [u8]
+    random_data_for_upload: Bytes,
 }
 
 impl TransferManagerRunner {
@@ -52,8 +55,11 @@ impl TransferManagerRunner {
                 .try_into()
                 .unwrap()
         };
-        let mut random_data_for_upload = Vec::new(); 
-        random_data_for_upload.resize_with(upload_data_size, rand::random::<u8>);
+        let random_data_for_upload: Bytes = {
+            let mut data = Vec::new(); 
+            data.resize_with(upload_data_size, rand::random::<u8>);
+            data.into()
+        };
 
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()
@@ -68,7 +74,7 @@ impl TransferManagerRunner {
             handle: Arc::new(Handle {
                 config,
                 transfer_manager,
-                random_data_for_upload: Box::leak(random_data_for_upload.into_boxed_slice()),
+                random_data_for_upload,
             }),
         }
     }
@@ -139,8 +145,9 @@ impl TransferManagerRunner {
 
         let stream = match self.config().workload.files_on_disk {
             true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
-            false => InputStream::from_static(self.handle.random_data_for_upload), 
+            false => self.handle.random_data_for_upload.clone().into(), 
         };
+
 
         self.handle
             .transfer_manager

@@ -1704,6 +1704,7 @@ dependencies = [
  "aws-config",
  "aws-s3-transfer-manager",
  "aws-sdk-s3",
+ "bytes",
  "clap",
  "futures",
  "rand",

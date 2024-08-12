@@ -30,6 +30,9 @@ jobs:
     - name: Lint s3-benchrunner-java
       run: python scripts/lint.py java
 
+    - name: Lint s3-benchrunner-rust
+      run: python scripts/lint.py rust
+
     - name: Check that workload.run.json files are up to date
       # build workloads and see if any files change
       run: |

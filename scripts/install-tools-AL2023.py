@@ -33,10 +33,7 @@ run(['sudo', 'dnf', 'install', '-y',
 # (the version in dnf is too old, in July 2024 it was the 1+ year old rust 1.68)
 # do NOT use sudo with rustup
 rustup_url = 'https://sh.rustup.rs'
-print(f'downloading: {rustup_url}...')
-rustup_text = urllib.request.urlopen(rustup_url).read().decode()
 rustup_filepath = '/tmp/rustup.sh'
-with open(rustup_filepath, 'w') as f:
-    f.write(rustup_text)
-
+print(f'downloading: {rustup_url} -> {rustup_filepath} ...')
+urllib.request.urlretrieve(rustup_url, rustup_filepath)
 run(['sh', rustup_filepath, '-y'])

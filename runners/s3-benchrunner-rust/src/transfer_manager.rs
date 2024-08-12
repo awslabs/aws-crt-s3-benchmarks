@@ -13,10 +13,8 @@ use tokio::task::JoinSet;
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
-
 };
 use bytes::Bytes;
-
 
 /// Benchmark runner using aws-s3-transfer-manager
 #[derive(Clone)]
@@ -46,7 +44,9 @@ impl TransferManagerRunner {
         let upload_data_size: usize = if config.workload.files_on_disk {
             0
         } else {
-            config.workload.tasks
+            config
+                .workload
+                .tasks
                 .iter()
                 .filter(|task| task.action == TaskAction::Upload)
                 .map(|task| task.size)
@@ -56,7 +56,7 @@ impl TransferManagerRunner {
                 .unwrap()
         };
         let random_data_for_upload: Bytes = {
-            let mut data = Vec::new(); 
+            let mut data = Vec::new();
             data.resize_with(upload_data_size, rand::random::<u8>);
             data.into()
         };
@@ -145,9 +145,8 @@ impl TransferManagerRunner {
 
         let stream = match self.config().workload.files_on_disk {
             true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
-            false => self.handle.random_data_for_upload.clone().into(), 
+            false => self.handle.random_data_for_upload.clone().into(),
         };
-
 
         self.handle
             .transfer_manager

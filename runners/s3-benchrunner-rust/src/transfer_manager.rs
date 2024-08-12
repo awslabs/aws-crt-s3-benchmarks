@@ -24,6 +24,7 @@ pub struct TransferManagerRunner {
 struct Handle {
     config: BenchmarkConfig,
     transfer_manager: aws_s3_transfer_manager::Client,
+    random_data_for_upload:&'static [u8]
 }
 
 impl TransferManagerRunner {
@@ -38,6 +39,22 @@ impl TransferManagerRunner {
         let num_objects = config.workload.tasks.len();
         let concurrency_per_object = (total_concurrency / num_objects).max(1);
 
+        // Create random buffer to upload
+        let upload_data_size: usize = if config.workload.files_on_disk {
+            0
+        } else {
+            config.workload.tasks
+                .iter()
+                .filter(|task| task.action == TaskAction::Upload)
+                .map(|task| task.size)
+                .max()
+                .unwrap_or(0)
+                .try_into()
+                .unwrap()
+        };
+        let mut random_data_for_upload = Vec::new(); 
+        random_data_for_upload.resize_with(upload_data_size, rand::random::<u8>);
+
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()
             .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
@@ -51,6 +68,7 @@ impl TransferManagerRunner {
             handle: Arc::new(Handle {
                 config,
                 transfer_manager,
+                random_data_for_upload: Box::leak(random_data_for_upload.into_boxed_slice()),
             }),
         }
     }
@@ -121,12 +139,7 @@ impl TransferManagerRunner {
 
         let stream = match self.config().workload.files_on_disk {
             true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
-            false => {
-                // TODO: What is a better way to do this?
-                let mut data = Vec::new();
-                data.resize_with(task_config.size.try_into().unwrap(), Default::default);
-                data.into()
-            }
+            false => InputStream::from_static(self.handle.random_data_for_upload), 
         };
 
         self.handle

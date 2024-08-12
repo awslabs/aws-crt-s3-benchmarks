@@ -59,7 +59,7 @@ pub struct TaskConfig {
 }
 
 /// Possible values for the "action" field of the workload's JSON file
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum TaskAction {
     Download,

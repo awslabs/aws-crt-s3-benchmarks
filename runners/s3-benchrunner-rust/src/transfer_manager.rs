@@ -143,9 +143,10 @@ impl TransferManagerRunner {
     async fn upload(&self, task_config: &TaskConfig) -> Result<()> {
         let key = &task_config.key;
 
-        let stream = match self.config().workload.files_on_disk {
-            true => InputStream::from_path(key).with_context(|| "Failed to create stream")?,
-            false => self.handle.random_data_for_upload.clone().into(),
+        let stream = if self.config().workload.files_on_disk {
+            InputStream::from_path(key).with_context(|| "Failed to create stream")?
+        } else {
+            self.handle.random_data_for_upload.clone().into()
         };
 
         self.handle

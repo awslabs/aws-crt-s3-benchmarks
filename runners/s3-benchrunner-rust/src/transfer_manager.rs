@@ -56,6 +56,7 @@ impl TransferManagerRunner {
                 .unwrap()
         };
         let random_data_for_upload: Bytes = {
+            // TODO: More efficient way to generate random buffer
             let mut data = Vec::new();
             data.resize_with(upload_data_size, rand::random::<u8>);
             data.into()

@@ -57,7 +57,7 @@ impl TransferManagerRunner {
         };
         let random_data_for_upload: Bytes = {
             let mut rng = fastrand::Rng::new();
-            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(10_000).collect();
+            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
             data.into()
         };
 

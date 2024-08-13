@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{iter::repeat_with, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -56,9 +56,8 @@ impl TransferManagerRunner {
                 .unwrap()
         };
         let random_data_for_upload: Bytes = {
-            // TODO: More efficient way to generate random buffer
-            let mut data = Vec::new();
-            data.resize_with(upload_data_size, rand::random::<u8>);
+            let mut rng = fastrand::Rng::new();
+            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(10_000).collect();
             data.into()
         };
 

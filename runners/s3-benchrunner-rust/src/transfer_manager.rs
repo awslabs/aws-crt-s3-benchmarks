@@ -146,7 +146,10 @@ impl TransferManagerRunner {
         let stream = if self.config().workload.files_on_disk {
             InputStream::from_path(key).with_context(|| "Failed to create stream")?
         } else {
-            self.handle.random_data_for_upload.slice(0..(task_config.size as usize)).into()
+            self.handle
+                .random_data_for_upload
+                .slice(0..(task_config.size as usize))
+                .into()
         };
 
         self.handle

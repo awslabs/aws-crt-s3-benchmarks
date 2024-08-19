@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.86"
 async-trait = "0.1.81"
 aws-config = "1.5.4"
-aws-s3-transfer-manager = { git = "ssh://git@github.com/awslabs/aws-s3-transfer-manager-rs.git", rev = "fc227cc4d8bfe099ee6543581862a306da143c8c" }
+aws-s3-transfer-manager = { git = "ssh://git@github.com/awslabs/aws-s3-transfer-manager-rs.git", rev = "b96966ce717b77e734df9d25d74c2f60810c52f8" }
 aws-sdk-s3 = "1.41.0"
 clap = { version = "4.5.9", features = ["derive"] }
 futures = "0.3.30"
@@ -15,3 +15,5 @@ serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
 thiserror = "1.0.62"
 tokio = { version = "1.38.1", features = ["io-util"] }
+bytes = "1"
+fastrand = "=2.1.0"

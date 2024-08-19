@@ -7,6 +7,7 @@ use aws_s3_transfer_manager::{
     io::InputStream,
     types::{ConcurrencySetting, PartSize},
 };
+use bytes::Bytes;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
@@ -14,7 +15,6 @@ use tokio::task::JoinSet;
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
 };
-use bytes::Bytes;
 
 /// Benchmark runner using aws-s3-transfer-manager
 #[derive(Clone)]
@@ -56,6 +56,9 @@ impl TransferManagerRunner {
                 .unwrap()
         };
         let random_data_for_upload: Bytes = {
+            // TODO: Can we optimize this further? Some ideas are trying a different library, using
+            // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
+            // times?
             let mut rng = fastrand::Rng::new();
             let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
             data.into()
@@ -105,7 +108,7 @@ impl TransferManagerRunner {
             .key(key)
             .send()
             .await
-            .with_context(|| format!("failed downloading: {key}"))?;
+            .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
         let mut dest_file = if self.config().workload.files_on_disk {

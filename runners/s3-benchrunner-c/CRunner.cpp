@@ -17,9 +17,20 @@
 
 using namespace std;
 
-// 256MiB is Java Transfer Mgr V2's default
-// TODO: Investigate. At time of writing, this noticeably impacts performance.
-#define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256
+// Read-backpressure (feature added Sept 2022) can prevent running out of
+// memory due to downloading data faster than we can write it to disk.
+// 256MiB is Java Transfer Mgr V2's default initial window (as of Aug 2024).
+// Unfortunately, this hurts the performance of single-file workloads
+// due to limiting the number of parts in-flight for a given file.
+// But the effect goes away if there are lots of files in a workload,
+// because the total number of parts in-flight gets high enough.
+//
+// The memory-limiter (feature added 1 yr later in Nov 2023) is another way
+// to prevent running out of memory.
+//
+// This benchmark can turn off backpressure and rely solely on the memory-limiter,
+// since it always processes data synchronously within the body callback.
+// #define BACKPRESSURE_INITIAL_READ_WINDOW_MiB 256 /* If commented out, backpressure is disabled */
 
 aws_byte_cursor toCursor(string_view src)
 {
@@ -178,6 +189,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         s3ClientConfig.enable_s3express = true;
     }
 
+#if defined(BACKPRESSURE_INITIAL_READ_WINDOW_MiB)
     // If writing data to disk, enable backpressure.
     // This prevents us from running out of memory due to downloading
     // data faster than we can write it to disk.
@@ -186,6 +198,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         s3ClientConfig.enable_read_backpressure = true;
         s3ClientConfig.initial_read_window = bytesFromMiB(BACKPRESSURE_INITIAL_READ_WINDOW_MiB);
     }
+#endif
 
     // struct aws_http_connection_monitoring_options httpMonitoringOpts;
     // AWS_ZERO_STRUCT(httpMonitoringOpts);

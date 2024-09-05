@@ -8,9 +8,7 @@ import software.amazon.awssdk.crt.http.HttpRequest;
 import software.amazon.awssdk.crt.http.HttpRequestBodyStream;
 import software.amazon.awssdk.crt.s3.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,7 +22,6 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
     TaskConfig config;
     S3MetaRequest metaRequest;
     CompletableFuture<Void> doneFuture;
-    ReadableByteChannel uploadFileChannel;
 
     CRTJavaTask(CRTJavaBenchmarkRunner runner, int taskI) {
         this.runner = runner;
@@ -111,14 +108,6 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
             Util.exitWithError("S3MetaRequest failed");
         } else {
             // CRTJavaTask succeeded. Clean up...
-            try {
-                if (uploadFileChannel != null) {
-                    uploadFileChannel.close();
-                }
-            } catch (IOException e) {
-                Util.exitWithError("Failed closing file: " + e.toString());
-            }
-
             // work around API-gotcha where callbacks can fire on other threads
             // before makeMetaRequest() has returned
             synchronized (this) {

@@ -10,7 +10,7 @@
 
   <properties>
     <!-- build with -Dawscrt.version=1.0.0-SNAPSHOT to use the locally installed dev version) -->
-    <awscrt.version>[0.30,)</awscrt.version>
+    <awscrt.version>[0.30.10,)</awscrt.version>
     <aws.sdk.version>[2.27,)</aws.sdk.version>
 
     <maven.compiler.release>17</maven.compiler.release>

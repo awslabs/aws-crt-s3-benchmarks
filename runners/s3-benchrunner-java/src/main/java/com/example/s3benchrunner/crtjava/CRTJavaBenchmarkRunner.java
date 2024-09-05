@@ -78,7 +78,7 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
         // If writing data to disk, enable backpressure.
         // This prevents us from running out of memory due to downloading
         // data faster than we can write it to disk.
-        if (config.filesOnDisk) {
+        if (config.filesOnDisk && Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB != 0) {
             s3ClientOpts.withReadBackpressureEnabled(true);
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         }

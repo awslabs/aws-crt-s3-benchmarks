@@ -11,8 +11,9 @@ public class Main {
     /////////////// BEGIN ARBITRARY HARDCODED VALUES ///////////////
 
     // 256MiB is Java Transfer Mgr v2 default.
-    // TODO: Investigate. At time of writing, this noticeably impacts performance.
-    public static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 256;
+    // This benchmark can turn off backpressure and rely solely on the
+    // memory-limiter.
+    public static final int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 0;
 
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 

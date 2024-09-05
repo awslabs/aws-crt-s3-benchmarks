@@ -76,14 +76,6 @@ class Task
     promise<void> donePromise;
     future<void> doneFuture;
 
-    FILE *downloadFile = NULL;
-
-    static int onDownloadData(
-        struct aws_s3_meta_request *meta_request,
-        const struct aws_byte_cursor *body,
-        uint64_t range_start,
-        void *user_data);
-
     static void onFinished(
         struct aws_s3_meta_request *meta_request,
         const struct aws_s3_meta_request_result *meta_request_result,
@@ -295,10 +287,7 @@ Task::Task(CRunner &runner, size_t taskI)
 
         if (runner.config.filesOnDisk)
         {
-            downloadFile = fopen(config.key.c_str(), "wb");
-            AWS_FATAL_ASSERT(downloadFile != NULL);
-
-            options.body_callback = Task::onDownloadData;
+            options.recv_filepath = toCursor(config.key);
         }
     }
     else
@@ -367,27 +356,8 @@ void Task::onFinished(
     }
 
     // clean up task
-    if (task->downloadFile != NULL)
-        fclose(task->downloadFile);
     aws_s3_meta_request_release(task->metaRequest);
     task->donePromise.set_value();
-}
-
-int Task::onDownloadData(
-    struct aws_s3_meta_request *meta_request,
-    const struct aws_byte_cursor *body,
-    uint64_t range_start,
-    void *user_data)
-{
-    auto *task = static_cast<Task *>(user_data);
-
-    size_t written = fwrite(body->ptr, 1, body->len, task->downloadFile);
-    AWS_FATAL_ASSERT(written == body->len);
-
-    // Increment read window so data will continue downloading
-    aws_s3_meta_request_increment_read_window(meta_request, body->len);
-
-    return AWS_OP_SUCCESS;
 }
 
 int main(int argc, char *argv[])

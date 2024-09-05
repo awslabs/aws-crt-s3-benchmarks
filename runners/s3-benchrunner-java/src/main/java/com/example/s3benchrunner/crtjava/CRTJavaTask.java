@@ -10,12 +10,9 @@ import software.amazon.awssdk.crt.s3.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +25,6 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
     S3MetaRequest metaRequest;
     CompletableFuture<Void> doneFuture;
     ReadableByteChannel uploadFileChannel;
-    WritableByteChannel downloadFileChannel;
 
     CRTJavaTask(CRTJavaBenchmarkRunner runner, int taskI) {
         this.runner = runner;
@@ -66,12 +62,7 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
             headers.add(new HttpHeader("Content-Length", "0"));
 
             if (runner.config.filesOnDisk) {
-                try {
-                    downloadFileChannel = FileChannel.open(Path.of(config.key),
-                            StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                options.withResponseFilePath(Path.of(config.key));
             }
         } else {
             throw new RuntimeException("Unknown task action: " + config.action);
@@ -103,21 +94,6 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
     }
 
     @Override
-    public int onResponseBody(ByteBuffer bodyBytesIn, long objectRangeStart, long objectRangeEnd) {
-        int amountReceived = bodyBytesIn.remaining();
-
-        if (downloadFileChannel != null) {
-            try {
-                downloadFileChannel.write(bodyBytesIn);
-            } catch (IOException e) {
-                Util.exitWithError("Failed writing to file: " + e.toString());
-            }
-        }
-
-        return amountReceived;
-    }
-
-    @Override
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
             // CRTJavaTask failed. Report error and kill program...
@@ -136,9 +112,6 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
         } else {
             // CRTJavaTask succeeded. Clean up...
             try {
-                if (downloadFileChannel != null) {
-                    downloadFileChannel.close();
-                }
                 if (uploadFileChannel != null) {
                     uploadFileChannel.close();
                 }

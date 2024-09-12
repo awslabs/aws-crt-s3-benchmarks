@@ -108,6 +108,10 @@ If your Batch job is stuck in the RUNNABLE state forever, use the
 * Insufficient service quotas for EC2 types (see `check-service-quotas.py`)
 * EC2 instance type unavailable (for rare EC2 types)
 
+Changes to the EC2 LaunchTemplate are ignored unless you completely destroy and re-deploy the stack (see [issue](https://github.com/aws/aws-cdk/issues/6686). Metrics data history will survive the apocalypse, so it's no big deal just annoying.
+
+If you need to update to the new latest Amazon Linux, you'll also need to destroy and re-deploy the stack. Otherwise it sticks with the version it was first deployed with.
+
 ## Architecture
 
 The requirements driving this architecture are:

@@ -119,7 +119,7 @@ impl TransferManagerRunner {
         };
 
         let mut total_size = 0u64;
-        while let Some(chunk_result) = download_handle.body.next().await {
+        while let Some(chunk_result) = download_handle.body_mut().next().await {
             let chunk =
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
 

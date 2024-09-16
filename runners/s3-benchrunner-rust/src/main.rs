@@ -3,7 +3,7 @@ use std::process::exit;
 use std::time::Instant;
 
 use s3_benchrunner_rust::{
-    bytes_to_gigabits, prepare_run, BenchmarkConfig, Result, RunBenchmark, RunnerError,
+    bytes_to_gigabits, prepare_run, BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError,
     TransferManagerRunner,
 };
 
@@ -40,13 +40,15 @@ fn main() {
         .unwrap();
 
     match runtime.block_on(async_main(&args)) {
-        Err(RunnerError::Fail(e)) => {
-            panic!("{e:?}");
-        }
-        Err(RunnerError::SkipBenchmark(msg)) => {
-            eprintln!("Skipping benchmark - {msg}");
-            exit(123);
-        }
+        Err(e) => match e.downcast_ref::<SkipBenchmarkError>() {
+            None => {
+                panic!("{e:?}");
+            }
+            Some(msg) => {
+                eprintln!("Skipping benchmark - {msg}");
+                exit(123);
+            }
+        },
         Ok(()) => (),
     }
 }

@@ -6,21 +6,16 @@ use std::{fs::File, io::BufReader, path::Path};
 mod transfer_manager;
 pub use transfer_manager::TransferManagerRunner;
 
-pub type Result<T> = std::result::Result<T, RunnerError>;
+pub type Result<T> = anyhow::Result<T>;
 
 pub const MEBIBYTE: u64 = 1024 * 1024;
 pub const PART_SIZE: u64 = 8 * MEBIBYTE;
 
+/// Used when the runner knows it can't run a workload.
+/// It's not the user's fault, it's not a bug.
 #[derive(thiserror::Error, Debug)]
-pub enum RunnerError {
-    /// Used when the runner knows it can't run a workload.
-    /// It's not the user's fault, it's not a bug.
-    #[error("skipping benchmark - {0}")]
-    SkipBenchmark(String),
-
-    #[error(transparent)]
-    Fail(#[from] anyhow::Error),
-}
+#[error("skipping benchmark - {0}")]
+pub struct SkipBenchmarkError(String);
 
 pub fn bytes_to_gigabits(bytes: u64) -> f64 {
     let bits = bytes * 8;
@@ -93,17 +88,19 @@ impl BenchmarkConfig {
         let workload: WorkloadConfig = match serde_json::from_reader(json_reader) {
             Ok(workload) => workload,
             Err(e) => {
-                return Err(RunnerError::SkipBenchmark(format!(
+                return Err(SkipBenchmarkError(format!(
                     "Can't parse '{workload_path}'. Different version maybe? - {e}"
-                )))
+                ))
+                .into())
             }
         };
 
         if workload.version != 2 {
-            return Err(RunnerError::SkipBenchmark(format!(
+            return Err(SkipBenchmarkError(format!(
                 "Workload version not supported: {}",
                 workload.version
-            )));
+            ))
+            .into());
         };
 
         Ok(BenchmarkConfig {
@@ -144,7 +141,7 @@ pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
 
                 TaskAction::Upload => {
                     if !filepath.is_file() {
-                        return Err(RunnerError::Fail(anyhow!("file not found: {filepath:?}")));
+                        return Err(anyhow!("file not found: {filepath:?}"));
                     }
                 }
             }

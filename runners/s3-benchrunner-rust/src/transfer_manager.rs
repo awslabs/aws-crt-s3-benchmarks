@@ -13,7 +13,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
 
 use crate::{
-    BenchmarkConfig, Result, RunBenchmark, RunnerError, TaskAction, TaskConfig, PART_SIZE,
+    BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError, TaskAction, TaskConfig, PART_SIZE,
 };
 
 /// Benchmark runner using aws-s3-transfer-manager
@@ -86,9 +86,7 @@ impl TransferManagerRunner {
         let task_config = &self.config().workload.tasks[task_i];
 
         if self.config().workload.checksum.is_some() {
-            return Err(RunnerError::SkipBenchmark(
-                "checksums not yet implemented".to_string(),
-            ));
+            return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
         }
 
         match task_config.action {
@@ -178,7 +176,7 @@ impl RunBenchmark for TransferManagerRunner {
         // Spawn concurrent tasks for all uploads/downloads.
         // We want the benchmark to fail fast if anything goes wrong,
         // so we're using a JoinSet.
-        let mut task_set: JoinSet<std::result::Result<(), RunnerError>> = JoinSet::new();
+        let mut task_set: JoinSet<Result<()>> = JoinSet::new();
         for i in 0..self.config().workload.tasks.len() {
             task_set.spawn(self.clone().run_task(i));
         }

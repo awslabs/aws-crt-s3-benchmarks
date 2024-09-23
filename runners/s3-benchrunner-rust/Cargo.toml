@@ -17,3 +17,12 @@ thiserror = "1.0.62"
 tokio = { version = "1.38.1", features = ["io-util"] }
 bytes = "1"
 fastrand = "=2.1.0"
+tracing-subscriber = "0.3.18"
+tracing = "0.1.40"
+opentelemetry = { version = "0.23", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.23", default-features = false, features = ["trace", "rt-tokio"] }
+opentelemetry-stdout = { version = "0.4.0", features = ["trace", "metrics"] }
+opentelemetry-otlp = { version = "0.16", features = ["metrics"] }
+opentelemetry-semantic-conventions = "0.15.0"
+tracing-core = "0.1.28"
+tracing-opentelemetry = "0.24.0"

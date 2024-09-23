@@ -3,10 +3,9 @@ use std::process::exit;
 use std::time::Instant;
 
 use s3_benchrunner_rust::{
-    bytes_to_gigabits, prepare_run, BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError,
-    TransferManagerRunner,
+    bytes_to_gigabits, prepare_run, telemetry, BenchmarkConfig, Result, RunBenchmark,
+    SkipBenchmarkError, TransferManagerRunner,
 };
-
 #[derive(Parser)]
 #[command()]
 struct Args {
@@ -20,6 +19,8 @@ struct Args {
     region: String,
     #[arg(help = "Target throughput, in gigabits per second (e.g. \"100.0\" for c5n.18xlarge)")]
     target_throughput: f64,
+    #[arg(long, help = "Emit telemetry via OTLP/gRPC to http://localhost:4317")]
+    telemetry: bool,
 }
 
 #[derive(ValueEnum, Clone)]
@@ -54,6 +55,18 @@ fn main() {
 }
 
 async fn async_main(args: &Args) -> Result<()> {
+    let _telemetry_guard = if args.telemetry {
+        // If emitting telemetry, set that up as tracing_subscriber.
+        Some(telemetry::init_tracing_subscriber()?)
+    } else {
+        // Otherwise, set the default subscriber.
+        // prints to stdout, if env-var set like RUST_LOG=trace
+        tracing_subscriber::fmt::init();
+        None
+    };
+
+    tracing::info!("GRAEBM INFO EVENT");
+
     let config = BenchmarkConfig::new(
         &args.workload,
         &args.bucket,

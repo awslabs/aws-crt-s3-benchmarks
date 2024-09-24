@@ -232,6 +232,7 @@ dependencies = [
 [[package]]
 name = "aws-s3-transfer-manager"
 version = "0.1.0"
+source = "git+ssh://git@github.com/awslabs/aws-s3-transfer-manager-rs.git?rev=e929fac22a4aeb49b4ef1953324e8fcd54822aff#e929fac22a4aeb49b4ef1953324e8fcd54822aff"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -241,8 +242,10 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes",
+ "futures-util",
  "hyper",
  "path-clean",
+ "pin-project-lite",
  "tokio",
  "tower 0.5.1",
  "tracing",

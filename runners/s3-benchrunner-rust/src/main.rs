@@ -1,12 +1,13 @@
 use clap::{Parser, ValueEnum};
 use std::process::exit;
 use std::time::Instant;
+use tracing::{self, info_span, instrument, Instrument};
 
 use s3_benchrunner_rust::{
     bytes_to_gigabits, prepare_run, telemetry, BenchmarkConfig, Result, RunBenchmark,
     SkipBenchmarkError, TransferManagerRunner,
 };
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command()]
 struct Args {
     #[arg(value_enum, help = "ID of S3 library to use")]
@@ -23,7 +24,7 @@ struct Args {
     telemetry: bool,
 }
 
-#[derive(ValueEnum, Clone)]
+#[derive(ValueEnum, Clone, Debug)]
 enum S3ClientId {
     #[clap(name = "sdk-rust-tm", help = "use aws-s3-transfer-manager crate")]
     TransferManager,
@@ -32,16 +33,23 @@ enum S3ClientId {
     // SdkClient,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap();
+    let _telemetry_guard = if args.telemetry {
+        // If emitting telemetry, set that up as tracing_subscriber.
+        Some(telemetry::init_tracing_subscriber().unwrap())
+    } else {
+        // Otherwise, set the default subscriber,
+        // which prints to stdout if env-var set like RUST_LOG=trace
+        tracing_subscriber::fmt::init();
+        None
+    };
 
-    match runtime.block_on(async_main(&args)) {
-        Err(e) => match e.downcast_ref::<SkipBenchmarkError>() {
+    let result = execute(&args).await;
+    if let Err(e) = result {
+        match e.downcast_ref::<SkipBenchmarkError>() {
             None => {
                 panic!("{e:?}");
             }
@@ -49,38 +57,15 @@ fn main() {
                 eprintln!("Skipping benchmark - {msg}");
                 exit(123);
             }
-        },
-        Ok(()) => (),
+        }
     }
 }
 
-async fn async_main(args: &Args) -> Result<()> {
-    let _telemetry_guard = if args.telemetry {
-        // If emitting telemetry, set that up as tracing_subscriber.
-        Some(telemetry::init_tracing_subscriber()?)
-    } else {
-        // Otherwise, set the default subscriber.
-        // prints to stdout, if env-var set like RUST_LOG=trace
-        tracing_subscriber::fmt::init();
-        None
-    };
-
-    tracing::info!("GRAEBM INFO EVENT");
-
-    let config = BenchmarkConfig::new(
-        &args.workload,
-        &args.bucket,
-        &args.region,
-        args.target_throughput,
-    )?;
-
+#[instrument(name = "main")]
+async fn execute(args: &Args) -> Result<()> {
     // create appropriate benchmark runner
-    let runner: Box<dyn RunBenchmark> = match args.s3_client {
-        S3ClientId::TransferManager => {
-            let transfer_manager = TransferManagerRunner::new(config).await;
-            Box::new(transfer_manager)
-        }
-    };
+    let runner = new_runner(args).await?;
+
     let workload = &runner.config().workload;
     let bytes_per_run: u64 = workload.tasks.iter().map(|x| x.size).sum();
     let gigabits_per_run = bytes_to_gigabits(bytes_per_run);
@@ -92,7 +77,10 @@ async fn async_main(args: &Args) -> Result<()> {
 
         let run_start = Instant::now();
 
-        runner.run().await?;
+        runner
+            .run()
+            .instrument(info_span!("run", i = run_i))
+            .await?;
 
         let run_secs = run_start.elapsed().as_secs_f64();
         println!(
@@ -109,4 +97,21 @@ async fn async_main(args: &Args) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[instrument(skip_all, level = "debug")]
+async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
+    let config = BenchmarkConfig::new(
+        &args.workload,
+        &args.bucket,
+        &args.region,
+        args.target_throughput,
+    )?;
+
+    match args.s3_client {
+        S3ClientId::TransferManager => {
+            let transfer_manager = TransferManagerRunner::new(config).await;
+            Ok(Box::new(transfer_manager))
+        }
+    }
 }

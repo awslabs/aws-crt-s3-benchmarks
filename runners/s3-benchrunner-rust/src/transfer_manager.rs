@@ -7,10 +7,11 @@ use aws_s3_transfer_manager::{
     io::InputStream,
     types::{ConcurrencySetting, PartSize},
 };
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
+use tracing::{debug_span, info_span, Instrument};
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError, TaskAction, TaskConfig, PART_SIZE,
@@ -55,14 +56,15 @@ impl TransferManagerRunner {
                 .try_into()
                 .unwrap()
         };
-        let random_data_for_upload: Bytes = {
-            // TODO: Can we optimize this further? Some ideas are trying a different library, using
-            // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
-            // times?
-            let mut rng = fastrand::Rng::new();
-            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
-            data.into()
-        };
+        let random_data_for_upload: Bytes =
+            debug_span!("random_data_for_upload", size = upload_data_size).in_scope(|| {
+                // TODO: Can we optimize this further? Some ideas are trying a different library, using
+                // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
+                // times?
+                let mut rng = fastrand::Rng::new();
+                let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
+                data.into()
+            });
 
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()
@@ -82,7 +84,7 @@ impl TransferManagerRunner {
         }
     }
 
-    async fn run_task(self, task_i: usize) -> Result<()> {
+    async fn run_task(self, task_i: usize, parent_span: tracing::Span) -> Result<()> {
         let task_config = &self.config().workload.tasks[task_i];
 
         if self.config().workload.checksum.is_some() {
@@ -90,8 +92,16 @@ impl TransferManagerRunner {
         }
 
         match task_config.action {
-            TaskAction::Download => self.download(task_config).await,
-            TaskAction::Upload => self.upload(task_config).await,
+            TaskAction::Download => {
+                self.download(task_config)
+                    .instrument(info_span!(parent: parent_span, "download", key=task_config.key))
+                    .await
+            }
+            TaskAction::Upload => {
+                self.upload(task_config)
+                    .instrument(info_span!(parent: parent_span, "upload", key=task_config.key))
+                    .await
+            }
         }
     }
 
@@ -105,12 +115,14 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key(key)
             .send()
+            .instrument(info_span!("initial-send"))
             .await
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
         let mut dest_file = if self.config().workload.files_on_disk {
             let file = File::create(key)
+                .instrument(info_span!("file-open"))
                 .await
                 .with_context(|| format!("failed creating file: {key}"))?;
             Some(file)
@@ -119,20 +131,23 @@ impl TransferManagerRunner {
         };
 
         let mut total_size = 0u64;
-        while let Some(chunk_result) = download_handle.body_mut().next().await {
-            let chunk =
+        while let Some(chunk_result) = download_handle
+            .body_mut()
+            .next()
+            .instrument(info_span!("body-next"))
+            .await
+        {
+            let mut chunk =
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
 
-            for segment in chunk.into_segments() {
-                // if files_on_disk: write to file
-                if let Some(dest_file) = &mut dest_file {
-                    dest_file
-                        .write_all(&segment)
-                        .await
-                        .with_context(|| format!("failed writing file: {key}"))?;
-                }
+            let chunk_size = chunk.remaining();
+            total_size += chunk_size as u64;
 
-                total_size += segment.len() as u64;
+            if let Some(dest_file) = &mut dest_file {
+                dest_file
+                    .write_all_buf(&mut chunk)
+                    .instrument(info_span!("file-write", bytes = chunk_size))
+                    .await?;
             }
         }
 
@@ -153,16 +168,21 @@ impl TransferManagerRunner {
                 .into()
         };
 
-        self.handle
+        let upload_handle = self
+            .handle
             .transfer_manager
             .upload()
             .bucket(&self.config().bucket)
             .key(key)
             .body(stream)
             .send()
+            .instrument(info_span!("initial-send"))
             .await
-            .with_context(|| format!("failed starting upload: {key}"))?
+            .with_context(|| format!("failed starting upload: {key}"))?;
+
+        upload_handle
             .join()
+            .instrument(info_span!("join"))
             .await
             .with_context(|| format!("failed uploading: {key}"))?;
 
@@ -178,7 +198,9 @@ impl RunBenchmark for TransferManagerRunner {
         // so we're using a JoinSet.
         let mut task_set: JoinSet<Result<()>> = JoinSet::new();
         for i in 0..self.config().workload.tasks.len() {
-            task_set.spawn(self.clone().run_task(i));
+            let parent_span_of_task = tracing::Span::current();
+            let task = self.clone().run_task(i, parent_span_of_task);
+            task_set.spawn(task);
         }
 
         while let Some(join_result) = task_set.join_next().await {

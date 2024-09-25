@@ -1,5 +1,13 @@
 //! code adapted from: https://github.com/tokio-rs/tracing-opentelemetry/blob/v0.24.0/examples/opentelemetry-otlp.rs
 
+// Avoid adding `use` declarations to the top of this file.
+// If you MUST shorten a path, add the `use` within a function.
+// The examples this code is adapted from had `use` declarations, and
+// I (graebm) found it hard to understand what all the boilerplate was doing.
+// With full paths, it's clear that the boilerplate is about tying together
+// different ecosystems (`opentelemetry` vs `tracing`). These ecosystems
+// split their features among many crates, and full paths make it more clear.
+
 use anyhow::Context;
 
 use crate::Result;

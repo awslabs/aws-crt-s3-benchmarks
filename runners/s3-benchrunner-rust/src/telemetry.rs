@@ -58,6 +58,14 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
 
     // We want data emitted from the `tracing` crate to be exported as OpenTelemetry data.
     // To do this, register an `OpenTelemetryLayer` as a `tracing_subscriber`.
+    //
+    // TODO: stop using `tracing_opentelemetry::OpenTelemetryLayer` (from makers of Tokio)
+    // when OpenTelemetry adds `tracing` integration in the OpenTelemetry SDK itself.
+    // - We've had issues where these crates don't all work together:
+    //   https://github.com/tokio-rs/tracing-opentelemetry/issues/159
+    // - OpenTelemetry says they're working on adding on their own integration:
+    //   https://github.com/open-telemetry/opentelemetry-rust/issues/1571#issuecomment-2258910019)
+
     use tracing_subscriber::prelude::*;
 
     tracing_subscriber::registry()

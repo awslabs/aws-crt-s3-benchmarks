@@ -14,7 +14,7 @@ This produces: `target/release/s3-benchrunner-rust`
 ## Running
 
 ```
-Usage: s3-benchrunner-rust <S3_CLIENT> <WORKLOAD> <BUCKET> <REGION> <TARGET_THROUGHPUT>
+Usage: s3-benchrunner-rust [OPTIONS] <S3_CLIENT> <WORKLOAD> <BUCKET> <REGION> <TARGET_THROUGHPUT>
 
 Arguments:
   <S3_CLIENT>
@@ -36,8 +36,19 @@ Arguments:
           Target throughput, in gigabits per second (e.g. "100.0" for c5n.18xlarge)
 
 Options:
+      --telemetry
+          Emit telemetry via OTLP/gRPC to http://localhost:4317
+
   -h, --help
           Print help (see a summary with '-h')
 ```
 
 See further instructions [here](../../README.md#run-a-benchmark).
+
+### Viewing Telemetry
+
+Use the `--telemetry` flag to export OpenTelemetry data to  http://localhost:4317 as OTLP/gRPC payloads.
+
+The simplest way I know collect and view this data is with [Jaeger All in One](https://www.jaegertracing.io/docs/latest/getting-started/) or [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer?tab=readme-ov-file#getting-started). Get one of these running, run the benchmark with the `--telemetry` flag, then view the data in your browser.
+
+TODO: document how to collect and view data from a non-local run.

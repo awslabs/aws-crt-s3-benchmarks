@@ -2,7 +2,6 @@ use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use serde::Deserialize;
 use std::{fs::File, io::BufReader, path::Path};
-use tracing::instrument;
 
 pub mod telemetry;
 
@@ -122,7 +121,6 @@ pub trait RunBenchmark {
 }
 
 // Do prep work between runs, before timers starts (e.g. create intermediate directories)
-#[instrument(skip_all, level = "debug")]
 pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
     if workload.files_on_disk {
         for task_config in &workload.tasks {

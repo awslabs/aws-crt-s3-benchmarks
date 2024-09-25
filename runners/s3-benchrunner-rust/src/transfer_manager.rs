@@ -11,7 +11,7 @@ use bytes::{Buf, Bytes};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
-use tracing::{debug_span, info_span, Instrument};
+use tracing::{info_span, Instrument};
 
 use crate::{
     BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError, TaskAction, TaskConfig, PART_SIZE,
@@ -56,15 +56,14 @@ impl TransferManagerRunner {
                 .try_into()
                 .unwrap()
         };
-        let random_data_for_upload: Bytes =
-            debug_span!("random_data_for_upload", size = upload_data_size).in_scope(|| {
-                // TODO: Can we optimize this further? Some ideas are trying a different library, using
-                // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
-                // times?
-                let mut rng = fastrand::Rng::new();
-                let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
-                data.into()
-            });
+        let random_data_for_upload: Bytes = {
+            // TODO: Can we optimize this further? Some ideas are trying a different library, using
+            // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
+            // times?
+            let mut rng = fastrand::Rng::new();
+            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
+            data.into()
+        };
 
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()

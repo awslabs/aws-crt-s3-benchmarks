@@ -99,7 +99,6 @@ async fn execute(args: &Args) -> Result<()> {
     Ok(())
 }
 
-#[instrument(skip_all, level = "debug")]
 async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
     let config = BenchmarkConfig::new(
         &args.workload,

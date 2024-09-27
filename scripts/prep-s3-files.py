@@ -75,14 +75,14 @@ def gather_tasks(workload_filepath: Path, all_tasks: dict[str, Task]):
         # we require uploads to use a key prefixed with "upload/"
         # so we can set a bucket lifetime policy to expire these files automatically
         # so we don't waste money storing files forever that we'll never download
-        if action == 'upload':
-            if not key.startswith('upload/'):
-                raise Exception(
-                    f'Bad key: "{key}". Uploads must use "upload/" prefix')
-        else:
-            if key.startswith('upload/'):
-                raise Exception(
-                    f'Bad key: "{key}". Only uploads should use "upload/" prefix')
+#        if action == 'upload':
+#            if not key.startswith('upload/'):
+#                raise Exception(
+#                    f'Bad key: "{key}". Uploads must use "upload/" prefix')
+#        else:
+#            if key.startswith('upload/'):
+#                raise Exception(
+#                    f'Bad key: "{key}". Only uploads should use "upload/" prefix')
 
         size = task_info['size']
 

@@ -8,52 +8,43 @@
 // different ecosystems (`opentelemetry` vs `tracing`). These ecosystems
 // split their features among many crates, and full paths make it more clear.
 
-use anyhow::Context;
+use std::env;
 
 use crate::Result;
 
 // Create OTEL Resource (the entity that produces telemetry)
 fn otel_resource() -> opentelemetry_sdk::Resource {
     use opentelemetry::KeyValue;
-    use opentelemetry_semantic_conventions::{
-        resource::{DEPLOYMENT_ENVIRONMENT, SERVICE_NAME, SERVICE_VERSION},
-        SCHEMA_URL,
-    };
+    use opentelemetry_sdk::Resource;
+    use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
 
-    opentelemetry_sdk::Resource::from_schema_url(
-        [
-            KeyValue::new(SERVICE_NAME, env!("CARGO_PKG_NAME")),
-            KeyValue::new(SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
-            KeyValue::new(DEPLOYMENT_ENVIRONMENT, "develop"),
-        ],
-        SCHEMA_URL,
-    )
+    Resource::default().merge(&Resource::new(vec![KeyValue::new(
+        SERVICE_NAME,
+        env!("CARGO_PKG_NAME"),
+    )]))
 }
 
-// Construct OpenTelemetry Tracer
-fn new_otel_tracer() -> Result<opentelemetry_sdk::trace::Tracer> {
-    use opentelemetry_sdk::trace::Sampler;
-
-    opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_trace_config(
+// Construct OpenTelemetry TracerProvider
+fn new_otel_tracer_provider() -> opentelemetry_sdk::trace::TracerProvider {
+    opentelemetry_sdk::trace::TracerProvider::builder()
+        .with_config(
             opentelemetry_sdk::trace::Config::default()
-                // Customize sampling strategy
-                .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
-                    1.0,
-                ))))
                 // If export trace to AWS X-Ray, you can use XrayIdGenerator
                 .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
                 .with_resource(otel_resource()),
         )
-        .with_batch_config(opentelemetry_sdk::trace::BatchConfig::default())
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
-        .install_batch(opentelemetry_sdk::runtime::Tokio)
-        .with_context(|| format!(""))
+        // .with_simple_exporter(opentelemetry_stdout::SpanExporter::default())
+        .with_batch_exporter(
+            opentelemetry_stdout::SpanExporter::default(),
+            opentelemetry_sdk::runtime::Tokio,
+        )
+        .build()
 }
 
 /// TelemetryGuard ensures data gets flushed when the guard goes out of scope.
-pub struct TelemetryGuard {}
+pub struct TelemetryGuard {
+    otel_tracer_provider: opentelemetry_sdk::trace::TracerProvider,
+}
 
 impl Drop for TelemetryGuard {
     fn drop(&mut self) {
@@ -62,7 +53,11 @@ impl Drop for TelemetryGuard {
 }
 
 pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
-    let otel_tracer = new_otel_tracer()?;
+
+    let otel_tracer_provider = new_otel_tracer_provider();
+
+    use opentelemetry::trace::TracerProvider as _;
+    let otel_tracer = otel_tracer_provider.tracer(env!("CARGO_PKG_NAME"));
 
     // We want data emitted from the `tracing` crate to be exported as OpenTelemetry data.
     // To do this, register an `OpenTelemetryLayer` as a `tracing_subscriber`.
@@ -76,12 +71,26 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
 
     use tracing_subscriber::prelude::*;
 
+    let filter = tracing_subscriber::EnvFilter::new("info")
+        .add_directive("s3_benchrunner_rust=info".parse().unwrap())
+        .add_directive("aws_s3_transfer_manager=debug".parse().unwrap());
+
     tracing_subscriber::registry()
-        .with(tracing_subscriber::filter::LevelFilter::from_level(
-            tracing::Level::INFO,
-        ))
+        .with(filter)
         .with(tracing_opentelemetry::OpenTelemetryLayer::new(otel_tracer))
         .init();
 
-    Ok(TelemetryGuard {})
+    Ok(TelemetryGuard { otel_tracer_provider })
+}
+
+impl TelemetryGuard {
+    pub fn flush(&self) {
+        for flush_result in self.otel_tracer_provider.force_flush() {
+            if let Err(e) = flush_result {
+                // don't treat as fatal error
+                eprintln!("Failed to flush telemetry traces: {e:?}");
+                return;
+            }
+        }
+    }
 }

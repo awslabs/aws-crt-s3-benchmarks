@@ -37,16 +37,6 @@ enum S3ClientId {
 async fn main() {
     let args = Args::parse();
 
-    let _telemetry_guard = if args.telemetry {
-        // If emitting telemetry, set that up as tracing_subscriber.
-        Some(telemetry::init_tracing_subscriber().unwrap())
-    } else {
-        // Otherwise, set the default subscriber,
-        // which prints to stdout if env-var set like RUST_LOG=trace
-        tracing_subscriber::fmt::init();
-        None
-    };
-
     let result = execute(&args).await;
     if let Err(e) = result {
         match e.downcast_ref::<SkipBenchmarkError>() {
@@ -63,6 +53,16 @@ async fn main() {
 
 #[instrument(name = "main")]
 async fn execute(args: &Args) -> Result<()> {
+    let telemetry_guard = if args.telemetry {
+        // If emitting telemetry, set that up as tracing_subscriber.
+        Some(telemetry::init_tracing_subscriber().unwrap())
+    } else {
+        // Otherwise, set the default subscriber,
+        // which prints to stdout if env-var set like RUST_LOG=trace
+        tracing_subscriber::fmt::init();
+        None
+    };
+
     // create appropriate benchmark runner
     let runner = new_runner(args).await?;
 
@@ -83,7 +83,13 @@ async fn execute(args: &Args) -> Result<()> {
             .await?;
 
         let run_secs = run_start.elapsed().as_secs_f64();
-        println!(
+
+        // flush any telemetry
+        if let Some(telemetry) = &telemetry_guard {
+            telemetry.flush();
+        }
+
+        eprintln!(
             "Run:{} Secs:{:.6} Gb/s:{:.6}",
             run_i + 1,
             run_secs,

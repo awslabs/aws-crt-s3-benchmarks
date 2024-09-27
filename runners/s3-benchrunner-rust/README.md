@@ -52,3 +52,7 @@ Use the `--telemetry` flag to export OpenTelemetry data to  http://localhost:431
 The simplest way I know collect and view this data is with [Jaeger All in One](https://www.jaegertracing.io/docs/latest/getting-started/) or [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer?tab=readme-ov-file#getting-started). Get one of these running, run the benchmark with the `--telemetry` flag, then view the data in your browser.
 
 TODO: document how to collect and view data from a non-local run.
+
+TEACH ABOUT PORT FORWARDING.
+WARN ABOUT VSCODE AUTO PORT FORWARDING
+MAYBE FIND A WAY TO TRICK VSCODE

@@ -53,7 +53,9 @@ fn new_otel_tracer() -> Result<opentelemetry_sdk::trace::Tracer> {
 }
 
 /// TelemetryGuard ensures data gets flushed when the guard goes out of scope.
-pub struct TelemetryGuard {}
+pub struct TelemetryGuard {
+    otel_tracer: opentelemetry_sdk::trace::Tracer,
+}
 
 impl Drop for TelemetryGuard {
     fn drop(&mut self) {
@@ -76,12 +78,29 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
 
     use tracing_subscriber::prelude::*;
 
+    let filter = tracing_subscriber::EnvFilter::new("info")
+        // .add_directive("s3_benchrunner_rust=info".parse().unwrap())
+        // .add_directive("aws_s3_transfer_manager=debug".parse().unwrap())
+        ;
+
     tracing_subscriber::registry()
-        .with(tracing_subscriber::filter::LevelFilter::from_level(
-            tracing::Level::INFO,
+        .with(filter)
+        .with(tracing_opentelemetry::OpenTelemetryLayer::new(
+            otel_tracer.clone(),
         ))
-        .with(tracing_opentelemetry::OpenTelemetryLayer::new(otel_tracer))
         .init();
 
-    Ok(TelemetryGuard {})
+    Ok(TelemetryGuard { otel_tracer })
+}
+
+impl TelemetryGuard {
+    pub fn try_flush(&self) {
+        let otel_sdk_tracer_provider = self.otel_tracer.provider().unwrap();
+        for flush_result in otel_sdk_tracer_provider.force_flush() {
+            if let Err(e) = flush_result {
+                eprintln!("Failed to flush telemetry traces: {e:?}");
+                return
+            }
+        }
+    }
 }

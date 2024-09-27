@@ -129,11 +129,12 @@ impl TransferManagerRunner {
             None
         };
 
+        let mut seq = 0u64;
         let mut total_size = 0u64;
         while let Some(chunk_result) = download_handle
             .body_mut()
             .next()
-            .instrument(info_span!("body-next"))
+            // .instrument(info_span!("body-next"))
             .await
         {
             let mut chunk =
@@ -141,6 +142,10 @@ impl TransferManagerRunner {
 
             let chunk_size = chunk.remaining();
             total_size += chunk_size as u64;
+
+            tracing::info!("body-next seq={seq} chunk_size={chunk_size} total_size={total_size}",);
+
+            seq += 1;
 
             if let Some(dest_file) = &mut dest_file {
                 dest_file

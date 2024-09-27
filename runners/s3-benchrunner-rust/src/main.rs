@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::process::exit;
 use std::time::Instant;
-use tracing::{self, info_span, instrument, Instrument};
+use tracing::{self, info_span, Instrument};
 
 use s3_benchrunner_rust::{
     bytes_to_gigabits, prepare_run, telemetry, BenchmarkConfig, Result, RunBenchmark,
@@ -37,16 +37,6 @@ enum S3ClientId {
 async fn main() {
     let args = Args::parse();
 
-    let _telemetry_guard = if args.telemetry {
-        // If emitting telemetry, set that up as tracing_subscriber.
-        Some(telemetry::init_tracing_subscriber().unwrap())
-    } else {
-        // Otherwise, set the default subscriber,
-        // which prints to stdout if env-var set like RUST_LOG=trace
-        tracing_subscriber::fmt::init();
-        None
-    };
-
     let result = execute(&args).await;
     if let Err(e) = result {
         match e.downcast_ref::<SkipBenchmarkError>() {
@@ -61,8 +51,17 @@ async fn main() {
     }
 }
 
-#[instrument(name = "main")]
 async fn execute(args: &Args) -> Result<()> {
+    let _telemetry_guard = if args.telemetry {
+        // If emitting telemetry, set that up as tracing_subscriber.
+        Some(telemetry::init_tracing_subscriber().unwrap())
+    } else {
+        // Otherwise, set the default subscriber,
+        // which prints to stdout if env-var set like RUST_LOG=trace
+        tracing_subscriber::fmt::init();
+        None
+    };
+
     // create appropriate benchmark runner
     let runner = new_runner(args).await?;
 
@@ -75,11 +74,20 @@ async fn execute(args: &Args) -> Result<()> {
     for run_i in 0..workload.max_repeat_count {
         prepare_run(workload)?;
 
+        if let Some(telemetry) = &_telemetry_guard {
+            telemetry.try_flush();
+        }
+
         let run_start = Instant::now();
 
         runner
             .run()
-            .instrument(info_span!("run", i = run_i))
+            // each "run" should be its own top-level span, so they can be inspected independently
+            .instrument(info_span!(
+                "run",
+                num = run_i + 1,
+                workload = workload_name(&args.workload)
+            ))
             .await?;
 
         let run_secs = run_start.elapsed().as_secs_f64();
@@ -89,6 +97,10 @@ async fn execute(args: &Args) -> Result<()> {
             run_secs,
             gigabits_per_run / run_secs
         );
+
+        if let Some(telemetry) = &_telemetry_guard {
+            telemetry.try_flush();
+        }
 
         // break out if we've exceeded max_repeat_secs
         if app_start.elapsed().as_secs_f64() >= workload.max_repeat_secs {
@@ -113,4 +125,11 @@ async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
             Ok(Box::new(transfer_manager))
         }
     }
+}
+
+// Given "path/to/my-workload.run.json" return "my-workload"
+fn workload_name(path: &str) -> &str {
+    let filename = path.rsplit('/').next().unwrap_or(path);
+    let without_extension = filename.split('.').next().unwrap_or(filename);
+    without_extension
 }

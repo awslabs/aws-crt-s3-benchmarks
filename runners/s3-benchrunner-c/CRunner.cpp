@@ -131,7 +131,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
     aws_logger_set(&logger);
 
-    eventLoopGroup = aws_event_loop_group_new_default(alloc, 0 /*max-threads*/, NULL /*shutdown-options*/);
+    eventLoopGroup = aws_event_loop_group_new_default(alloc, 256 /*max-threads*/, NULL /*shutdown-options*/);
     AWS_FATAL_ASSERT(eventLoopGroup != NULL);
 
     aws_host_resolver_default_options resolverOpts;
@@ -198,7 +198,17 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     // httpMonitoringOpts.allowable_throughput_failure_interval_milliseconds = 750;
     // s3ClientConfig.monitoring_options = &httpMonitoringOpts;
 
+    struct aws_byte_cursor *interface_names_array = (struct aws_byte_cursor *) aws_mem_calloc(alloc, 4, sizeof(struct aws_byte_cursor));
+    interface_names_array[0] = aws_byte_cursor_from_c_str("ens32");
+    interface_names_array[1] = aws_byte_cursor_from_c_str("ens33");
+    interface_names_array[2] = aws_byte_cursor_from_c_str("ens64");
+    interface_names_array[3] = aws_byte_cursor_from_c_str("ens65");
+
+    s3ClientConfig.network_interface_names_array = interface_names_array;
+    s3ClientConfig.num_network_interface_names = 4;
+    s3ClientConfig.memory_limit_in_bytes = 64L * 1024 * 1024 * 1024;
     s3Client = aws_s3_client_new(alloc, &s3ClientConfig);
+    aws_mem_release(alloc, interface_names_array);
     AWS_FATAL_ASSERT(s3Client != NULL);
 }
 

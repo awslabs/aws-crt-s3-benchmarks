@@ -12,6 +12,8 @@ use std::env;
 
 use crate::Result;
 
+mod trace_exporter;
+
 // Create OTEL Resource (the entity that produces telemetry)
 fn otel_resource() -> opentelemetry_sdk::Resource {
     use opentelemetry::KeyValue;
@@ -53,6 +55,8 @@ impl Drop for TelemetryGuard {
 }
 
 pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
+
+    let _deleteme = crate::telemetry::trace_exporter::JsonSpanExporter::new();
 
     let otel_tracer_provider = new_otel_tracer_provider();
 

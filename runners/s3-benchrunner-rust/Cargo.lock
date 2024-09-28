@@ -1888,6 +1888,7 @@ dependencies = [
  "bytes",
  "clap",
  "fastrand",
+ "futures-util",
  "opentelemetry",
  "opentelemetry-semantic-conventions",
  "opentelemetry-stdout",

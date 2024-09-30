@@ -74,11 +74,8 @@ async fn execute(args: &Args) -> Result<()> {
     for run_i in 0..workload.max_repeat_count {
         prepare_run(workload)?;
 
-        if let Some(telemetry) = &_telemetry_guard {
-            telemetry.try_flush();
-        }
-
         let run_start = Instant::now();
+        println!("Running...");
 
         runner
             .run()
@@ -100,6 +97,7 @@ async fn execute(args: &Args) -> Result<()> {
 
         if let Some(telemetry) = &_telemetry_guard {
             telemetry.try_flush();
+            println!("Flush complete");
         }
 
         // break out if we've exceeded max_repeat_secs

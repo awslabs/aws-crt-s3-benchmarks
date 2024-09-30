@@ -8,6 +8,8 @@
 // different ecosystems (`opentelemetry` vs `tracing`). These ecosystems
 // split their features among many crates, and full paths make it more clear.
 
+use std::usize;
+
 use anyhow::Context;
 
 use crate::Result;
@@ -46,7 +48,14 @@ fn new_otel_tracer() -> Result<opentelemetry_sdk::trace::Tracer> {
                 .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
                 .with_resource(otel_resource()),
         )
-        .with_batch_config(opentelemetry_sdk::trace::BatchConfig::default())
+        .with_batch_config(
+            opentelemetry_sdk::trace::BatchConfigBuilder::default()
+                .with_max_concurrent_exports(usize::MAX >> 3)
+                .with_max_export_batch_size(usize::MAX >> 3)
+                .with_max_queue_size(usize::MAX >> 3)
+                .with_scheduled_delay(std::time::Duration::from_secs(60))
+                .build(),
+        )
         .with_exporter(opentelemetry_otlp::new_exporter().tonic())
         .install_batch(opentelemetry_sdk::runtime::Tokio)
         .with_context(|| format!(""))
@@ -99,7 +108,7 @@ impl TelemetryGuard {
         for flush_result in otel_sdk_tracer_provider.force_flush() {
             if let Err(e) = flush_result {
                 eprintln!("Failed to flush telemetry traces: {e:?}");
-                return
+                return;
             }
         }
     }

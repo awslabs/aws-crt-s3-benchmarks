@@ -53,7 +53,6 @@ impl Drop for TelemetryGuard {
 }
 
 pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
-
     let otel_tracer_provider = new_otel_tracer_provider();
 
     use opentelemetry::trace::TracerProvider as _;
@@ -80,7 +79,9 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
         .with(tracing_opentelemetry::OpenTelemetryLayer::new(otel_tracer))
         .init();
 
-    Ok(TelemetryGuard { otel_tracer_provider })
+    Ok(TelemetryGuard {
+        otel_tracer_provider,
+    })
 }
 
 impl TelemetryGuard {

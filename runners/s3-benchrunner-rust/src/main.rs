@@ -75,6 +75,14 @@ async fn execute(args: &Args) -> Result<()> {
     for run_i in 0..workload.max_repeat_count {
         prepare_run(workload)?;
 
+        eprintln!("Starting run...");
+
+        let profiler_guard = pprof::ProfilerGuardBuilder::default()
+            .frequency(1000)
+            .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+            .build()
+            .unwrap();
+
         let run_start = Instant::now();
 
         runner
@@ -84,17 +92,27 @@ async fn execute(args: &Args) -> Result<()> {
 
         let run_secs = run_start.elapsed().as_secs_f64();
 
-        // flush any telemetry
-        if let Some(telemetry) = &telemetry_guard {
-            telemetry.flush();
-        }
-
         eprintln!(
             "Run:{} Secs:{:.6} Gb/s:{:.6}",
             run_i + 1,
             run_secs,
             gigabits_per_run / run_secs
         );
+
+        if let Ok(report) = profiler_guard.report().build() {
+            let file = std::fs::File::create(format!(
+                "flamegraph-run{}-{}gbps.svg",
+                run_i + 1,
+                (gigabits_per_run / run_secs) as u64
+            ))
+            .unwrap();
+            report.flamegraph(file).unwrap();
+        };
+
+        // flush any telemetry
+        if let Some(telemetry) = &telemetry_guard {
+            telemetry.flush();
+        }
 
         // break out if we've exceeded max_repeat_secs
         if app_start.elapsed().as_secs_f64() >= workload.max_repeat_secs {

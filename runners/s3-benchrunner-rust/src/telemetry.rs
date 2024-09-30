@@ -12,7 +12,8 @@ use std::env;
 
 use crate::Result;
 
-mod trace_exporter;
+pub mod common;
+pub mod trace;
 
 // Create OTEL Resource (the entity that produces telemetry)
 fn otel_resource() -> opentelemetry_sdk::Resource {
@@ -37,7 +38,7 @@ fn new_otel_tracer_provider() -> opentelemetry_sdk::trace::TracerProvider {
         )
         // .with_simple_exporter(opentelemetry_stdout::SpanExporter::default())
         .with_batch_exporter(
-            opentelemetry_stdout::SpanExporter::default(),
+            crate::telemetry::trace::SpanExporter::default(),
             opentelemetry_sdk::runtime::Tokio,
         )
         .build()
@@ -55,9 +56,6 @@ impl Drop for TelemetryGuard {
 }
 
 pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
-
-    let _deleteme = crate::telemetry::trace_exporter::JsonSpanExporter::new();
-
     let otel_tracer_provider = new_otel_tracer_provider();
 
     use opentelemetry::trace::TracerProvider as _;
@@ -84,7 +82,9 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
         .with(tracing_opentelemetry::OpenTelemetryLayer::new(otel_tracer))
         .init();
 
-    Ok(TelemetryGuard { otel_tracer_provider })
+    Ok(TelemetryGuard {
+        otel_tracer_provider,
+    })
 }
 
 impl TelemetryGuard {

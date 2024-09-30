@@ -88,9 +88,8 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
     use tracing_subscriber::prelude::*;
 
     let filter = tracing_subscriber::EnvFilter::new("info")
-        // .add_directive("s3_benchrunner_rust=info".parse().unwrap())
-        // .add_directive("aws_s3_transfer_manager=debug".parse().unwrap())
-        ;
+        .add_directive("s3_benchrunner_rust=info".parse().unwrap())
+        .add_directive("aws_s3_transfer_manager=debug".parse().unwrap());
 
     tracing_subscriber::registry()
         .with(filter)

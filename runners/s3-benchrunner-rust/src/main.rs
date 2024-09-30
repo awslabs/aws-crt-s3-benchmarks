@@ -74,6 +74,12 @@ async fn execute(args: &Args) -> Result<()> {
     for run_i in 0..workload.max_repeat_count {
         prepare_run(workload)?;
 
+        let profiler_guard = pprof::ProfilerGuardBuilder::default()
+            .frequency(1000)
+            .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+            .build()
+            .unwrap();
+
         let run_start = Instant::now();
         println!("Running...");
 
@@ -94,6 +100,16 @@ async fn execute(args: &Args) -> Result<()> {
             run_secs,
             gigabits_per_run / run_secs
         );
+
+        if let Ok(report) = profiler_guard.report().build() {
+            let file = std::fs::File::create(format!(
+                "flamegraph-run{}-{}gbps.svg",
+                run_i + 1,
+                (gigabits_per_run / run_secs) as u64
+            ))
+            .unwrap();
+            report.flamegraph(file).unwrap();
+        };
 
         if let Some(telemetry) = &_telemetry_guard {
             telemetry.try_flush();

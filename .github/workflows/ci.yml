@@ -40,7 +40,7 @@ jobs:
         git diff --exit-code
 
   Build:
-    runs-on: ubuntu-22.04 # latest at time of writing
+    runs-on: ubuntu-24.04 # latest at time of writing
     strategy:
       fail-fast: false
       matrix:
@@ -49,6 +49,7 @@ jobs:
           - cpp
           - java
           - python
+          - rust
     steps:
     - uses: actions/checkout@v4
 

@@ -1,4 +1,4 @@
-use std::{iter::repeat_with, sync::Arc};
+use std::{cmp::min, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -38,8 +38,6 @@ impl TransferManagerRunner {
 
         // Blugh, the user shouldn't need to manually configure concurrency like this.
         let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
-        let num_objects = config.workload.tasks.len();
-        let concurrency_per_object = (total_concurrency / num_objects).max(1);
 
         // Create random buffer to upload
         let upload_data_size: usize = if config.workload.files_on_disk {
@@ -56,18 +54,11 @@ impl TransferManagerRunner {
                 .try_into()
                 .unwrap()
         };
-        let random_data_for_upload: Bytes = {
-            // TODO: Can we optimize this further? Some ideas are trying a different library, using
-            // 64-bit numbers, or generating a smaller buffer and then concatenating it a bunch of
-            // times?
-            let mut rng = fastrand::Rng::new();
-            let data: Vec<u8> = repeat_with(|| rng.u8(..)).take(upload_data_size).collect();
-            data.into()
-        };
+        let random_data_for_upload = new_random_bytes(upload_data_size);
 
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()
-            .concurrency(ConcurrencySetting::Explicit(concurrency_per_object))
+            .concurrency(ConcurrencySetting::Explicit(total_concurrency))
             .part_size(PartSize::Target(PART_SIZE))
             .client(s3_client)
             .build();
@@ -222,4 +213,39 @@ impl RunBenchmark for TransferManagerRunner {
 fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
     let concurrency = target_throughput_gigabits_per_sec * 2.5;
     (concurrency as usize).max(10)
+}
+
+// Quickly generate a buffer of random data.
+// This is fancy because a naive approach can add MINUTES to each debug run,
+// and we want devs to iterate quickly.
+fn new_random_bytes(size: usize) -> Bytes {
+    // fastrand's fill() is the fastest we found.
+    // we also tested rand's fill_bytes(), and aws_lc_rs's SystemRandom.
+    let mut rng = fastrand::Rng::new();
+
+    // Generating randomness is slower then copying memory. Therefore, only fill SOME
+    // of the buffer with randomness, and fill the rest with copies of that randomness.
+    // In debug, with 30GiB, this trick reduces time from 172 sec -> 7 sec.
+
+    // We don't want any parts to be identical.
+    // Use something that won't fall on a part boundary as we copy it.
+    let rand_len = min(31415926, size); // approx 30MiB, digits of pi
+
+    // Avoid re-allocations by reserving exact amount
+    let mut data = Vec::<u8>::new();
+    data.reserve_exact(size);
+
+    // Fill the beginning with randomness.
+    unsafe {
+        // Unsafe set_len saves a half-second in debug, compared to resize().
+        data.set_len(rand_len);
+    }
+    rng.fill(&mut data);
+
+    // Copy randomness until it's the size we want
+    while data.len() < size {
+        let extend_len = min(data.len(), size - data.len());
+        data.extend_from_within(0..extend_len);
+    }
+    data.into()
 }

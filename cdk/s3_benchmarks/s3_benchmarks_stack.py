@@ -41,6 +41,7 @@ DEFAULT_INSTANCE_TYPES = [
 # since each one adds significantly to execution time.
 DEFAULT_S3_CLIENTS = {
     'crt-c': S3ClientProps(color=cloudwatch.Color.RED),
+    'sdk-rust-tm': S3ClientProps(color=cloudwatch.Color.ORANGE),
     'crt-java': S3ClientProps(color=cloudwatch.Color.GREEN),
     'sdk-java-client-crt': S3ClientProps(color=cloudwatch.Color.BROWN),
     'sdk-java-tm-classic': S3ClientProps(color='#ffd43b'),  # yellow
@@ -56,14 +57,16 @@ DEFAULT_S3_CLIENTS = {
 DEFAULT_WORKLOADS = [
     'download-max-throughput',  # how fast can we theoretically go?
     'upload-max-throughput',
+    'download-256KiB-10_000x',  # lots of small files
+    'upload-256KiB-10_000x',
     'download-30GiB-1x',  # very big file
     'upload-30GiB-1x',
+    'download-30GiB-1x-ram',  # no disk access to slow us down
+    'upload-30GiB-1x-ram',
     'download-5GiB-1x',  # moderately big file
     'upload-5GiB-1x',
     'download-5GiB-1x-ram',  # no disk access to slow us down
     'upload-5GiB-1x-ram',
-    'download-256KiB-10_000x',  # lots of small files
-    'upload-256KiB-10_000x',
 ]
 
 PER_INSTANCE_STORAGE_GiB = 500
@@ -455,9 +458,9 @@ class S3BenchmarksStack(Stack):
         events.Rule(
             self, "CanaryCronRule",
             # run nightly
-            # Note this is UTC so hour=8 means midnight PST
+            # Note this is UTC so hour=7 means 11pm PST
             schedule=events.Schedule.cron(
-                minute='0', hour='8'),
+                minute='0', hour='7'),
             targets=[events_targets.BatchJob(
                 job_queue_arn=self.orchestrator_job_queue.job_queue_arn,
                 job_queue_scope=self.orchestrator_job_queue,

@@ -72,8 +72,14 @@ if __name__ == '__main__':
     instance_type = s3_benchmarks.INSTANCE_TYPES[args.instance_type]
 
     # cd into tmp working dir
-    tmp_dir = Path(tempfile.mkdtemp(
-        prefix='s3-benchmarks-', dir=s3_benchmarks.PER_INSTANCE_WORK_DIR)).absolute()
+    try:
+        tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-',
+                                        dir=s3_benchmarks.PER_INSTANCE_WORK_DIR)).absolute()
+    except FileNotFoundError:
+        # if running locally, PER_INSTANCE_WORK_DIR may not exist,
+        # so fall back to normal /tmp dir
+        tmp_dir = Path(tempfile.mkdtemp(prefix='s3-benchmarks-')).absolute()
+
     os.chdir(tmp_dir)
     print(f"Using tmp dir: {tmp_dir}")
 

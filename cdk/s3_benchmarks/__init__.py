@@ -59,7 +59,7 @@ PER_INSTANCE_JOB_TIMEOUT_HOURS = 12.0
 
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.
-ORCHESTRATOR_JOB_TIMEOUT_HOURS = 12.0
+ORCHESTRATOR_JOB_TIMEOUT_HOURS = 23.0
 
 
 PER_INSTANCE_WORK_DIR = "/workdir"

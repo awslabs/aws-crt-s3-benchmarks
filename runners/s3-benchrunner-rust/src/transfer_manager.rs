@@ -1,4 +1,4 @@
-use std::{cmp::min, sync::Arc, time::Instant};
+use std::{cmp::min, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -54,9 +54,7 @@ impl TransferManagerRunner {
                 .try_into()
                 .unwrap()
         };
-        let start = Instant::now();
         let random_data_for_upload = new_random_bytes(upload_data_size);
-        println!("random: {}s", start.elapsed().as_secs_f64());
 
         let s3_client = aws_sdk_s3::Client::new(&sdk_config);
         let tm_config = aws_s3_transfer_manager::Config::builder()

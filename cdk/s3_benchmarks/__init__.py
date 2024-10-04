@@ -54,8 +54,8 @@ ORCHESTRATOR_INSTANCE_TYPE = InstanceType(
     bandwidth_Gbps=10, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_configuration=StorageConfiguration.EBS)
 
 # Timeout for job running on our slowest EC2 instance type,
-# running ALL benchmarking workloads, using ALL S3 clients.
-PER_INSTANCE_JOB_TIMEOUT_HOURS = 8.0
+# running ALL benchmarking workloads, using ALL S3 clients, and ALL buckets.
+PER_INSTANCE_JOB_TIMEOUT_HOURS = 12.0
 
 # Timeout for orchestrator to run each per-instance benchmarking job,
 # one after the other.

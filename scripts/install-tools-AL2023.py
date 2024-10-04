@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import os
+import os.path
 import shutil
 import urllib.request
 
@@ -37,3 +39,8 @@ rustup_filepath = '/tmp/rustup.sh'
 print(f'downloading: {rustup_url} -> {rustup_filepath} ...')
 urllib.request.urlretrieve(rustup_url, rustup_filepath)
 run(['sh', rustup_filepath, '-y'])
+
+# add rust to path, so current process can run it without reloading shell
+PATH = os.environ['PATH']
+if '.cargo/bin' not in PATH:
+    os.environ['PATH'] = f"{PATH}:{os.path.expanduser('~/.cargo/bin')}"

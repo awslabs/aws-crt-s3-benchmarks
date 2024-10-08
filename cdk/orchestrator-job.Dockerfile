@@ -1,4 +1,4 @@
-from amazonlinux:2023
+FROM amazonlinux:2023
 
 RUN dnf install -y python3-pip \
     && python3 -m pip install boto3

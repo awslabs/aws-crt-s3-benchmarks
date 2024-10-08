@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import os
-import os.path
 import shutil
 import urllib.request
 
@@ -31,16 +29,12 @@ run(['sudo', 'dnf', 'install', '-y',
      'python3-devel',  # for building aws-crt-python
      ])
 
-# install rust via rustup.sh
-# (the version in dnf is too old, in July 2024 it was the 1+ year old rust 1.68)
-# do NOT use sudo with rustup
-rustup_url = 'https://sh.rustup.rs'
-rustup_filepath = '/tmp/rustup.sh'
-print(f'downloading: {rustup_url} -> {rustup_filepath} ...')
-urllib.request.urlretrieve(rustup_url, rustup_filepath)
-run(['sh', rustup_filepath, '-y'])
-
-# add rust to path, so current process can run it without reloading shell
-PATH = os.environ['PATH']
-if '.cargo/bin' not in PATH:
-    os.environ['PATH'] = f"{PATH}:{os.path.expanduser('~/.cargo/bin')}"
+if not shutil.which('cargo'):
+    # install rust via rustup.sh
+    # (the version in dnf is too old, in July 2024 it was the 1+ year old rust 1.68)
+    # do NOT use sudo with rustup
+    rustup_url = 'https://sh.rustup.rs'
+    rustup_filepath = '/tmp/rustup.sh'
+    print(f'downloading: {rustup_url} -> {rustup_filepath} ...')
+    urllib.request.urlretrieve(rustup_url, rustup_filepath)
+    run(['sh', rustup_filepath, '-y'])

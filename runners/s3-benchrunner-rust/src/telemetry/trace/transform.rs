@@ -6,6 +6,8 @@ use crate::telemetry::common::{
 use serde::{Serialize, Serializer};
 use std::{borrow::Cow, collections::HashMap, time::SystemTime};
 
+use super::SdkSpanDataBatch;
+
 /// Transformed trace data that can be serialized
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,33 +16,32 @@ pub struct SpanData {
 }
 
 impl SpanData {
-    pub(crate) fn new(
-        sdk_spans: Vec<opentelemetry_sdk::export::trace::SpanData>,
-        sdk_resource: &opentelemetry_sdk::Resource,
-    ) -> Self {
+    pub(crate) fn new(sdk_span_batches: Vec<SdkSpanDataBatch>) -> Self {
         let mut resource_spans = HashMap::<AttributeSet, ResourceSpans>::new();
-        for sdk_span in sdk_spans {
-            let resource_schema_url = sdk_resource.schema_url().map(|s| s.to_string().into());
-            let schema_url = sdk_span.instrumentation_lib.schema_url.clone();
-            let scope = sdk_span.instrumentation_lib.clone().into();
-            let resource: Resource = sdk_resource.into();
+        for sdk_span_batch in sdk_span_batches {
+            let sdk_spans = sdk_span_batch.batch;
+            let sdk_resource = &sdk_span_batch.resource;
 
-            let rs = resource_spans
-                .entry(sdk_resource.into())
-                .or_insert_with(move || ResourceSpans {
-                    resource,
-                    scope_spans: Vec::with_capacity(1),
-                    schema_url: resource_schema_url,
-                });
+            for sdk_span in sdk_spans {
+                let scope = sdk_span.instrumentation_lib.clone().into();
 
-            match rs.scope_spans.iter_mut().find(|ss| ss.scope == scope) {
-                Some(ss) => ss.spans.push(sdk_span.into()),
-                None => rs.scope_spans.push(ScopeSpans {
-                    scope,
-                    spans: vec![sdk_span.into()],
-                    schema_url,
-                }),
-            };
+                let rs = resource_spans
+                    .entry(sdk_resource.into())
+                    .or_insert_with(move || ResourceSpans {
+                        resource: sdk_resource.into(),
+                        scope_spans: Vec::with_capacity(1),
+                        schema_url: sdk_resource.schema_url().map(|s| s.to_string().into()),
+                    });
+
+                match rs.scope_spans.iter_mut().find(|ss| ss.scope == scope) {
+                    Some(ss) => ss.spans.push(sdk_span.into()),
+                    None => rs.scope_spans.push(ScopeSpans {
+                        scope,
+                        schema_url: sdk_span.instrumentation_lib.schema_url.clone(),
+                        spans: vec![sdk_span.into()],
+                    }),
+                };
+            }
         }
 
         SpanData {

@@ -27,36 +27,31 @@ fn otel_resource() -> opentelemetry_sdk::Resource {
     )]))
 }
 
-// Construct OpenTelemetry TracerProvider
-fn new_otel_tracer_provider() -> opentelemetry_sdk::trace::TracerProvider {
-    opentelemetry_sdk::trace::TracerProvider::builder()
+pub struct Telemetry {
+    benchmark_trace_exporter: crate::telemetry::trace::SpanExporter,
+    otel_tracer_provider: opentelemetry_sdk::trace::TracerProvider,
+}
+
+impl Drop for Telemetry {
+    fn drop(&mut self) {
+        opentelemetry::global::shutdown_tracer_provider();
+    }
+}
+
+pub fn init_tracing_subscriber() -> Result<Telemetry> {
+    // Create our custom otel span exporter that queues up data until it's told to flush to a file
+    let benchmark_trace_exporter = crate::telemetry::trace::SpanExporter::new();
+
+    // Create otel tracer provider, which uses our exporter
+    let otel_tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_config(
             opentelemetry_sdk::trace::Config::default()
                 // If export trace to AWS X-Ray, you can use XrayIdGenerator
                 .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
                 .with_resource(otel_resource()),
         )
-        // .with_simple_exporter(opentelemetry_stdout::SpanExporter::default())
-        .with_batch_exporter(
-            crate::telemetry::trace::SpanExporter::default(),
-            opentelemetry_sdk::runtime::Tokio,
-        )
-        .build()
-}
-
-/// TelemetryGuard ensures data gets flushed when the guard goes out of scope.
-pub struct TelemetryGuard {
-    otel_tracer_provider: opentelemetry_sdk::trace::TracerProvider,
-}
-
-impl Drop for TelemetryGuard {
-    fn drop(&mut self) {
-        opentelemetry::global::shutdown_tracer_provider();
-    }
-}
-
-pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
-    let otel_tracer_provider = new_otel_tracer_provider();
+        .with_simple_exporter(benchmark_trace_exporter.clone())
+        .build();
 
     use opentelemetry::trace::TracerProvider as _;
     let otel_tracer = otel_tracer_provider.tracer(env!("CARGO_PKG_NAME"));
@@ -82,19 +77,27 @@ pub fn init_tracing_subscriber() -> Result<TelemetryGuard> {
         .with(tracing_opentelemetry::OpenTelemetryLayer::new(otel_tracer))
         .init();
 
-    Ok(TelemetryGuard {
+    Ok(Telemetry {
+        benchmark_trace_exporter,
         otel_tracer_provider,
     })
 }
 
-impl TelemetryGuard {
-    pub fn flush(&self) {
+impl Telemetry {
+    pub fn flush_to_file(&mut self, path: &str) {
+        // Ensure all otel data has been flushed to our custom exporter
         for flush_result in self.otel_tracer_provider.force_flush() {
             if let Err(e) = flush_result {
                 // don't treat as fatal error
-                eprintln!("Failed to flush telemetry traces: {e:?}");
-                return;
+                eprintln!("Failed to flush all telemetry traces: {e:?}");
+                break;
             }
+        }
+
+        // Have our exporter write all queued data to a file
+        if let Err(e) = self.benchmark_trace_exporter.flush_to_file(path) {
+            // don't treat as fatal error
+            eprintln!("Failed flushing telemetry traces to file: {e:?}");
         }
     }
 }

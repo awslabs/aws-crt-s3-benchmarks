@@ -1,21 +1,29 @@
 //! code adapted from: https://github.com/open-telemetry/opentelemetry-rust/blob/3193320fa6dc17e89a7bed6090000aef781ac29c/opentelemetry-stdout/src/trace/exporter.rs
 
+use anyhow::Context;
 use core::fmt;
 use futures_util::future::BoxFuture;
-use opentelemetry::trace::{TraceError, TraceResult};
 use opentelemetry_sdk::export::{self, trace::ExportResult};
-use std::io::{stdout, Write};
+use std::{
+    fs::File,
+    io::BufWriter,
+    sync::{Arc, Mutex},
+};
 
 use crate::telemetry::trace::transform::SpanData;
 use opentelemetry_sdk::resource::Resource;
 
-type Encoder = Box<dyn Fn(&mut dyn Write, SpanData) -> TraceResult<()> + Send + Sync>;
-
-/// An OpenTelemetry exporter that writes to stdout on export.
+/// An OpenTelemetry exporter that queues up spans, and flushes them to a file when it's told
+#[derive(Clone)]
 pub struct SpanExporter {
-    writer: Option<Box<dyn Write + Send + Sync>>,
-    encoder: Encoder,
+    queued_batches: Arc<Mutex<Vec<SdkSpanDataBatch>>>,
     resource: Resource,
+}
+
+/// A batch of SDK SpanData, and the associated resource
+pub struct SdkSpanDataBatch {
+    pub resource: Resource,
+    pub batch: Vec<export::trace::SpanData>,
 }
 
 impl fmt::Debug for SpanExporter {
@@ -24,106 +32,53 @@ impl fmt::Debug for SpanExporter {
     }
 }
 
-impl SpanExporter {
-    /// Create a builder to configure this exporter.
-    pub fn builder() -> SpanExporterBuilder {
-        SpanExporterBuilder::default()
-    }
-}
-
-impl Default for SpanExporter {
-    fn default() -> Self {
-        SpanExporterBuilder::default().build()
-    }
-}
-
 impl opentelemetry_sdk::export::trace::SpanExporter for SpanExporter {
     fn export(&mut self, batch: Vec<export::trace::SpanData>) -> BoxFuture<'static, ExportResult> {
-        let res = if let Some(writer) = &mut self.writer {
-            (self.encoder)(writer, crate::telemetry::trace::SpanData::new(batch, &self.resource)).and_then(
-                |_| {
-                    writer
-                        .write_all(b"\n")
-                        .map_err(|err| TraceError::Other(Box::new(err)))
-                },
-            )
-        } else {
-            Err("exporter is shut down".into())
+        // Queue batch, along with the current resource
+        let batch = SdkSpanDataBatch {
+            resource: self.resource.clone(),
+            batch: batch,
         };
+        self.queued_batches.lock().unwrap().push(batch);
 
-        Box::pin(std::future::ready(res))
+        Box::pin(std::future::ready(ExportResult::Ok(())))
     }
 
-    fn shutdown(&mut self) {
-        self.writer.take();
-    }
+    fn shutdown(&mut self) {}
 
     fn set_resource(&mut self, res: &opentelemetry_sdk::Resource) {
         self.resource = res.clone();
     }
 }
 
-/// Configuration for the stdout trace exporter
-#[derive(Default)]
-pub struct SpanExporterBuilder {
-    writer: Option<Box<dyn Write + Send + Sync>>,
-    encoder: Option<Encoder>,
-}
-
-impl fmt::Debug for SpanExporterBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("SpanExporterBuilder")
-    }
-}
-
-impl SpanExporterBuilder {
-    /// Set the writer that the exporter will write to
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use opentelemetry_stdout::SpanExporterBuilder;
-    ///
-    /// let buffer = Vec::new(); // Any type that implements `Write`
-    /// let exporter = SpanExporterBuilder::default().with_writer(buffer).build();
-    /// ```
-    pub fn with_writer(mut self, writer: impl Write + Send + Sync + 'static) -> Self {
-        self.writer = Some(Box::new(writer));
-        self
-    }
-
-    /// Set the encoder that this exporter will use
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use opentelemetry_stdout::SpanExporterBuilder;
-    ///
-    /// let exporter = SpanExporterBuilder::default()
-    ///     // Can be any function that can write formatted data
-    ///     // serde ecosystem crates for example provide such functions
-    ///     .with_encoder(|writer, data| Ok(serde_json::to_writer_pretty(writer, &data).unwrap()))
-    ///     .build();
-    /// ```
-    pub fn with_encoder(
-        mut self,
-        writer: impl Fn(&mut dyn Write, SpanData) -> TraceResult<()> + Send + Sync + 'static,
-    ) -> Self {
-        self.encoder = Some(Box::new(writer));
-        self
-    }
-
+impl SpanExporter {
     /// Create a span exporter with the current configuration
-    pub fn build(self) -> SpanExporter {
+    pub fn new() -> SpanExporter {
         SpanExporter {
-            writer: Some(self.writer.unwrap_or_else(|| Box::new(stdout()))),
+            queued_batches: Arc::new(Mutex::new(Vec::new())),
             resource: Resource::empty(),
-            encoder: self.encoder.unwrap_or_else(|| {
-                Box::new(|writer, spans| {
-                    serde_json::to_writer(writer, &spans)
-                        .map_err(|err| TraceError::Other(Box::new(err)))
-                })
-            }),
         }
+    }
+
+    pub fn flush_to_file(&mut self, path: &str) -> crate::Result<()> {
+        // Take contents of self.queued_batches
+        let queued_batches = {
+            let mut _mutex_guard = self.queued_batches.lock().unwrap();
+            let self_queue = &mut *_mutex_guard;
+            let prev_capacity = self_queue.capacity();
+            let new_queue = std::mem::take(self_queue);
+            *self_queue = Vec::with_capacity(prev_capacity);
+            new_queue
+        };
+
+        // Transform sdk spans into serde spans
+        let span_data = SpanData::new(queued_batches);
+
+        // Write to file
+        let file =
+            File::create_new(path).with_context(|| format!("Failed opening trace file: {path}"))?;
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &span_data)
+            .with_context(|| format!("Failed writing json to: {path}"))
     }
 }

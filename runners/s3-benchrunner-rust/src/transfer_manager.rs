@@ -1,4 +1,4 @@
-use std::{cmp::min, sync::Arc};
+use std::{cmp::min, sync::Arc, time::Instant};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -119,26 +119,32 @@ impl TransferManagerRunner {
         } else {
             None
         };
-
+        //println!("");
+        //println!("----------------------------------------------------------------------------------------");
         let mut total_size = 0u64;
+        let mut instant = Instant::now();
         while let Some(chunk_result) = download_handle
             .body_mut()
             .next()
             .instrument(info_span!("body-next"))
             .await
         {
-            let mut chunk =
-                chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
 
-            let chunk_size = chunk.remaining();
-            total_size += chunk_size as u64;
+            //print!("{0},", instant.elapsed().as_millis());
+//            let mut chunk =
+//                chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
 
-            if let Some(dest_file) = &mut dest_file {
-                dest_file
-                    .write_all_buf(&mut chunk)
-                    .instrument(info_span!("file-write", bytes = chunk_size))
-                    .await?;
+            for chunk in chunk_result {
+                total_size += chunk?.data.unwrap().remaining() as u64;
             }
+
+//            if let Some(dest_file) = &mut dest_file {
+//                dest_file
+//                    .write_all_buf(&mut chunk)
+//                    .instrument(info_span!("file-write", bytes = chunk_size))
+//                    .await?;
+//            }
+//            instant = Instant::now();
         }
 
         assert_eq!(total_size, task_config.size);

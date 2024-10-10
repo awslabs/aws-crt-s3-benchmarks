@@ -110,7 +110,7 @@ impl TransferManagerRunner {
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
-        let mut dest_file = if self.config().workload.files_on_disk {
+        let mut _dest_file = if self.config().workload.files_on_disk {
             let file = File::create(key)
                 .instrument(info_span!("file-open"))
                 .await
@@ -122,7 +122,7 @@ impl TransferManagerRunner {
         //println!("");
         //println!("----------------------------------------------------------------------------------------");
         let mut total_size = 0u64;
-        let mut instant = Instant::now();
+        let mut _instant = Instant::now();
         while let Some(chunk_result) = download_handle
             .body_mut()
             .next()

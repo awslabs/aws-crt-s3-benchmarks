@@ -62,6 +62,7 @@ def draw(data):
         yaxis=dict(
             autorange='reversed',  # root span at top
         ),
+        plot_bgcolor='#fcfcff',  # nearly-white so spans visible when zoomed way out
     )
 
     return fig

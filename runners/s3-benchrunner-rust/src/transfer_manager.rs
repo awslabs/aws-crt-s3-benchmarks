@@ -2,7 +2,6 @@ use std::{cmp::min, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use aws_config::{self, BehaviorVersion, Region};
 use aws_s3_transfer_manager::{
     io::InputStream,
     types::{ConcurrencySetting, PartSize},
@@ -31,11 +30,6 @@ struct Handle {
 
 impl TransferManagerRunner {
     pub async fn new(config: BenchmarkConfig) -> TransferManagerRunner {
-        let sdk_config = aws_config::defaults(BehaviorVersion::latest())
-            .region(Region::new(config.region.clone()))
-            .load()
-            .await;
-
         // Blugh, the user shouldn't need to manually configure concurrency like this.
         let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
 
@@ -56,12 +50,11 @@ impl TransferManagerRunner {
         };
         let random_data_for_upload = new_random_bytes(upload_data_size);
 
-        let s3_client = aws_sdk_s3::Client::new(&sdk_config);
-        let tm_config = aws_s3_transfer_manager::Config::builder()
+        let tm_config = aws_s3_transfer_manager::from_env()
             .concurrency(ConcurrencySetting::Explicit(total_concurrency))
             .part_size(PartSize::Target(PART_SIZE))
-            .client(s3_client)
-            .build();
+            .load()
+            .await;
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
 

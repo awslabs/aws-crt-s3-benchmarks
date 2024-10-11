@@ -10,16 +10,20 @@ def draw(data):
         for scope_span in resource_span['scopeSpans']:
             spans_list.extend(scope_span['spans'])
 
+    # simplify attributes of each span to be simple dict
+    for span in spans_list:
+        span['attributes'] = _simplify_attributes(span['attributes'])
+
     # Sort spans according to parent-child hierarchy
     sorted_spans = _sort_spans_by_hierarchy(spans_list)
 
     # Prepare columns for plotly
     columns = defaultdict(list)
     name_count = defaultdict(int)
-    for span in sorted_spans:
+    for (idx, span) in enumerate(sorted_spans):
 
         name = span['name']
-        # we want each span in its own row, so assign a unique name and use that Y value
+        # we want each span in its own row, so assign a unique name and use that as Y value
         name_count[name] += 1
         unique_name = f"{name}#{name_count[name]}"
 
@@ -29,7 +33,11 @@ def draw(data):
             span['endTimeUnixNano'] - span['startTimeUnixNano'])
         columns['Start Time'].append(pd.to_datetime(span['startTimeUnixNano']))
         columns['End Time'].append(pd.to_datetime(span['endTimeUnixNano']))
-        columns['Attributes'].append(_format_attributes(span['attributes']))
+        columns['Index'].append(idx)
+        columns['Span ID'].append(span['spanId'])
+        columns['Parent ID'].append(span['parentSpanId'])
+        columns['Attributes'].append(
+            [f"<br>  {k}: {v}" for (k, v) in span['attributes'].items()])
 
     # if a span name occurs only once, remove the "#1" from its unique name
     for (i, name) in enumerate(columns['Name']):
@@ -96,39 +104,39 @@ def _sort_spans_by_hierarchy(spans):
             ids_to_process.extend(child_ids)
 
         if id in id_to_span:
-            sorted_spans.append(id_to_span.pop(id))
+            sorted_spans.append(id_to_span[id])
 
-    # we popped spans as we processed them, check if any are left
-    if id_to_span:
-        num_leftover = len(id_to_span)
+    # warn if any spans are missing
+    if (num_leftover := len(spans) - len(sorted_spans)):
         print(f"WARNING: {
               num_leftover} spans not shown due to missing parents")
 
     return sorted_spans
 
 
-# Helper function to format attributes for hover text
-# Format attributes for hover text. Transform from JSON like:
+# Transform attributes from like:
 #   [
 #     {"key": "code.namespace", {"value": {"stringValue": "s3_benchrunner_rust::transfer_manager"}},
 #     {"key": "code.lineno", "value": {"intValue": 136}}
 #   ]
-# To string like:
-#       code.namespace: s3_benchrunner_rust::transfer_manager
-#       code.lineno: 136
-def _format_attributes(attributes):
-    formatted_attributes = []
-    for attr in attributes:
+# To like:
+#   {
+#     "code.namespace": "s3_benchrunner_rust::transfer_manager",
+#     "code.lineno": 136,
+#   }
+def _simplify_attributes(attributes_list):
+    simple_dict = {}
+    for attr in attributes_list:
         key = attr['key']
-        # Extract the value regardless of type
-        value = list(attr['value'].values())[0]
+        # Extract actual value, ignoring value's key which looks like "intValue"
+        value = next(iter(attr['value'].values()))
 
         # trim down long filepaths by omitting everything before "src/"
         if key == 'code.filepath':
-            src_idx = value.find("src/")
-            if src_idx > 0:
+
+            if (src_idx := value.find("src/")) > 0:
                 value = value[src_idx:]
 
-        formatted_attributes.append(f"<br>   {key}: {value}")
+        simple_dict[key] = value
 
-    return formatted_attributes
+    return simple_dict

@@ -4,3 +4,5 @@ autopep8 # for code formatting
 mypy # for type checking
 aws-cdk-lib==2.116.1  # CDK
 constructs>=10.0.0,<11.0.0  # CDK
+pandas # for graphs
+plotly # for graphs

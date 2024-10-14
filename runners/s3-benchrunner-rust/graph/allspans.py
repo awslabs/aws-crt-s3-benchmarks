@@ -5,22 +5,22 @@ import plotly.express as px  # type: ignore
 
 def draw(data):
     # Extract relevant span data and sort by hierarchy
-    spans_list = []
+    spans = []
     for resource_span in data['resourceSpans']:
         for scope_span in resource_span['scopeSpans']:
-            spans_list.extend(scope_span['spans'])
+            spans.extend(scope_span['spans'])
 
     # simplify attributes of each span to be simple dict
-    for span in spans_list:
+    for span in spans:
         span['attributes'] = _simplify_attributes(span['attributes'])
 
     # Sort spans according to parent-child hierarchy
-    sorted_spans = _sort_spans_by_hierarchy(spans_list)
+    spans = _sort_spans_by_hierarchy(spans)
 
     # Prepare columns for plotly
     columns = defaultdict(list)
     name_count = defaultdict(int)
-    for (idx, span) in enumerate(sorted_spans):
+    for (idx, span) in enumerate(spans):
 
         name = span['name']
         # we want each span in its own row, so assign a unique name and use that as Y value
@@ -59,30 +59,36 @@ def draw(data):
         x_end='End Time',
         y='Unique Name',
         hover_data=hover_data,
-        color='Name',  # spans with same original name get same color
+        # spans with same original name get same color
+        color='Name',
         # force ordering, otherwise plotly will group by 'color'
         category_orders={'Unique Name': df['Unique Name']},
     )
 
     # if there are lots of rows, ensure they're not drawn too small
-    num_rows = len(sorted_spans)
+    num_rows = len(spans)
     if num_rows > 20:
         preferred_total_height = 800
         min_row_height = 3
         row_height = preferred_total_height / num_rows
         row_height = int(max(min_row_height, row_height))
         height = num_rows * row_height
+        # don't show yaxis labels if they're so squished that some are omitted
+        show_yaxis_labels = row_height >= 15
     else:
         # otherwise auto-height
         height = None
+        show_yaxis_labels = True
 
     fig.update_layout(
         title="All Benchmark Spans",
         xaxis_title="Time",
         yaxis_title="Span Name",
         height=height,
+        yaxis=dict(
+            showticklabels=show_yaxis_labels,
+        ),
         hovermode='y unified',  # show hover if mouse anywhere in row
-        plot_bgcolor='#fcfcff',  # nearly-white so spans visible when zoomed way out
     )
 
     return fig

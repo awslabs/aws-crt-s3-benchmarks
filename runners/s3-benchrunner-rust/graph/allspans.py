@@ -4,7 +4,7 @@ import plotly.express as px  # type: ignore
 
 
 def draw(data):
-    # Extract relevant span data and sort by hierarchy
+    # gather all spans into a single list
     spans = []
     for resource_span in data['resourceSpans']:
         for scope_span in resource_span['scopeSpans']:
@@ -14,10 +14,10 @@ def draw(data):
     for span in spans:
         span['attributes'] = _simplify_attributes(span['attributes'])
 
-    # Sort spans according to parent-child hierarchy
+    # sort spans according to parent-child hierarchy
     spans = _sort_spans_by_hierarchy(spans)
 
-    # Prepare columns for plotly
+    # prepare columns for plotly
     columns = defaultdict(list)
     name_count = defaultdict(int)
     for (idx, span) in enumerate(spans):
@@ -133,7 +133,7 @@ def _sort_spans_by_hierarchy(spans):
 
 # Transform attributes from like:
 #   [
-#     {"key": "code.namespace", {"value": {"stringValue": "s3_benchrunner_rust::transfer_manager"}},
+#     {"key": "code.namespace", "value": {"stringValue": "s3_benchrunner_rust::transfer_manager"}},
 #     {"key": "code.lineno", "value": {"intValue": 136}}
 #   ]
 # To like:
@@ -145,12 +145,11 @@ def _simplify_attributes(attributes_list):
     simple_dict = {}
     for attr in attributes_list:
         key = attr['key']
-        # Extract actual value, ignoring value's key which looks like "intValue"
+        # extract actual value, ignoring value's key which looks like "intValue"
         value = next(iter(attr['value'].values()))
 
         # trim down long filepaths by omitting everything before "src/"
         if key == 'code.filepath':
-
             if (src_idx := value.find("src/")) > 0:
                 value = value[src_idx:]
 

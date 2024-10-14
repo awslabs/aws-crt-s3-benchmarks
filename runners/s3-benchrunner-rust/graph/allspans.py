@@ -60,16 +60,28 @@ def draw(data):
         y='Unique Name',
         hover_data=hover_data,
         color='Name',  # spans with same original name get same color
+        # force ordering, otherwise plotly will group by 'color'
+        category_orders={'Unique Name': df['Unique Name']},
     )
+
+    # if there are lots of rows, ensure they're not drawn too small
+    num_rows = len(sorted_spans)
+    if num_rows > 20:
+        preferred_total_height = 800
+        min_row_height = 3
+        row_height = preferred_total_height / num_rows
+        row_height = int(max(min_row_height, row_height))
+        height = num_rows * row_height
+    else:
+        # otherwise auto-height
+        height = None
 
     fig.update_layout(
         title="All Benchmark Spans",
         xaxis_title="Time",
         yaxis_title="Span Name",
+        height=height,
         hovermode='y unified',  # show hover if mouse anywhere in row
-        yaxis=dict(
-            autorange='reversed',  # root span at top
-        ),
         plot_bgcolor='#fcfcff',  # nearly-white so spans visible when zoomed way out
     )
 
@@ -108,8 +120,7 @@ def _sort_spans_by_hierarchy(spans):
 
     # warn if any spans are missing
     if (num_leftover := len(spans) - len(sorted_spans)):
-        print(f"WARNING: {
-              num_leftover} spans not shown due to missing parents")
+        print(f"WARNING: {num_leftover} spans not shown (missing parents)")
 
     return sorted_spans
 

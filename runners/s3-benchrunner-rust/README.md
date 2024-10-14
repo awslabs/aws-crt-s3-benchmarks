@@ -47,8 +47,19 @@ See further instructions [here](../../README.md#run-a-benchmark).
 
 ### Viewing Telemetry
 
-Use the `--telemetry` flag to export OpenTelemetry data to  http://localhost:4317 as OTLP/gRPC payloads.
+Use the `--telemetry` flag to export OpenTelemetry Protocol data as a `trace_*.json` files in the working directory.
 
-The simplest way I know collect and view this data is with [Jaeger All in One](https://www.jaegertracing.io/docs/latest/getting-started/) or [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer?tab=readme-ov-file#getting-started). Get one of these running, run the benchmark with the `--telemetry` flag, then view the data in your browser.
+Run `graph.py`:
+```sh
+usage: graph.py [-h] TRACE_JSON
 
-TODO: document how to collect and view data from a non-local run.
+Graph a benchmark run
+
+positional arguments:
+  TRACE_JSON  trace_*.json file to graph.
+
+options:
+  -h, --help  show this help message and exit
+```
+
+View new `trace_*.html` file, in same directory as `trace_*.json` file.

@@ -24,6 +24,7 @@ def draw(data):
 
         name = span['name']
         # we want each span in its own row, so assign a unique name and use that as Y value
+        # TODO: improve unique name, using "seq" or "part-num"
         name_count[name] += 1
         unique_name = f"{name}#{name_count[name]}"
 
@@ -60,6 +61,7 @@ def draw(data):
         y='Unique Name',
         hover_data=hover_data,
         # spans with same original name get same color
+        # TODO: combine name with code.namespace, in case same name used in multiple places
         color='Name',
         # force ordering, otherwise plotly will group by 'color'
         category_orders={'Unique Name': df['Unique Name']},

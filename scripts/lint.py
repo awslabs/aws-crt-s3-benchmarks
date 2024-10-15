@@ -38,6 +38,7 @@ def _lint_python():
     dirs = [
         SCRIPTS_DIR,
         RUNNERS['python'].dir,
+        RUNNERS['rust'].dir,
         REPO_DIR/'cdk',
     ]
     exclude_dirs = ['cdk.out']

@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::process::exit;
 use std::time::Instant;
-use tracing::{self, info_span, instrument, Instrument};
+use tracing::{info_span, Instrument};
 
 use s3_benchrunner_rust::{
     bytes_to_gigabits, prepare_run, telemetry, BenchmarkConfig, Result, RunBenchmark,
@@ -37,16 +37,6 @@ enum S3ClientId {
 async fn main() {
     let args = Args::parse();
 
-    let _telemetry_guard = if args.telemetry {
-        // If emitting telemetry, set that up as tracing_subscriber.
-        Some(telemetry::init_tracing_subscriber().unwrap())
-    } else {
-        // Otherwise, set the default subscriber,
-        // which prints to stdout if env-var set like RUST_LOG=trace
-        tracing_subscriber::fmt::init();
-        None
-    };
-
     let result = execute(&args).await;
     if let Err(e) = result {
         match e.downcast_ref::<SkipBenchmarkError>() {
@@ -61,31 +51,52 @@ async fn main() {
     }
 }
 
-#[instrument(name = "main")]
 async fn execute(args: &Args) -> Result<()> {
+    let mut telemetry = if args.telemetry {
+        // If emitting telemetry, set that up as tracing_subscriber.
+        Some(telemetry::init_tracing_subscriber().unwrap())
+    } else {
+        // Otherwise, set the default subscriber,
+        // which prints to stdout if env-var set like RUST_LOG=trace
+        tracing_subscriber::fmt::init();
+        None
+    };
+
     // create appropriate benchmark runner
     let runner = new_runner(args).await?;
 
     let workload = &runner.config().workload;
+    let workload_name = workload_name(&args.workload);
     let bytes_per_run: u64 = workload.tasks.iter().map(|x| x.size).sum();
     let gigabits_per_run = bytes_to_gigabits(bytes_per_run);
 
     // repeat benchmark until we exceed max_repeat_count or max_repeat_secs
     let app_start = Instant::now();
-    for run_i in 0..workload.max_repeat_count {
+    for run_num in 1..=workload.max_repeat_count {
         prepare_run(workload)?;
 
-        let run_start = Instant::now();
+        let run_start_datetime = chrono::Utc::now();
+        let run_start = Instant::now(); // high resolution
 
         runner
             .run()
-            .instrument(info_span!("run", i = run_i))
+            .instrument(info_span!("run", num = run_num, workload = workload_name))
             .await?;
 
         let run_secs = run_start.elapsed().as_secs_f64();
-        println!(
+
+        // flush any telemetry
+        if let Some(telemetry) = &mut telemetry {
+            telemetry.flush_to_file(&trace_file_name(
+                workload_name,
+                &run_start_datetime,
+                run_num,
+            ));
+        }
+
+        eprintln!(
             "Run:{} Secs:{:.6} Gb/s:{:.6}",
-            run_i + 1,
+            run_num,
             run_secs,
             gigabits_per_run / run_secs
         );
@@ -113,4 +124,20 @@ async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
             Ok(Box::new(transfer_manager))
         }
     }
+}
+
+// Given "path/to/my-workload.run.json" return "my-workload"
+fn workload_name(path: &str) -> &str {
+    let filename = path.rsplit('/').next().unwrap_or(path);
+    let without_extension = filename.split('.').next().unwrap_or(filename);
+    without_extension
+}
+
+fn trace_file_name(
+    workload: &str,
+    run_start: &chrono::DateTime<chrono::Utc>,
+    run_num: u32,
+) -> String {
+    let run_start = run_start.format("%Y%m%dT%H%M%SZ").to_string();
+    format!("trace_{run_start}_{workload}_run{run_num:02}.json")
 }

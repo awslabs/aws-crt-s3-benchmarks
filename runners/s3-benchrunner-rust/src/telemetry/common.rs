@@ -1,4 +1,8 @@
-//! code adapted from: https://github.com/open-telemetry/opentelemetry-rust/blob/3193320fa6dc17e89a7bed6090000aef781ac29c/opentelemetry-stdout/src/common.rs
+//! This file is for mapping from `opentelemetry_sdk` structs, to serde-serializable
+//! structs that match the OpenTelemetry Protocol (OTLP) format.
+//! See: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/common/v1/common.proto
+//!
+//! Code adapted from: https://github.com/open-telemetry/opentelemetry-rust/blob/3193320fa6dc17e89a7bed6090000aef781ac29c/opentelemetry-stdout/src/common.rs
 
 use std::{
     borrow::Cow,

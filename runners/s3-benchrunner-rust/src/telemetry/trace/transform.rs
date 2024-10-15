@@ -1,4 +1,8 @@
-//! code adapted from: https://github.com/open-telemetry/opentelemetry-rust/blob/3193320fa6dc17e89a7bed6090000aef781ac29c/opentelemetry-stdout/src/trace/exporter.rs
+//! This file is for mapping from `opentelemetry_sdk` structs, to serde-serializable
+//! structs that match the OpenTelemetry Protocol (OTLP) format.
+//! See: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto
+//!
+//! Code adapted from: https://github.com/open-telemetry/opentelemetry-rust/blob/3193320fa6dc17e89a7bed6090000aef781ac29c/opentelemetry-stdout/src/trace/exporter.rs
 
 use crate::telemetry::common::{
     as_human_readable, as_unix_nano, AttributeSet, KeyValue, Resource, Scope,

@@ -13,6 +13,10 @@ use std::{
 use crate::telemetry::trace::transform::SpanData;
 use opentelemetry_sdk::resource::Resource;
 
+/// Magic number based on: In Oct 2024, downloading 1 30GiB file generated 11,000+ batches per run.
+/// This should give plenty of headroom for more tracing data and larger workloads.
+const QUEUED_BATCHES_INITIAL_CAPACITY: usize = 2_097_152;
+
 /// An OpenTelemetry exporter that queues up spans, and flushes them to a file when it's told
 #[derive(Clone)]
 pub struct SpanExporter {
@@ -55,7 +59,9 @@ impl SpanExporter {
     /// Create a span exporter with the current configuration
     pub fn new() -> SpanExporter {
         SpanExporter {
-            queued_batches: Arc::new(Mutex::new(Vec::new())),
+            queued_batches: Arc::new(Mutex::new(Vec::with_capacity(
+                QUEUED_BATCHES_INITIAL_CAPACITY,
+            ))),
             resource: Resource::empty(),
         }
     }
@@ -67,6 +73,7 @@ impl SpanExporter {
             let self_queue = &mut *_mutex_guard;
             let prev_capacity = self_queue.capacity();
             let new_queue = std::mem::take(self_queue);
+            // take() resets capacity. Put it back where it was
             *self_queue = Vec::with_capacity(prev_capacity);
             new_queue
         };

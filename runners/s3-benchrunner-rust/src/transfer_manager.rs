@@ -67,7 +67,7 @@ impl TransferManagerRunner {
         }
     }
 
-    async fn run_task(self, task_i: usize, parent_span: tracing::Span) -> Result<()> {
+    async fn run_task(self, task_i: usize) -> Result<()> {
         let task_config = &self.config().workload.tasks[task_i];
 
         if self.config().workload.checksum.is_some() {
@@ -77,12 +77,12 @@ impl TransferManagerRunner {
         match task_config.action {
             TaskAction::Download => {
                 self.download(task_config)
-                    .instrument(info_span!(parent: parent_span, "download", key=task_config.key))
+                    .instrument(info_span!("download", key = task_config.key))
                     .await
             }
             TaskAction::Upload => {
                 self.upload(task_config)
-                    .instrument(info_span!(parent: parent_span, "upload", key=task_config.key))
+                    .instrument(info_span!("upload", key = task_config.key))
                     .await
             }
         }
@@ -98,14 +98,13 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key(key)
             .send()
-            .instrument(info_span!("initial-send"))
             .await
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
         let mut dest_file = if self.config().workload.files_on_disk {
             let file = File::create(key)
-                .instrument(info_span!("file-open"))
+                .instrument(info_span!("open-file"))
                 .await
                 .with_context(|| format!("failed creating file: {key}"))?;
             Some(file)
@@ -114,10 +113,11 @@ impl TransferManagerRunner {
         };
 
         let mut total_size = 0u64;
+        let mut seq: u64 = 0;
         while let Some(chunk_result) = download_handle
             .body_mut()
             .next()
-            .instrument(info_span!("body-next"))
+            .instrument(info_span!("next-chunk", seq, offset = total_size))
             .await
         {
             let mut chunk =
@@ -125,11 +125,12 @@ impl TransferManagerRunner {
 
             let chunk_size = chunk.remaining();
             total_size += chunk_size as u64;
+            seq += 1;
 
             if let Some(dest_file) = &mut dest_file {
                 dest_file
                     .write_all_buf(&mut chunk)
-                    .instrument(info_span!("file-write", bytes = chunk_size))
+                    .instrument(info_span!("write-file", bytes = chunk_size))
                     .await?;
             }
         }
@@ -159,13 +160,11 @@ impl TransferManagerRunner {
             .key(key)
             .body(stream)
             .send()
-            .instrument(info_span!("initial-send"))
             .await
             .with_context(|| format!("failed starting upload: {key}"))?;
 
         upload_handle
             .join()
-            .instrument(info_span!("join"))
             .await
             .with_context(|| format!("failed uploading: {key}"))?;
 
@@ -181,9 +180,8 @@ impl RunBenchmark for TransferManagerRunner {
         // so we're using a JoinSet.
         let mut task_set: JoinSet<Result<()>> = JoinSet::new();
         for i in 0..self.config().workload.tasks.len() {
-            let parent_span_of_task = tracing::Span::current();
-            let task = self.clone().run_task(i, parent_span_of_task);
-            task_set.spawn(task);
+            let task = self.clone().run_task(i);
+            task_set.spawn(task.instrument(tracing::Span::current()));
         }
 
         while let Some(join_result) = task_set.join_next().await {

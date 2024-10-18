@@ -80,7 +80,11 @@ async fn execute(args: &Args) -> Result<()> {
 
         runner
             .run()
-            .instrument(info_span!("run", num = run_num, workload = workload_name))
+            .instrument(info_span!(
+                "run-benchmark",
+                num = run_num,
+                workload = workload_name
+            ))
             .await?;
 
         let run_secs = run_start.elapsed().as_secs_f64();

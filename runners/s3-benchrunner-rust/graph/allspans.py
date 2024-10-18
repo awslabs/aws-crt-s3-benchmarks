@@ -10,10 +10,6 @@ def draw(data):
         for scope_span in resource_span['scopeSpans']:
             spans.extend(scope_span['spans'])
 
-    # simplify attributes of each span to be simple dict
-    for span in spans:
-        span['attributes'] = _simplify_attributes(span['attributes'])
-
     # sort spans according to parent-child hierarchy
     spans = _sort_spans_by_hierarchy(spans)
 
@@ -132,29 +128,3 @@ def _sort_spans_by_hierarchy(spans):
 
     return sorted_spans
 
-
-# Transform attributes from like:
-#   [
-#     {"key": "code.namespace", "value": {"stringValue": "s3_benchrunner_rust::transfer_manager"}},
-#     {"key": "code.lineno", "value": {"intValue": 136}}
-#   ]
-# To like:
-#   {
-#     "code.namespace": "s3_benchrunner_rust::transfer_manager",
-#     "code.lineno": 136,
-#   }
-def _simplify_attributes(attributes_list):
-    simple_dict = {}
-    for attr in attributes_list:
-        key = attr['key']
-        # extract actual value, ignoring value's key which looks like "intValue"
-        value = next(iter(attr['value'].values()))
-
-        # trim down long filepaths by omitting everything before "src/"
-        if key == 'code.filepath':
-            if (src_idx := value.find("src/")) > 0:
-                value = value[src_idx:]
-
-        simple_dict[key] = value
-
-    return simple_dict

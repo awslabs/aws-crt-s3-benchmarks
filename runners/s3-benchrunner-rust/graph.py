@@ -5,6 +5,7 @@ from pathlib import Path
 
 from graph import PerfTimer
 import graph.allspans
+import graph.http
 
 PARSER = argparse.ArgumentParser(description="Graph a benchmark run")
 
@@ -32,8 +33,14 @@ with PerfTimer(f'Open {args.TRACE_JSON}'):
     with open(args.TRACE_JSON) as f:
         traces_data = json.load(f)
 
-with PerfTimer('Graph all spans'):
-    fig = graph.allspans.draw(traces_data)
+    # clean data (simplify attributes, etc)
+    graph.clean_traces_data(traces_data)
+
+# with PerfTimer('Graph all spans'):
+#     fig = graph.allspans.draw(traces_data)
+
+with PerfTimer("Graph HTTP requests"):
+    fig = graph.http.draw(traces_data)
 
 html_path = Path(args.TRACE_JSON).with_suffix('.html')
 with PerfTimer(f'Write {html_path}'):

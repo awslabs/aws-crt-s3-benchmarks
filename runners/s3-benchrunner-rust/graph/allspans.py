@@ -17,24 +17,29 @@ def draw(data):
     columns = defaultdict(list)
     name_count = defaultdict(int)
     for (idx, span) in enumerate(spans):
-
         name = span['name']
         # we want each span in its own row, so assign a unique name and use that as Y value
         # TODO: improve unique name, using "seq" or "part-num"
         name_count[name] += 1
         unique_name = f"{name}#{name_count[name]}"
 
+        start_time_ns = span['startTimeUnixNano']
+        end_time_ns = span['endTimeUnixNano']
+        duration_ns = end_time_ns - start_time_ns
+        # ensure span is wide enough to see
+        visual_end_time_ns = start_time_ns + max(duration_ns, 50_000_000)
+
         columns['Name'].append(name)
         columns['Unique Name'].append(unique_name)
-        columns['Duration (ns)'].append(
-            span['endTimeUnixNano'] - span['startTimeUnixNano'])
-        columns['Start Time'].append(pd.to_datetime(span['startTimeUnixNano']))
-        columns['End Time'].append(pd.to_datetime(span['endTimeUnixNano']))
+        columns['Start Time'].append(pd.to_datetime(start_time_ns))
+        columns['End Time'].append(pd.to_datetime(end_time_ns))
+        columns['Visual End Time'].append(pd.to_datetime(visual_end_time_ns))
+        columns['Duration (secs)'].append(duration_ns / 1_000_000_000.0)
         columns['Index'].append(idx)
         columns['Span ID'].append(span['spanId'])
         columns['Parent ID'].append(span['parentSpanId'])
         columns['Attributes'].append(
-            [f"<br>  {k}: {v}" for (k, v) in span['attributes'].items()])
+            "".join([f"<br>  {k}={v}" for (k, v) in span['attributes'].items()]))
 
     # if a span name occurs only once, remove the "#1" from its unique name
     for (i, name) in enumerate(columns['Name']):
@@ -46,14 +51,13 @@ def draw(data):
     # By default, show all columns in hover text.
     # Omit a column by setting false. You can also set special formatting rules here.
     hover_data = {col: True for col in columns.keys()}
-    hover_data['Name'] = False  # already shown
     hover_data['Unique Name'] = False  # already shown
-    hover_data['End Time'] = False  # who cares
+    hover_data['Visual End Time'] = False  # actual "End Time" already shown
 
     fig = px.timeline(
         data_frame=df,
         x_start='Start Time',
-        x_end='End Time',
+        x_end='Visual End Time',
         y='Unique Name',
         hover_data=hover_data,
         # spans with same original name get same color

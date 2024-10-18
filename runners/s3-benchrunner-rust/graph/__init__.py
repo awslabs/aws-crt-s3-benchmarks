@@ -55,6 +55,11 @@ def _simplify_attributes(attributes_list):
             if (src_idx := value.find("src/")) > 0:
                 value = value[src_idx:]
 
+        # trim down excessively long strings
+        MAX_STRLEN = 150
+        if isinstance(value, str) and len(value) > MAX_STRLEN:
+            value = value[:MAX_STRLEN] + "...TRUNCATED"
+            
         simple_dict[key] = value
 
     return simple_dict

@@ -29,8 +29,17 @@ PARSER.add_argument('TRACE_JSON', help="trace_*.json file to graph.")
 
 args = PARSER.parse_args()
 
-with PerfTimer(f'Open {args.TRACE_JSON}'):
-    with open(args.TRACE_JSON) as f:
+trace_json = Path(args.TRACE_JSON)
+
+# if directory passed in, pick the newest file
+if trace_json.is_dir():
+    all_traces = list(trace_json.glob('trace_*.json'))
+    if len(all_traces) == 0:
+        exit(f"No trace_*.json found under: {trace_json.absolute()}")
+    trace_json = sorted(all_traces, key=lambda x: x.stat().st_mtime)[-1]
+
+with PerfTimer(f'Open {trace_json}'):
+    with open(trace_json) as f:
         traces_data = json.load(f)
 
     # clean data (simplify attributes, etc)
@@ -42,6 +51,6 @@ with PerfTimer(f'Open {args.TRACE_JSON}'):
 with PerfTimer("Graph HTTP requests"):
     fig = graph.http.draw(traces_data)
 
-html_path = Path(args.TRACE_JSON).with_suffix('.html')
+html_path = Path(trace_json).with_suffix('.allspans.html')
 with PerfTimer(f'Write {html_path}'):
     fig.write_html(html_path)

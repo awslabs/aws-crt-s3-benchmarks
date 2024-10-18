@@ -18,10 +18,11 @@ def draw(data):
     name_count = defaultdict(int)
     for (idx, span) in enumerate(spans):
         name = span['name']
+        # nice name includes stuff like part-number
+        nice_name = _nice_name(span)
         # we want each span in its own row, so assign a unique name and use that as Y value
-        # TODO: improve unique name, using "seq" or "part-num"
-        name_count[name] += 1
-        unique_name = f"{name}#{name_count[name]}"
+        name_count[nice_name] += 1
+        unique_name = f"{nice_name} ({span['spanId']})"
 
         start_time_ns = span['startTimeUnixNano']
         end_time_ns = span['endTimeUnixNano']
@@ -30,21 +31,21 @@ def draw(data):
         visual_end_time_ns = start_time_ns + max(duration_ns, 50_000_000)
 
         columns['Name'].append(name)
+        columns['Nice Name'].append(nice_name)
         columns['Unique Name'].append(unique_name)
         columns['Start Time'].append(pd.to_datetime(start_time_ns))
         columns['End Time'].append(pd.to_datetime(end_time_ns))
         columns['Visual End Time'].append(pd.to_datetime(visual_end_time_ns))
         columns['Duration (secs)'].append(duration_ns / 1_000_000_000.0)
-        columns['Index'].append(idx)
         columns['Span ID'].append(span['spanId'])
         columns['Parent ID'].append(span['parentSpanId'])
         columns['Attributes'].append(
             "".join([f"<br>  {k}={v}" for (k, v) in span['attributes'].items()]))
 
-    # if a span name occurs only once, remove the "#1" from its unique name
+    # if a span name occurs only once, we can just use the nice_name
     for (i, name) in enumerate(columns['Name']):
         if name_count[name] == 1:
-            columns['Unique Name'][i] = name
+            columns['Unique Name'][i] = columns['Nice Name'][i]
 
     df = pd.DataFrame(columns)
 

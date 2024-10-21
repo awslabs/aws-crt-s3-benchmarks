@@ -61,7 +61,7 @@ class Trace:
             id = span_or_id['spanId']
         return self._id_to_child_spans[id]
 
-    def get_attribute_in_span_or_parent(self, span, attribute_name) -> Union[Any, None]:
+    def get_attribute_in_span_or_parent(self, span, attribute_name, default=None) -> Union[Any, None]:
         """
         Get named attribute from this span, or one of its parents.
         Useful for getting common attributes like "bucket".
@@ -71,7 +71,7 @@ class Trace:
                 return attribute_val
             span = self.get_span(span['parentSpanId'])
 
-        return None
+        return default
 
     @staticmethod
     def _simplify_attributes(attributes_list):
@@ -107,6 +107,11 @@ class Trace:
             simple_dict[key] = value
 
         return simple_dict
+
+    @staticmethod
+    def get_span_attributes_hover_data(span):
+        """return span['attributes'] formatted for plotly hover_data"""
+        return "".join([f"<br>  {k}={v}" for (k, v) in span['attributes'].items()])
 
     @staticmethod
     def _nice_name(span):

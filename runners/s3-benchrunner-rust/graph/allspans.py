@@ -11,7 +11,7 @@ def draw(trace: Trace):
 
     # prepare columns for plotly
     columns = defaultdict(list)
-    name_count = defaultdict(int)
+    name_count: dict[str, int] = defaultdict(int)
     for (idx, span) in enumerate(spans):
         name = span['name']
         # nice name includes stuff like part-number
@@ -36,7 +36,7 @@ def draw(trace: Trace):
         columns['Span ID'].append(span['spanId'])
         columns['Parent ID'].append(span['parentSpanId'])
         columns['Attributes'].append(
-            "".join([f"<br>  {k}={v}" for (k, v) in span['attributes'].items()]))
+            trace.get_span_attributes_hover_data(span))
 
     # if a span name occurs only once, we can just use the nice_name
     for (i, name) in enumerate(columns['Name']):

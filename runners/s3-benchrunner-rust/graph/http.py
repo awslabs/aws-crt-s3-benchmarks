@@ -19,8 +19,8 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
 
     So like, 7 HTTP requests could be drawn using 3 rows like so:
     2|   -- ----
-    1|  ---- -----
-    0| -- ----- -----
+    1|  ----- -----
+    0| -- -----   -----
     """
     min_ns = min(span['startTimeUnixNano'] for span in trace.spans)
     max_ns = max(span['endTimeUnixNano'] for span in trace.spans)

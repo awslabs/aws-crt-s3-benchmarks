@@ -78,6 +78,7 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
     hover_data['Row'] = False  # row is meaningless
 
     fig = plotly.express.timeline(
+        title="HTTP Requests",
         data_frame=df,
         x_start='Start Time',
         x_end='End Time',
@@ -85,6 +86,10 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
         hover_data=hover_data,
         color='Duration (secs)',
         color_continuous_scale=['green', 'yellow', 'red'],
+    )
+    fig.update_layout(
+        xaxis_title="Start/End Time",
+        yaxis_title="Concurrency (approx)",
     )
 
     return fig

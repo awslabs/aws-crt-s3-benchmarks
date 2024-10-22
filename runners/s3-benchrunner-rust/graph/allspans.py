@@ -2,28 +2,20 @@ from collections import defaultdict
 import pandas as pd  # type: ignore
 import plotly.express as px  # type: ignore
 
+from . import Trace
 
-def draw(data):
-    # gather all spans into a single list
-    spans = []
-    for resource_span in data['resourceSpans']:
-        for scope_span in resource_span['scopeSpans']:
-            spans.extend(scope_span['spans'])
 
-    # simplify attributes of each span to be simple dict
-    for span in spans:
-        span['attributes'] = _simplify_attributes(span['attributes'])
-
+def draw(trace: Trace):
     # sort spans according to parent-child hierarchy
-    spans = _sort_spans_by_hierarchy(spans)
+    spans = _sort_spans_by_hierarchy(trace)
 
     # prepare columns for plotly
     columns = defaultdict(list)
-    name_count = defaultdict(int)
+    name_count: dict[str, int] = defaultdict(int)
     for (idx, span) in enumerate(spans):
         name = span['name']
         # nice name includes stuff like part-number
-        nice_name = _nice_name(span)
+        nice_name = span['niceName']
         # we want each span in its own row, so assign a unique name and use that as Y value
         name_count[nice_name] += 1
         unique_name = f"{nice_name} ({span['spanId']})"
@@ -44,7 +36,7 @@ def draw(data):
         columns['Span ID'].append(span['spanId'])
         columns['Parent ID'].append(span['parentSpanId'])
         columns['Attributes'].append(
-            "".join([f"<br>  {k}={v}" for (k, v) in span['attributes'].items()]))
+            trace.get_span_attributes_hover_data(span))
 
     # if a span name occurs only once, we can just use the nice_name
     for (i, name) in enumerate(columns['Name']):
@@ -101,18 +93,7 @@ def draw(data):
     return fig
 
 
-def _sort_spans_by_hierarchy(spans):
-    # map from ID to span
-    id_to_span = {}
-    # map from parent ID to to child span IDs
-    parent_to_child_ids = defaultdict(list)
-    for span in spans:
-        id = span['spanId']
-        id_to_span[id] = span
-
-        parent_id = span['parentSpanId']
-        parent_to_child_ids[parent_id].append(id)
-
+def _sort_spans_by_hierarchy(trace: Trace):
     # sort spans in depth-first order, by crawling the parent/child tree starting at root
     sorted_spans = []
     # ids_to_process is FIFO
@@ -121,61 +102,20 @@ def _sort_spans_by_hierarchy(spans):
     ids_to_process = ['0000000000000000']
     while ids_to_process:
         id = ids_to_process.pop(-1)
-        if id in parent_to_child_ids:
-            child_ids = parent_to_child_ids[id]
-            # sorted by start time, but reversed because we pop from the BACK of ids_to_process
-            child_ids = sorted(
-                child_ids, key=lambda x: id_to_span[x]['startTimeUnixNano'], reverse=True)
-            ids_to_process.extend(child_ids)
 
-        if id in id_to_span:
-            sorted_spans.append(id_to_span[id])
+        # child_ids are already sorted by start time
+        child_ids = [child['spanId'] for child in trace.get_child_spans(id)]
+
+        # reverse child IDs before pushing into ids_to_process,
+        # since we pop from BACK and want earlier children to pop sooner
+        child_ids.reverse()
+        ids_to_process.extend(child_ids)
+
+        if (span := trace.get_span(id)) is not None:
+            sorted_spans.append(span)
 
     # warn if any spans are missing
-    if (num_leftover := len(spans) - len(sorted_spans)):
+    if (num_leftover := len(trace.spans) - len(sorted_spans)):
         print(f"WARNING: {num_leftover} spans not shown (missing parents)")
 
     return sorted_spans
-
-
-# Transform attributes from like:
-#   [
-#     {"key": "code.namespace", "value": {"stringValue": "s3_benchrunner_rust::transfer_manager"}},
-#     {"key": "code.lineno", "value": {"intValue": 136}}
-#   ]
-# To like:
-#   {
-#     "code.namespace": "s3_benchrunner_rust::transfer_manager",
-#     "code.lineno": 136,
-#   }
-def _simplify_attributes(attributes_list):
-    simple_dict = {}
-    for attr in attributes_list:
-        key = attr['key']
-        # extract actual value, ignoring value's key which looks like "intValue"
-        value = next(iter(attr['value'].values()))
-
-        # trim down long filepaths by omitting everything before "src/"
-        if key == 'code.filepath':
-            if (src_idx := value.find("src/")) > 0:
-                value = value[src_idx:]
-
-        # trim down excessively long strings
-        MAX_STRLEN = 150
-        if isinstance(value, str) and len(value) > MAX_STRLEN:
-            value = value[:MAX_STRLEN] + "...TRUNCATED"
-
-        simple_dict[key] = value
-
-    return simple_dict
-
-
-def _nice_name(span):
-    name = span['name']
-    attributes = span['attributes']
-    if (seq := attributes.get('seq')) is not None:
-        name += f"[{seq}]"
-
-    if (part_number := attributes.get('part_number')) is not None:
-        name += f"#{part_number}"
-    return name

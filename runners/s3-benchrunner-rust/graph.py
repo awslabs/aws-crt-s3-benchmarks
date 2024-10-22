@@ -3,8 +3,9 @@ import argparse
 import json
 from pathlib import Path
 
-from graph import PerfTimer
+from graph import PerfTimer, Trace
 import graph.allspans
+import graph.http
 
 PARSER = argparse.ArgumentParser(description="Graph a benchmark run")
 
@@ -28,22 +29,26 @@ PARSER.add_argument('TRACE_JSON', help="trace_*.json file to graph.")
 
 args = PARSER.parse_args()
 
-trace_json = Path(args.TRACE_JSON)
+trace_json_path = Path(args.TRACE_JSON)
 
 # if directory passed in, pick the newest file
-if trace_json.is_dir():
-    all_traces = list(trace_json.glob('trace_*.json'))
+if trace_json_path.is_dir():
+    all_traces = list(trace_json_path.glob('trace_*.json'))
     if len(all_traces) == 0:
-        exit(f"No trace_*.json found under: {trace_json.absolute()}")
-    trace_json = sorted(all_traces, key=lambda x: x.stat().st_mtime)[-1]
+        exit(f"No trace_*.json found under: {trace_json_path.absolute()}")
+    trace_json_path = sorted(all_traces, key=lambda x: x.stat().st_mtime)[-1]
 
-with PerfTimer(f'Open {trace_json}'):
-    with open(trace_json) as f:
+with PerfTimer(f'Open {trace_json_path}'):
+    with open(trace_json_path) as f:
         traces_data = json.load(f)
+        trace = Trace(traces_data)
 
-with PerfTimer('Graph all spans'):
-    fig = graph.allspans.draw(traces_data)
+allspans_path = Path(trace_json_path).with_suffix('.allspans.html')
+with PerfTimer(f'Write {allspans_path}'):
+    fig = graph.allspans.draw(trace)
+    fig.write_html(allspans_path)
 
-html_path = Path(trace_json).with_suffix('.allspans.html')
-with PerfTimer(f'Write {html_path}'):
-    fig.write_html(html_path)
+http_path = Path(trace_json_path).with_suffix('.http.html')
+with PerfTimer(f'Write {http_path}'):
+    fig = graph.http.draw(trace)
+    fig.write_html(http_path)

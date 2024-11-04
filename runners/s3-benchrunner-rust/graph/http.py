@@ -28,9 +28,6 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
     # when drawing a line, don't make it shorter than this, or it won't be visible
     min_visual_duration_ns = int((max_ns - min_ns) * 0.0001)
 
-    # gaps between adjacent lines should be this large
-    gap_between_requests_ns = int((max_ns - min_ns) * 0.001)
-
     requests = _gather_all_requests(trace)
 
     columns = defaultdict(list)
@@ -65,9 +62,9 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
             row_i += 1
         if row_i == len(row_end_times_ns):
             row_end_times_ns.append(0)
-        row_end_times_ns[row_i] = visual_end_time_ns + gap_between_requests_ns
+        row_end_times_ns[row_i] = visual_end_time_ns
 
-        columns['Row'].append(row_i * 2)
+        columns['Concurrency'].append(row_i + 1)
 
     df = pandas.DataFrame(columns)
 
@@ -75,21 +72,28 @@ def draw(trace: Trace) -> plotly.graph_objs.Figure:
     # Omit a column by setting false. You can also set special formatting rules here.
     hover_data = {col: True for col in columns.keys()}
     hover_data['Visual End Time'] = False  # actual "End Time" already shown
-    hover_data['Row'] = False  # row is meaningless
+    hover_data['Concurrency'] = False  # this is just visual
 
     fig = plotly.express.timeline(
         title="HTTP Requests",
         data_frame=df,
         x_start='Start Time',
         x_end='End Time',
-        y='Row',
+        y='Concurrency',
         hover_data=hover_data,
         color='Duration (secs)',
-        color_continuous_scale=['green', 'yellow', 'red'],
     )
     fig.update_layout(
         xaxis_title="Start/End Time",
-        yaxis_title="Concurrency (approx)",
+        # Color requests from green -> red according to duration.
+        coloraxis=dict(
+            # these must have values from 0 -> 1
+            colorscale=[(0, 'green'), (0.25, 'yellow'),
+                        (0.6, 'orange'), (1, 'red')],
+            # then you separately set the real-world Duration (secs) they apply to
+            cmin=0.0,
+            cmax=5.0,  # 5 secs is common when UploadPart is randomly slow
+        ),
     )
 
     return fig

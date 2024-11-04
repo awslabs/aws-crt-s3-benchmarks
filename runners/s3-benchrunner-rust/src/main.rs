@@ -20,8 +20,10 @@ struct Args {
     region: String,
     #[arg(help = "Target throughput, in gigabits per second (e.g. \"100.0\" for c5n.18xlarge)")]
     target_throughput: f64,
-    #[arg(long, help = "Emit telemetry via OTLP/gRPC to http://localhost:4317")]
+    #[arg(long, help = "Emit telemetry to trace_*.json")]
     telemetry: bool,
+    #[arg(long, help = "Emit flamegraph_*.svg")]
+    flamegraph: bool,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -33,13 +35,16 @@ enum S3ClientId {
     // SdkClient,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = Args::parse();
 
-    let result = execute(&args).await;
-    if let Err(e) = result {
-        match e.downcast_ref::<SkipBenchmarkError>() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    match runtime.block_on(execute(&args)) {
+        Err(e) => match e.downcast_ref::<SkipBenchmarkError>() {
             None => {
                 panic!("{e:?}");
             }
@@ -47,7 +52,8 @@ async fn main() {
                 eprintln!("Skipping benchmark - {msg}");
                 exit(123);
             }
-        }
+        },
+        Ok(()) => (),
     }
 }
 
@@ -71,11 +77,22 @@ async fn execute(args: &Args) -> Result<()> {
     let gigabits_per_run = bytes_to_gigabits(bytes_per_run);
 
     // repeat benchmark until we exceed max_repeat_count or max_repeat_secs
+    let app_start_datetime = chrono::Utc::now();
     let app_start = Instant::now();
     for run_num in 1..=workload.max_repeat_count {
         prepare_run(workload)?;
 
-        let run_start_datetime = chrono::Utc::now();
+        let profiler = if args.flamegraph {
+            Some(
+                pprof::ProfilerGuardBuilder::default()
+                    .frequency(10)
+                    .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+                    .build()?,
+            )
+        } else {
+            None
+        };
+
         let run_start = Instant::now(); // high resolution
 
         runner
@@ -89,12 +106,28 @@ async fn execute(args: &Args) -> Result<()> {
 
         let run_secs = run_start.elapsed().as_secs_f64();
 
+        if let Some(profiler) = &profiler {
+            let report = profiler.report().build()?;
+            let file = std::fs::File::create(artifact_file_name(
+                "flamegraph",
+                workload_name,
+                &app_start_datetime,
+                run_num,
+                gigabits_per_run / run_secs,
+                ".svg",
+            ))?;
+            report.flamegraph(file)?;
+        }
+
         // flush any telemetry
         if let Some(telemetry) = &mut telemetry {
-            telemetry.flush_to_file(&trace_file_name(
+            telemetry.flush_to_file(&artifact_file_name(
+                "trace",
                 workload_name,
-                &run_start_datetime,
+                &app_start_datetime,
                 run_num,
+                gigabits_per_run / run_secs,
+                ".json",
             ));
         }
 
@@ -137,11 +170,16 @@ fn workload_name(path: &str) -> &str {
     without_extension
 }
 
-fn trace_file_name(
+// Get file name to use when emitting things like telemetry and flamegraph files per benchmark run
+fn artifact_file_name(
+    prefix: &str,
     workload: &str,
-    run_start: &chrono::DateTime<chrono::Utc>,
+    timestamp: &chrono::DateTime<chrono::Utc>,
     run_num: u32,
+    run_gigabits_per_sec: f64,
+    suffix: &str,
 ) -> String {
-    let run_start = run_start.format("%Y%m%dT%H%M%SZ").to_string();
-    format!("trace_{run_start}_{workload}_run{run_num:02}.json")
+    let timestamp = timestamp.format("%Y%m%dT%H%M%SZ").to_string();
+    let run_gigabits_per_sec = run_gigabits_per_sec.round() as u64;
+    format!("{prefix}_{timestamp}_{workload}_run{run_num:02}_{run_gigabits_per_sec:03}Gbps{suffix}")
 }

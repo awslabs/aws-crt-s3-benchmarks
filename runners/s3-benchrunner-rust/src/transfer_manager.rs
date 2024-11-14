@@ -231,7 +231,7 @@ impl RunBenchmark for TransferManagerRunner {
             return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
         }
         if self.transfer_path != None {
-            /* Use the objects API to download/upload directory directly */
+            // Use the objects API to download/upload directory directly
             match workload_config.tasks[0].action {
                 TaskAction::Download => {
                     self.download_objects()
@@ -245,7 +245,7 @@ impl RunBenchmark for TransferManagerRunner {
                 }
             }
         } else {
-            /* Iterate through all the tasks to download/upload each object. */
+            // Iterate through all the tasks to download/upload each object.
             for i in 0..workload_config.tasks.len() {
                 let task = self.clone().run_task(i);
                 task_set.spawn(task.instrument(tracing::Span::current()));

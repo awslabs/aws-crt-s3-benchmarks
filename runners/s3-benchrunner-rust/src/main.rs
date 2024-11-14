@@ -126,7 +126,6 @@ async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
         &args.region,
         args.target_throughput,
     )?;
-    print!("{}", args.disable_directory);
     match args.s3_client {
         S3ClientId::TransferManager => {
             let transfer_manager = TransferManagerRunner::new(config, args.disable_directory).await;

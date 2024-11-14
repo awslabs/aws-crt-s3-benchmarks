@@ -61,14 +61,25 @@ impl TransferManagerRunner {
         let mut transfer_path = None;
         if config.workload.files_on_disk && !disable_directory {
             let first_task = &config.workload.tasks[0];
-            transfer_path = Some(
-                std::path::Path::new(&first_task.key)
-                    .parent()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            let mut common_root = std::path::Path::new(&first_task.key).parent();
+            // Find the common parents directory for all the tasks.
+            // If there is no common parent, we can't use the same directory for downloads.
+            for task in &config.workload.tasks {
+                // Find the directory that is the root to all files.
+                common_root = common_root.unwrap().ancestors().find(|ancestor| {
+                    std::path::Path::new(&task.key)
+                        .ancestors()
+                        .any(|task_ancestor| task_ancestor == *ancestor)
+                });
+                if common_root.is_none() {
+                    // If there is no common root, we can't use the same directory for downloads.
+                    // Instead, we'll just fall back to iterate through every task for transfers.
+                    break;
+                }
+            }
+            if common_root.is_some() {
+                transfer_path = Some(common_root.unwrap().to_str().unwrap().to_string());
+            }
         }
 
         TransferManagerRunner {

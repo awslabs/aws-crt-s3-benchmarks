@@ -1,4 +1,4 @@
-use std::{cmp::min, sync::Arc};
+use std::{cmp::min, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -20,6 +20,7 @@ use crate::{
 #[derive(Clone)]
 pub struct TransferManagerRunner {
     handle: Arc<Handle>,
+    transfer_path: Option<String>,
 }
 
 struct Handle {
@@ -57,6 +58,18 @@ impl TransferManagerRunner {
             .await;
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
+        let mut transfer_path = None;
+        if config.workload.files_on_disk && config.workload.tasks.len() > 1 {
+            let first_task = &config.workload.tasks[0];
+            transfer_path = Some(
+                std::path::Path::new(&first_task.key)
+                    .parent()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            );
+        }
 
         TransferManagerRunner {
             handle: Arc::new(Handle {
@@ -64,6 +77,7 @@ impl TransferManagerRunner {
                 transfer_manager,
                 random_data_for_upload,
             }),
+            transfer_path: transfer_path,
         }
     }
 
@@ -86,6 +100,37 @@ impl TransferManagerRunner {
                     .await
             }
         }
+    }
+    async fn download_objects(&self) -> Result<()> {
+        let path = self.transfer_path.as_ref().unwrap();
+        let dest = PathBuf::from(path);
+
+        let download_objects_handle = self
+            .handle
+            .transfer_manager
+            .download_objects()
+            .bucket(&self.config().bucket)
+            .key_prefix(path)
+            .destination(&dest)
+            .send()
+            .await?;
+        download_objects_handle.join().await?;
+        Ok(())
+    }
+
+    async fn upload_objects(&self) -> Result<()> {
+        let path = self.transfer_path.as_ref().unwrap();
+        let upload_objects_handle = self
+            .handle
+            .transfer_manager
+            .upload_objects()
+            .bucket(&self.config().bucket)
+            .key_prefix(path)
+            .source(path)
+            .send()
+            .await?;
+        upload_objects_handle.join().await?;
+        Ok(())
     }
 
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
@@ -179,16 +224,38 @@ impl RunBenchmark for TransferManagerRunner {
         // We want the benchmark to fail fast if anything goes wrong,
         // so we're using a JoinSet.
         let mut task_set: JoinSet<Result<()>> = JoinSet::new();
-        for i in 0..self.config().workload.tasks.len() {
-            let task = self.clone().run_task(i);
-            task_set.spawn(task.instrument(tracing::Span::current()));
-        }
 
-        while let Some(join_result) = task_set.join_next().await {
-            let task_result = join_result.unwrap();
-            task_result?;
-        }
+        let workload_config = &self.config().workload;
 
+        if workload_config.checksum.is_some() {
+            return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
+        }
+        if self.transfer_path != None {
+            /* Use the objects API to download/upload directory directly */
+            match workload_config.tasks[0].action {
+                TaskAction::Download => {
+                    self.download_objects()
+                        .instrument(info_span!("download directory", key = self.transfer_path))
+                        .await?
+                }
+                TaskAction::Upload => {
+                    self.upload_objects()
+                        .instrument(info_span!("download directory", key = self.transfer_path))
+                        .await?
+                }
+            }
+        } else {
+            /* Iterate through all the tasks to download/upload each object. */
+            for i in 0..workload_config.tasks.len() {
+                let task = self.clone().run_task(i);
+                task_set.spawn(task.instrument(tracing::Span::current()));
+            }
+
+            while let Some(join_result) = task_set.join_next().await {
+                let task_result = join_result.unwrap();
+                task_result?;
+            }
+        }
         Ok(())
     }
 

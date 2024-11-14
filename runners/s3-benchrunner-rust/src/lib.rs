@@ -135,7 +135,7 @@ pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
                     } else if let Some(dir) = filepath.parent() {
                         // create directory if necessary
                         if !dir.exists() {
-                            std::fs::create_dir(dir)
+                            std::fs::create_dir_all(dir)
                                 .with_context(|| format!("failed creating directory: {dir:?}"))?;
                         }
                     }

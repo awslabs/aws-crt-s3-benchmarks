@@ -30,7 +30,7 @@ struct Handle {
 }
 
 impl TransferManagerRunner {
-    pub async fn new(config: BenchmarkConfig) -> TransferManagerRunner {
+    pub async fn new(config: BenchmarkConfig, disable_directory: bool) -> TransferManagerRunner {
         // Blugh, the user shouldn't need to manually configure concurrency like this.
         let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
 
@@ -59,7 +59,7 @@ impl TransferManagerRunner {
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
         let mut transfer_path = None;
-        if config.workload.files_on_disk && config.workload.tasks.len() > 1 {
+        if config.workload.files_on_disk && !disable_directory {
             let first_task = &config.workload.tasks[0];
             transfer_path = Some(
                 std::path::Path::new(&first_task.key)

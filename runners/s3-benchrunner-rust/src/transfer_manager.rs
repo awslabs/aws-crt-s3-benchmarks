@@ -20,17 +20,17 @@ use crate::{
 #[derive(Clone)]
 pub struct TransferManagerRunner {
     handle: Arc<Handle>,
-    transfer_path: Option<String>,
 }
 
 struct Handle {
     config: BenchmarkConfig,
     transfer_manager: aws_s3_transfer_manager::Client,
     random_data_for_upload: Bytes,
+    transfer_path: Option<String>,
 }
 
 impl TransferManagerRunner {
-    pub async fn new(config: BenchmarkConfig, disable_directory: bool) -> TransferManagerRunner {
+    pub async fn new(config: BenchmarkConfig) -> TransferManagerRunner {
         // Blugh, the user shouldn't need to manually configure concurrency like this.
         let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
 
@@ -58,37 +58,14 @@ impl TransferManagerRunner {
             .await;
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
-        let mut transfer_path = None;
-        if config.workload.files_on_disk && !disable_directory {
-            let first_task = &config.workload.tasks[0];
-
-            // Find the common parents directory for all the tasks.
-            // If there is no common parent, we can't use the same directory for downloads.
-            let mut common_root = std::path::Path::new(&first_task.key).parent();
-            for task in &config.workload.tasks {
-                common_root = common_root.unwrap().ancestors().find(|ancestor| {
-                    std::path::Path::new(&task.key)
-                        .ancestors()
-                        .any(|task_ancestor| task_ancestor == *ancestor)
-                });
-                if common_root.is_none() {
-                    // If there is no common root, we can't use the same directory for downloads.
-                    // Instead, we'll just fall back to iterate through every task for transfers.
-                    break;
-                }
-            }
-            if common_root.is_some() {
-                transfer_path = Some(common_root.unwrap().to_str().unwrap().to_string());
-            }
-        }
-
+        let transfer_path = resolve_transfer_path(&config);
         TransferManagerRunner {
             handle: Arc::new(Handle {
                 config,
                 transfer_manager,
                 random_data_for_upload,
+                transfer_path,
             }),
-            transfer_path: transfer_path,
         }
     }
 
@@ -113,7 +90,7 @@ impl TransferManagerRunner {
         }
     }
     async fn download_objects(&self) -> Result<()> {
-        let path = self.transfer_path.as_ref().unwrap();
+        let path = self.handle.transfer_path.as_ref().unwrap();
         let dest = PathBuf::from(path);
 
         let download_objects_handle = self
@@ -130,7 +107,7 @@ impl TransferManagerRunner {
     }
 
     async fn upload_objects(&self) -> Result<()> {
-        let path = self.transfer_path.as_ref().unwrap();
+        let path = self.handle.transfer_path.as_ref().unwrap();
         let upload_objects_handle = self
             .handle
             .transfer_manager
@@ -241,17 +218,23 @@ impl RunBenchmark for TransferManagerRunner {
         if workload_config.checksum.is_some() {
             return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
         }
-        if self.transfer_path != None {
+        if self.handle.transfer_path != None {
             // Use the objects API to download/upload directory directly
             match workload_config.tasks[0].action {
                 TaskAction::Download => {
                     self.download_objects()
-                        .instrument(info_span!("download directory", key = self.transfer_path))
+                        .instrument(info_span!(
+                            "download directory",
+                            key = self.handle.transfer_path
+                        ))
                         .await?
                 }
                 TaskAction::Upload => {
                     self.upload_objects()
-                        .instrument(info_span!("download directory", key = self.transfer_path))
+                        .instrument(info_span!(
+                            "download directory",
+                            key = self.handle.transfer_path
+                        ))
                         .await?
                 }
             }
@@ -282,6 +265,29 @@ impl RunBenchmark for TransferManagerRunner {
 fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
     let concurrency = target_throughput_gigabits_per_sec * 2.5;
     (concurrency as usize).max(10)
+}
+
+/// Resolve the transfer path based on the config.
+/// If None returns,
+fn resolve_transfer_path(config: &BenchmarkConfig) -> Option<String> {
+    if config.workload.files_on_disk && !config.disable_directory {
+        let first_task = &config.workload.tasks[0];
+
+        // Find the common parents directory for all the tasks.
+        // If there is no common parent, we can't use the same directory for downloads.
+        let mut common_root = std::path::Path::new(&first_task.key).parent()?;
+        for task in &config.workload.tasks {
+            let task_path = std::path::Path::new(&task.key);
+            common_root = common_root.ancestors().find(|ancestor| {
+                task_path
+                    .ancestors()
+                    .any(|task_ancestor| task_ancestor == *ancestor)
+            })?;
+        }
+        Some(common_root.to_str()?.to_string())
+    } else {
+        None
+    }
 }
 
 // Quickly generate a buffer of random data.

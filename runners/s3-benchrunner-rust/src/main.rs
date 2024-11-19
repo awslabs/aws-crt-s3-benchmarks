@@ -24,7 +24,7 @@ struct Args {
     telemetry: bool,
     #[arg(
         long,
-        help = "Disable directory workload, enforce to iterate through each object for transfer manager."
+        help = "Instead of using 1 upload_objects()/download_objects() call for multiple files on disk, use N upload()/download() calls."
     )]
     disable_directory: bool,
 }
@@ -125,10 +125,11 @@ async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
         &args.bucket,
         &args.region,
         args.target_throughput,
+        args.disable_directory,
     )?;
     match args.s3_client {
         S3ClientId::TransferManager => {
-            let transfer_manager = TransferManagerRunner::new(config, args.disable_directory).await;
+            let transfer_manager = TransferManagerRunner::new(config).await;
             Ok(Box::new(transfer_manager))
         }
     }

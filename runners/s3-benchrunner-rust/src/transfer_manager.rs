@@ -58,7 +58,7 @@ impl TransferManagerRunner {
             .await;
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
-        let transfer_path = resolve_transfer_path(&config);
+        let transfer_path = find_common_parent_dir(&config);
         TransferManagerRunner {
             handle: Arc::new(Handle {
                 config,
@@ -208,46 +208,42 @@ impl TransferManagerRunner {
 #[async_trait]
 impl RunBenchmark for TransferManagerRunner {
     async fn run(&self) -> Result<()> {
-        // Spawn concurrent tasks for all uploads/downloads.
-        // We want the benchmark to fail fast if anything goes wrong,
-        // so we're using a JoinSet.
-        let mut task_set: JoinSet<Result<()>> = JoinSet::new();
-
         let workload_config = &self.config().workload;
 
         if workload_config.checksum.is_some() {
             return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
         }
-        if self.handle.transfer_path != None {
-            // Use the objects API to download/upload directory directly
-            match workload_config.tasks[0].action {
-                TaskAction::Download => {
-                    self.download_objects()
-                        .instrument(info_span!(
-                            "download directory",
-                            key = self.handle.transfer_path
-                        ))
-                        .await?
-                }
-                TaskAction::Upload => {
-                    self.upload_objects()
-                        .instrument(info_span!(
-                            "download directory",
-                            key = self.handle.transfer_path
-                        ))
-                        .await?
+        match &self.handle.transfer_path {
+            Some(transfer_path) => {
+                // Use the objects API to download/upload directory directly
+                match workload_config.tasks[0].action {
+                    TaskAction::Download => {
+                        self.download_objects()
+                            .instrument(info_span!("download-directory", directory = transfer_path))
+                            .await?
+                    }
+                    TaskAction::Upload => {
+                        self.upload_objects()
+                            .instrument(info_span!("upload-directory", directory = transfer_path))
+                            .await?
+                    }
                 }
             }
-        } else {
-            // Iterate through all the tasks to download/upload each object.
-            for i in 0..workload_config.tasks.len() {
-                let task = self.clone().run_task(i);
-                task_set.spawn(task.instrument(tracing::Span::current()));
-            }
+            None => {
+                // Spawn concurrent tasks for all uploads/downloads.
+                // We want the benchmark to fail fast if anything goes wrong,
+                // so we're using a JoinSet.
+                let mut task_set: JoinSet<Result<()>> = JoinSet::new();
+                // Iterate through all the tasks to download/upload each object.
+                for i in 0..workload_config.tasks.len() {
+                    let task = self.clone().run_task(i);
+                    task_set.spawn(task.instrument(tracing::Span::current()));
+                }
 
-            while let Some(join_result) = task_set.join_next().await {
-                let task_result = join_result.unwrap();
-                task_result?;
+                while let Some(join_result) = task_set.join_next().await {
+                    let task_result = join_result.unwrap();
+                    task_result?;
+                }
             }
         }
         Ok(())
@@ -267,10 +263,11 @@ fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
     (concurrency as usize).max(10)
 }
 
-/// Resolve the transfer path based on the config.
-/// If None returns,
-fn resolve_transfer_path(config: &BenchmarkConfig) -> Option<String> {
-    if config.workload.files_on_disk && !config.disable_directory {
+/// Find the common parent directory for all tasks.
+/// Returns None if we shouldn't be doing upload/download on a whole directory.
+fn find_common_parent_dir(config: &BenchmarkConfig) -> Option<String> {
+    if config.workload.files_on_disk && !config.disable_directory && config.workload.tasks.len() > 1
+    {
         let first_task = &config.workload.tasks[0];
 
         // Find the common parents directory for all the tasks.

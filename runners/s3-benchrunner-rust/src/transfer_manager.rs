@@ -130,8 +130,7 @@ impl TransferManagerRunner {
             .download()
             .bucket(&self.config().bucket)
             .key(key)
-            .send()
-            .await
+            .initiate()
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
@@ -153,8 +152,9 @@ impl TransferManagerRunner {
             .instrument(info_span!("next-chunk", seq, offset = total_size))
             .await
         {
-            let mut chunk =
+            let output =
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
+            let mut chunk = output.data;
 
             let chunk_size = chunk.remaining();
             total_size += chunk_size as u64;

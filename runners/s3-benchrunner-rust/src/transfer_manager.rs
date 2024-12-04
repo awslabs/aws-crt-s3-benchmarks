@@ -1,4 +1,4 @@
-use std::{cmp::min, sync::Arc};
+use std::{cmp::min, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
@@ -26,6 +26,7 @@ struct Handle {
     config: BenchmarkConfig,
     transfer_manager: aws_s3_transfer_manager::Client,
     random_data_for_upload: Bytes,
+    transfer_path: Option<String>,
 }
 
 impl TransferManagerRunner {
@@ -57,12 +58,13 @@ impl TransferManagerRunner {
             .await;
 
         let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
-
+        let transfer_path = find_common_parent_dir(&config);
         TransferManagerRunner {
             handle: Arc::new(Handle {
                 config,
                 transfer_manager,
                 random_data_for_upload,
+                transfer_path,
             }),
         }
     }
@@ -87,6 +89,37 @@ impl TransferManagerRunner {
             }
         }
     }
+    async fn download_objects(&self) -> Result<()> {
+        let path = self.handle.transfer_path.as_ref().unwrap();
+        let dest = PathBuf::from(path);
+
+        let download_objects_handle = self
+            .handle
+            .transfer_manager
+            .download_objects()
+            .bucket(&self.config().bucket)
+            .key_prefix(path)
+            .destination(&dest)
+            .send()
+            .await?;
+        download_objects_handle.join().await?;
+        Ok(())
+    }
+
+    async fn upload_objects(&self) -> Result<()> {
+        let path = self.handle.transfer_path.as_ref().unwrap();
+        let upload_objects_handle = self
+            .handle
+            .transfer_manager
+            .upload_objects()
+            .bucket(&self.config().bucket)
+            .key_prefix(path)
+            .source(path)
+            .send()
+            .await?;
+        upload_objects_handle.join().await?;
+        Ok(())
+    }
 
     async fn download(&self, task_config: &TaskConfig) -> Result<()> {
         let key = &task_config.key;
@@ -97,8 +130,7 @@ impl TransferManagerRunner {
             .download()
             .bucket(&self.config().bucket)
             .key(key)
-            .send()
-            .await
+            .initiate()
             .with_context(|| format!("failed starting download: {key}"))?;
 
         // if files_on_disk: open file for writing
@@ -120,8 +152,9 @@ impl TransferManagerRunner {
             .instrument(info_span!("next-chunk", seq, offset = total_size))
             .await
         {
-            let mut chunk =
+            let output =
                 chunk_result.with_context(|| format!("failed downloading next chunk of: {key}"))?;
+            let mut chunk = output.data;
 
             let chunk_size = chunk.remaining();
             total_size += chunk_size as u64;
@@ -175,20 +208,44 @@ impl TransferManagerRunner {
 #[async_trait]
 impl RunBenchmark for TransferManagerRunner {
     async fn run(&self) -> Result<()> {
-        // Spawn concurrent tasks for all uploads/downloads.
-        // We want the benchmark to fail fast if anything goes wrong,
-        // so we're using a JoinSet.
-        let mut task_set: JoinSet<Result<()>> = JoinSet::new();
-        for i in 0..self.config().workload.tasks.len() {
-            let task = self.clone().run_task(i);
-            task_set.spawn(task.instrument(tracing::Span::current()));
-        }
+        let workload_config = &self.config().workload;
 
-        while let Some(join_result) = task_set.join_next().await {
-            let task_result = join_result.unwrap();
-            task_result?;
+        if workload_config.checksum.is_some() {
+            return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
         }
+        match &self.handle.transfer_path {
+            Some(transfer_path) => {
+                // Use the objects API to download/upload directory directly
+                match workload_config.tasks[0].action {
+                    TaskAction::Download => {
+                        self.download_objects()
+                            .instrument(info_span!("download-directory", directory = transfer_path))
+                            .await?
+                    }
+                    TaskAction::Upload => {
+                        self.upload_objects()
+                            .instrument(info_span!("upload-directory", directory = transfer_path))
+                            .await?
+                    }
+                }
+            }
+            None => {
+                // Spawn concurrent tasks for all uploads/downloads.
+                // We want the benchmark to fail fast if anything goes wrong,
+                // so we're using a JoinSet.
+                let mut task_set: JoinSet<Result<()>> = JoinSet::new();
+                // Iterate through all the tasks to download/upload each object.
+                for i in 0..workload_config.tasks.len() {
+                    let task = self.clone().run_task(i);
+                    task_set.spawn(task.instrument(tracing::Span::current()));
+                }
 
+                while let Some(join_result) = task_set.join_next().await {
+                    let task_result = join_result.unwrap();
+                    task_result?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -204,6 +261,33 @@ impl RunBenchmark for TransferManagerRunner {
 fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
     let concurrency = target_throughput_gigabits_per_sec * 2.5;
     (concurrency as usize).max(10)
+}
+
+/// Find the common parent directory for all tasks.
+/// Returns None if we shouldn't be doing upload/download on a whole directory.
+fn find_common_parent_dir(config: &BenchmarkConfig) -> Option<String> {
+    if config.workload.files_on_disk && !config.disable_directory && config.workload.tasks.len() > 1
+    {
+        let first_task = &config.workload.tasks[0];
+
+        // Find the common parents directory for all the tasks.
+        // If there is no common parent, we can't use the same directory for downloads.
+        let mut common_root = std::path::Path::new(&first_task.key).parent()?;
+        for task in &config.workload.tasks {
+            let task_path = std::path::Path::new(&task.key);
+            common_root = common_root.ancestors().find(|ancestor| {
+                task_path
+                    .ancestors()
+                    .any(|task_ancestor| task_ancestor == *ancestor)
+            })?;
+            if task.action != first_task.action {
+                panic!("Can't use directory for both download and upload");
+            }
+        }
+        Some(common_root.to_str()?.to_string())
+    } else {
+        None
+    }
 }
 
 // Quickly generate a buffer of random data.

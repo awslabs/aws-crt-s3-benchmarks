@@ -32,6 +32,7 @@ pub struct BenchmarkConfig {
     pub bucket: String,
     pub region: String,
     pub target_throughput_gigabits_per_sec: f64,
+    pub disable_directory: bool,
 }
 
 /// From the workload's JSON file
@@ -79,6 +80,7 @@ impl BenchmarkConfig {
         bucket: &str,
         region: &str,
         target_throughput_gigabits_per_sec: f64,
+        disable_directory: bool,
     ) -> Result<Self> {
         let json_file = File::open(workload_path)
             .with_context(|| format!("Failed opening '{workload_path}'"))?;
@@ -110,6 +112,7 @@ impl BenchmarkConfig {
             bucket: bucket.to_string(),
             region: region.to_string(),
             target_throughput_gigabits_per_sec,
+            disable_directory,
         })
     }
 }
@@ -135,7 +138,7 @@ pub fn prepare_run(workload: &WorkloadConfig) -> Result<()> {
                     } else if let Some(dir) = filepath.parent() {
                         // create directory if necessary
                         if !dir.exists() {
-                            std::fs::create_dir(dir)
+                            std::fs::create_dir_all(dir)
                                 .with_context(|| format!("failed creating directory: {dir:?}"))?;
                         }
                     }

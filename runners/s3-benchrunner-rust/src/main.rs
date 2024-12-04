@@ -22,6 +22,11 @@ struct Args {
     target_throughput: f64,
     #[arg(long, help = "Emit telemetry via OTLP/gRPC to http://localhost:4317")]
     telemetry: bool,
+    #[arg(
+        long,
+        help = "Instead of using 1 upload_objects()/download_objects() call for multiple files on disk, use N upload()/download() calls."
+    )]
+    disable_directory: bool,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -120,8 +125,8 @@ async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
         &args.bucket,
         &args.region,
         args.target_throughput,
+        args.disable_directory,
     )?;
-
     match args.s3_client {
         S3ClientId::TransferManager => {
             let transfer_manager = TransferManagerRunner::new(config).await;

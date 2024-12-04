@@ -280,6 +280,9 @@ fn find_common_parent_dir(config: &BenchmarkConfig) -> Option<String> {
                     .ancestors()
                     .any(|task_ancestor| task_ancestor == *ancestor)
             })?;
+            if task.action != first_task.action {
+                panic!("Can't use directory for both download and upload");
+            }
         }
         Some(common_root.to_str()?.to_string())
     } else {

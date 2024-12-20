@@ -84,9 +84,6 @@ async fn main() -> Result<()> {
         .map(|cli| Command::RunBenchmark(cli.run_args))
         .unwrap_or_else(|_| ExtendedCli::parse().command);
 
-    // let cli = Cli::parse();
-    // let command = cli.command.unwrap_or(Command::RunBenchmark(cli.run_args));
-
     match command {
         Command::RunBenchmark(args) => {
             let result = execute(&args).await;

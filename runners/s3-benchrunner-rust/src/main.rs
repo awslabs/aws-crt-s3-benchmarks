@@ -1,15 +1,44 @@
-use clap::{Parser, ValueEnum};
-use std::process::exit;
+use clap::{Parser, Subcommand, ValueEnum};
+use std::fs::File;
 use std::time::Instant;
+use std::{path::Path, process::exit};
 use tracing::{info_span, Instrument};
+
+use opentelemetry_proto::tonic::{
+    collector::trace::v1::{trace_service_client::TraceServiceClient, ExportTraceServiceRequest},
+    trace::v1::TracesData,
+};
+use tonic::transport::Channel;
 
 use s3_benchrunner_rust::{
     bytes_to_gigabits, prepare_run, telemetry, BenchmarkConfig, Result, RunBenchmark,
     SkipBenchmarkError, TransferManagerRunner,
 };
+
 #[derive(Parser, Debug)]
-#[command()]
-struct Args {
+struct SimpleCli {
+    #[command(flatten)]
+    run_args: RunArgs,
+}
+
+#[derive(Parser, Debug)]
+struct ExtendedCli {
+    #[command(subcommand)]
+    command: Command,
+    #[command(flatten)]
+    run_args: Option<RunArgs>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    RunBenchmark(RunArgs),
+    UploadOtlp(UploadOtlpArgs),
+}
+
+#[derive(Debug, clap::Args)]
+#[command(args_conflicts_with_subcommands = true)]
+#[command(flatten_help = true)]
+struct RunArgs {
     #[arg(value_enum, help = "ID of S3 library to use")]
     s3_client: S3ClientId,
     #[arg(help = "Path to workload file (e.g. download-1GiB.run.json)")]
@@ -29,6 +58,17 @@ struct Args {
     disable_directory: bool,
 }
 
+#[derive(Debug, clap::Args)]
+#[command(flatten_help = true)]
+struct UploadOtlpArgs {
+    /// OLTP endpoint to export data to
+    #[arg(long, default_value = "http://localhost:4317")]
+    oltp_endpoint: String,
+
+    /// Path to the trace file (in opentelemetry-proto JSON format) to upload
+    json_file: String,
+}
+
 #[derive(ValueEnum, Clone, Debug)]
 enum S3ClientId {
     #[clap(name = "sdk-rust-tm", help = "use aws-s3-transfer-manager crate")]
@@ -39,24 +79,33 @@ enum S3ClientId {
 }
 
 #[tokio::main]
-async fn main() {
-    let args = Args::parse();
+async fn main() -> Result<()> {
+    let command = SimpleCli::try_parse()
+        .map(|cli| Command::RunBenchmark(cli.run_args))
+        .unwrap_or_else(|_| ExtendedCli::parse().command);
 
-    let result = execute(&args).await;
-    if let Err(e) = result {
-        match e.downcast_ref::<SkipBenchmarkError>() {
-            None => {
-                panic!("{e:?}");
-            }
-            Some(msg) => {
-                eprintln!("Skipping benchmark - {msg}");
-                exit(123);
+    match command {
+        Command::RunBenchmark(args) => {
+            let result = execute(&args).await;
+            if let Err(e) = result {
+                match e.downcast_ref::<SkipBenchmarkError>() {
+                    None => {
+                        panic!("{e:?}");
+                    }
+                    Some(msg) => {
+                        eprintln!("Skipping benchmark - {msg}");
+                        exit(123);
+                    }
+                }
             }
         }
+        Command::UploadOtlp(args) => upload_otlp(args).await?,
     }
+
+    Ok(())
 }
 
-async fn execute(args: &Args) -> Result<()> {
+async fn execute(args: &RunArgs) -> Result<()> {
     let mut telemetry = if args.telemetry {
         // If emitting telemetry, set that up as tracing_subscriber.
         Some(telemetry::init_tracing_subscriber().unwrap())
@@ -119,7 +168,7 @@ async fn execute(args: &Args) -> Result<()> {
     Ok(())
 }
 
-async fn new_runner(args: &Args) -> Result<Box<dyn RunBenchmark>> {
+async fn new_runner(args: &RunArgs) -> Result<Box<dyn RunBenchmark>> {
     let config = BenchmarkConfig::new(
         &args.workload,
         &args.bucket,
@@ -149,4 +198,37 @@ fn trace_file_name(
 ) -> String {
     let run_start = run_start.format("%Y%m%dT%H%M%SZ").to_string();
     format!("trace_{run_start}_{workload}_run{run_num:02}.json")
+}
+
+async fn upload_otlp(args: UploadOtlpArgs) -> Result<()> {
+    let path = Path::new(&args.json_file);
+    let f = File::open(path)?;
+    let trace_data = read_spans_from_json(f)?;
+    println!("loaded {} spans", trace_data.resource_spans.len());
+
+    let endpoint = Channel::from_shared(args.oltp_endpoint)?;
+    let channel = endpoint.connect_lazy();
+    let mut client = TraceServiceClient::new(channel);
+
+    let requests: Vec<_> = trace_data
+        .resource_spans
+        .chunks(4_096)
+        .map(|batch| ExportTraceServiceRequest {
+            resource_spans: batch.to_vec(),
+        })
+        .collect();
+
+    for request in requests {
+        let resp = client.export(request).await?;
+        println!("export response: {:?}", resp);
+    }
+
+    Ok(())
+}
+
+// read a file contains ResourceSpans in json format
+pub fn read_spans_from_json(file: File) -> Result<TracesData> {
+    let reader = std::io::BufReader::new(file);
+    let trace_data: TracesData = serde_json::from_reader(reader)?;
+    Ok(trace_data)
 }

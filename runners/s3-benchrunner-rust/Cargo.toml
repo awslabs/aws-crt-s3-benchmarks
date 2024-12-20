@@ -7,7 +7,7 @@ edition = "2021"
 
 # Swap which line is commented-out to use GitHub or local aws-s3-transfer-manager
 aws-s3-transfer-manager = { git = "https://github.com/awslabs/aws-s3-transfer-manager-rs.git", rev = "06c087a5d53676bb048f6c512b8eb1fda63f03d5" }
-# aws-s3-transfer-manager = { path = "../../../aws-s3-transfer-manager-rs/aws-s3-transfer-manager" }
+#aws-s3-transfer-manager = { path = "../../../aws-s3-transfer-manager-rs/aws-s3-transfer-manager" }
 
 tracing-opentelemetry = "0.27"
 opentelemetry = { version = "0.26", features = ["trace"] }
@@ -15,22 +15,24 @@ opentelemetry_sdk = { version = "0.26", default-features = false, features = [
     "trace",
     "rt-tokio",
 ] }
+opentelemetry-proto = "0.26"
+opentelemetry-otlp = "0.26"
 opentelemetry-stdout = { version = "0.26", features = ["trace"] }
 opentelemetry-semantic-conventions = "0.26"
+tonic = "0.12.3"
 
 anyhow = "1.0.86"
 async-trait = "0.1.81"
-aws-config = "1.5.4"
-aws-sdk-s3 = "1.41.0"
+aws-config = "1.5.11"
 bytes = "1"
 chrono = "0.4.38"
-clap = { version = "4.5.9", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 fastrand = "=2.1.0"
 futures-util = "0.3"
 ordered-float = "4.3.0"
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
 thiserror = "1.0.62"
-tokio = { version = "1.40.0", features = ["io-util"] }
+tokio = { version = "1.42.0", features = ["io-util"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

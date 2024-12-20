@@ -10,7 +10,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::telemetry::trace::transform::SpanData;
+use opentelemetry_proto::transform::common::tonic::ResourceAttributesWithSchema;
+use opentelemetry_proto::{
+    tonic::trace::v1::TracesData, transform::trace::tonic::group_spans_by_resource_and_scope,
+};
 use opentelemetry_sdk::resource::Resource;
 
 /// Magic number based on: In Oct 2024, downloading 1 30GiB file generated 11,000+ batches per run.
@@ -41,7 +44,7 @@ impl opentelemetry_sdk::export::trace::SpanExporter for SpanExporter {
         // Queue batch, along with the current resource
         let batch = SdkSpanDataBatch {
             resource: self.resource.clone(),
-            batch: batch,
+            batch,
         };
         self.queued_batches.lock().unwrap().push(batch);
 
@@ -78,14 +81,21 @@ impl SpanExporter {
             new_queue
         };
 
-        // Transform sdk spans into serde spans
-        let span_data = SpanData::new(queued_batches);
+        let resource_spans: Vec<_> = queued_batches
+            .into_iter()
+            .flat_map(|batch| {
+                let resource = ResourceAttributesWithSchema::from(&batch.resource);
+                group_spans_by_resource_and_scope(batch.batch, &resource)
+            })
+            .collect();
+
+        let trace_data = TracesData { resource_spans };
 
         // Write to file
         let file =
             File::create_new(path).with_context(|| format!("Failed opening trace file: {path}"))?;
         let writer = BufWriter::new(file);
-        serde_json::to_writer(writer, &span_data)
+        serde_json::to_writer(writer, &trace_data)
             .with_context(|| format!("Failed writing json to: {path}"))
     }
 }

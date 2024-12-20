@@ -12,7 +12,6 @@ use std::env;
 
 use crate::Result;
 
-pub mod common;
 pub mod trace;
 
 // Create OTEL Resource (the entity that produces telemetry)

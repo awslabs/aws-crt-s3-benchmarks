@@ -172,25 +172,24 @@ def prep_bucket(s3, bucket: str, region: str):
 
     # Set lifecycle rules on this bucket, so we don't waste money.
     # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
-    # NOTE: S3 Express doesn't support lifecycle rules (as of March 2024).
-    if not is_s3express_bucket(bucket):
-        s3.put_bucket_lifecycle_configuration(
-            Bucket=bucket,
-            LifecycleConfiguration={
-                'Rules': [
-                    {
-                        'ID': 'Abort all incomplete multipart uploads after 1 day',
-                        'Status': 'Enabled',
-                        'Filter': {'Prefix': ''},  # blank string means all
-                        'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
-                    },
-                    {
-                        'ID': 'Objects under "upload/" expire after 1 day',
-                        'Status': 'Enabled',
-                        'Filter': {'Prefix': 'upload/'},
-                        'Expiration': {'Days': 1},
-                    },
-                ]})
+    s3.put_bucket_lifecycle_configuration(
+        Bucket=bucket,
+        ChecksumAlgorithm='CRC32',
+        LifecycleConfiguration={
+            'Rules': [
+                {
+                    'ID': 'Abort all incomplete multipart uploads after 1 day',
+                    'Status': 'Enabled',
+                    'Filter': {'Prefix': ''},  # blank string means all
+                    'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
+                },
+                {
+                    'ID': 'Objects under upload directory expire after 1 day',
+                    'Status': 'Enabled',
+                    'Filter': {'Prefix': 'upload/'},
+                    'Expiration': {'Days': 1},
+                },
+            ]})
 
 
 @dataclass

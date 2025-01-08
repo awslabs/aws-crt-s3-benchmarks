@@ -174,6 +174,7 @@ def prep_bucket(s3, bucket: str, region: str):
     # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
     s3.put_bucket_lifecycle_configuration(
         Bucket=bucket,
+        ChecksumAlgorithm='CRC32',
         LifecycleConfiguration={
             'Rules': [
                 {
@@ -183,7 +184,7 @@ def prep_bucket(s3, bucket: str, region: str):
                     'AbortIncompleteMultipartUpload': {'DaysAfterInitiation': 1},
                 },
                 {
-                    'ID': 'Objects under "upload/" expire after 1 day',
+                    'ID': 'Objects under upload directory expire after 1 day',
                     'Status': 'Enabled',
                     'Filter': {'Prefix': 'upload/'},
                     'Expiration': {'Days': 1},

@@ -63,7 +63,10 @@ async fn execute(args: &Args) -> Result<()> {
     } else {
         // Otherwise, set the default subscriber,
         // which prints to stdout if env-var set like RUST_LOG=trace
-        tracing_subscriber::fmt::init();
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_ansi(false) // Disable ANSI colors
+            .init();
         None
     };
 

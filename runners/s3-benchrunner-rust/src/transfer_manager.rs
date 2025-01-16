@@ -192,9 +192,7 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key(key)
             .body(stream)
-            .send()
-            .await
-            .with_context(|| format!("failed starting upload: {key}"))?;
+            .initiate()?;
 
         upload_handle
             .join()

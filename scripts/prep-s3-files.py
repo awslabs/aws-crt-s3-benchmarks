@@ -182,8 +182,7 @@ def prep_bucket(s3, bucket: str, region: str):
                             }
                         },
                         "Resource": [
-                            f"arn:aws:s3express:{region}:{
-                                account_id}:bucket/{bucket}"
+                            f"arn:aws:s3express:{region}:{account_id}:bucket/{bucket}"
                         ]
                     }
                 ]

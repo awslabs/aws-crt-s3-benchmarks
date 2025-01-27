@@ -163,31 +163,7 @@ def prep_bucket(s3, bucket: str, region: str):
                         'DataRedundancy': 'SingleAvailabilityZone'
                     }
                 })
-            account_id = boto3.client(
-                'sts').get_caller_identity().get('Account')
-            # Attach bucket policy to allow session-based access to perform lifecycle actions
-            bucket_policy = {
-                "Version": "2008-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": "lifecycle.s3.amazonaws.com"
-                        },
-                        "Action": "s3express:CreateSession",
-                        "Condition": {
-                            "StringEquals": {
-                                "s3express:SessionMode": "ReadWrite"
-                            }
-                        },
-                        "Resource": [
-                            f"arn:aws:s3express:{region}:{account_id}:bucket/{bucket}"
-                        ]
-                    }
-                ]
-            }
-            s3.put_bucket_policy(
-                Bucket=bucket, Policy=json.dumps(bucket_policy))
+
         else:
             s3.create_bucket(
                 Bucket=bucket,
@@ -196,6 +172,33 @@ def prep_bucket(s3, bucket: str, region: str):
 
     # Set lifecycle rules on this bucket, so we don't waste money.
     # Do this every time, in case the bucket was made by hand, or made by the CDK stack.
+    if is_s3express_bucket(bucket):
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-objects-lifecycle.html#directory-bucket-lifecycle-differences
+        # S3 express requires a bucket policy to allow session-based access to perform lifecycle actions
+        account_id = boto3.client(
+            'sts').get_caller_identity().get('Account')
+        bucket_policy = {
+            "Version": "2008-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "lifecycle.s3.amazonaws.com"
+                    },
+                    "Action": "s3express:CreateSession",
+                    "Condition": {
+                        "StringEquals": {
+                            "s3express:SessionMode": "ReadWrite"
+                        }
+                    },
+                    "Resource": [
+                        f"arn:aws:s3express:{region}:{account_id}:bucket/{bucket}"
+                    ]
+                }
+            ]
+        }
+        s3.put_bucket_policy(
+            Bucket=bucket, Policy=json.dumps(bucket_policy))
     s3.put_bucket_lifecycle_configuration(
         Bucket=bucket,
         ChecksumAlgorithm='CRC32',

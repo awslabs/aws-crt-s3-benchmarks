@@ -163,7 +163,6 @@ def prep_bucket(s3, bucket: str, region: str):
                         'DataRedundancy': 'SingleAvailabilityZone'
                     }
                 })
-
             account_id = boto3.client(
                 'sts').get_caller_identity().get('Account')
             # Attach bucket policy to allow session-based access to perform lifecycle actions
@@ -189,7 +188,10 @@ def prep_bucket(s3, bucket: str, region: str):
             }
             s3.put_bucket_policy(
                 Bucket=bucket, Policy=json.dumps(bucket_policy))
-
+        else:
+            s3.create_bucket(
+                Bucket=bucket,
+                CreateBucketConfiguration={'LocationConstraint': region})
         # note: no versioning on this bucket, so we don't waste money
 
     # Set lifecycle rules on this bucket, so we don't waste money.

@@ -227,7 +227,7 @@ impl RunBenchmark for TransferManagerRunner {
                     }
                     TaskAction::Upload => {
                         if workload_config.checksum.is_some() {
-                            return skip_benchmark(
+                            return skip_benchmark!(
                                 "upload_objects() doesn't let you specify checksum algorithm at this time",
                             );
                         }

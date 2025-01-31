@@ -19,8 +19,13 @@ pub const PART_SIZE: u64 = 8 * MEBIBYTE;
 #[error("skipping benchmark - {0}")]
 pub struct SkipBenchmarkError(String);
 
-pub fn skip_benchmark<T>(msg: impl Into<String>) -> Result<T> {
-    return Err(SkipBenchmarkError(msg.into()).into());
+/// Create Result<T>::Err containing a SkipBenchmarkError,
+/// with a message created from calling format!() on the args passed into this macro.
+#[macro_export]
+macro_rules! skip_benchmark {
+    ($($args:tt)*) => {
+        Err(crate::SkipBenchmarkError(format!($($args)*)).into())
+    };
 }
 
 pub fn bytes_to_gigabits(bytes: u64) -> f64 {
@@ -87,17 +92,14 @@ impl BenchmarkConfig {
         let workload: WorkloadConfig = match serde_json::from_reader(json_reader) {
             Ok(workload) => workload,
             Err(e) => {
-                return skip_benchmark(format!(
+                return skip_benchmark!(
                     "Can't parse '{workload_path}'. Different version maybe? - {e}"
-                ))
+                )
             }
         };
 
         if workload.version != 2 {
-            return skip_benchmark(format!(
-                "Workload version not supported: {}",
-                workload.version
-            ));
+            return skip_benchmark!("Workload version not supported: {}", workload.version);
         };
 
         Ok(BenchmarkConfig {

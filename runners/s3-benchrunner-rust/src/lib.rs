@@ -19,6 +19,10 @@ pub const PART_SIZE: u64 = 8 * MEBIBYTE;
 #[error("skipping benchmark - {0}")]
 pub struct SkipBenchmarkError(String);
 
+pub fn skip_benchmark<T>(msg: impl Into<String>) -> Result<T> {
+    return Err(SkipBenchmarkError(msg.into()).into());
+}
+
 pub fn bytes_to_gigabits(bytes: u64) -> f64 {
     let bits = bytes * 8;
     (bits as f64) / 1_000_000_000.0
@@ -41,7 +45,7 @@ pub struct BenchmarkConfig {
 pub struct WorkloadConfig {
     pub version: u32,
     pub files_on_disk: bool,
-    pub checksum: Option<ChecksumAlgorithm>,
+    pub checksum: Option<String>,
     pub max_repeat_count: u32,
     pub max_repeat_secs: f64,
     pub tasks: Vec<TaskConfig>,
@@ -64,15 +68,6 @@ pub enum TaskAction {
     Upload,
 }
 
-/// Possible values for the "checksum" field of the workload's JSON file
-#[derive(Debug, Deserialize)]
-pub enum ChecksumAlgorithm {
-    CRC32,
-    CRC32C,
-    SHA1,
-    SHA256,
-}
-
 /// All benchmark configuration (combination of json workload and command line args)
 impl BenchmarkConfig {
     pub fn new(
@@ -92,19 +87,17 @@ impl BenchmarkConfig {
         let workload: WorkloadConfig = match serde_json::from_reader(json_reader) {
             Ok(workload) => workload,
             Err(e) => {
-                return Err(SkipBenchmarkError(format!(
+                return skip_benchmark(format!(
                     "Can't parse '{workload_path}'. Different version maybe? - {e}"
                 ))
-                .into())
             }
         };
 
         if workload.version != 2 {
-            return Err(SkipBenchmarkError(format!(
+            return skip_benchmark(format!(
                 "Workload version not supported: {}",
                 workload.version
-            ))
-            .into());
+            ));
         };
 
         Ok(BenchmarkConfig {

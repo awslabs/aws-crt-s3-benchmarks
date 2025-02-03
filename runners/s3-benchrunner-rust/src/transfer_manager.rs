@@ -4,8 +4,10 @@ use anyhow::Context;
 use async_trait::async_trait;
 use aws_s3_transfer_manager::{
     io::InputStream,
+    operation::upload::ChecksumStrategy,
     types::{ConcurrencySetting, PartSize},
 };
+use aws_sdk_s3::types::ChecksumAlgorithm;
 use bytes::{Buf, Bytes};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -13,7 +15,7 @@ use tokio::task::JoinSet;
 use tracing::{info_span, Instrument};
 
 use crate::{
-    BenchmarkConfig, Result, RunBenchmark, SkipBenchmarkError, TaskAction, TaskConfig, PART_SIZE,
+    skip_benchmark, BenchmarkConfig, Result, RunBenchmark, TaskAction, TaskConfig, PART_SIZE,
 };
 
 /// Benchmark runner using aws-s3-transfer-manager
@@ -71,10 +73,6 @@ impl TransferManagerRunner {
 
     async fn run_task(self, task_i: usize) -> Result<()> {
         let task_config = &self.config().workload.tasks[task_i];
-
-        if self.config().workload.checksum.is_some() {
-            return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
-        }
 
         match task_config.action {
             TaskAction::Download => {
@@ -185,6 +183,15 @@ impl TransferManagerRunner {
                 .into()
         };
 
+        let checksum_strategy = match &self.config().workload.checksum {
+            Some(algorithm_name) => Some(
+                ChecksumStrategy::builder()
+                    .algorithm(ChecksumAlgorithm::from(algorithm_name.as_str()))
+                    .build()?,
+            ),
+            _ => None,
+        };
+
         let upload_handle = self
             .handle
             .transfer_manager
@@ -192,6 +199,7 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key(key)
             .body(stream)
+            .set_checksum_strategy(checksum_strategy)
             .initiate()?;
 
         upload_handle
@@ -208,9 +216,6 @@ impl RunBenchmark for TransferManagerRunner {
     async fn run(&self) -> Result<()> {
         let workload_config = &self.config().workload;
 
-        if workload_config.checksum.is_some() {
-            return Err(SkipBenchmarkError("checksums not yet implemented".to_string()).into());
-        }
         match &self.handle.transfer_path {
             Some(transfer_path) => {
                 // Use the objects API to download/upload directory directly
@@ -221,6 +226,12 @@ impl RunBenchmark for TransferManagerRunner {
                             .await?
                     }
                     TaskAction::Upload => {
+                        if workload_config.checksum.is_some() {
+                            return skip_benchmark!(
+                                "upload_objects() doesn't let you specify checksum algorithm at this time",
+                            );
+                        }
+
                         self.upload_objects()
                             .instrument(info_span!("upload-directory", directory = transfer_path))
                             .await?

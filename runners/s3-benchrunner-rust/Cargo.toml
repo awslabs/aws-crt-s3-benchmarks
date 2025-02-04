@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 
 # Swap which line is commented-out to use GitHub or local aws-s3-transfer-manager
-aws-s3-transfer-manager = { git = "https://github.com/awslabs/aws-s3-transfer-manager-rs.git", rev = "dc7e9d2719b855416ec8f4c8d464bd1cb42381b2" }
-# aws-s3-transfer-manager = { path = "../../../aws-s3-transfer-manager-rs/aws-s3-transfer-manager" }
+#aws-s3-transfer-manager = { git = "https://github.com/awslabs/aws-s3-transfer-manager-rs.git", rev = "dc7e9d2719b855416ec8f4c8d464bd1cb42381b2" }
+aws-s3-transfer-manager = { path = "../../../aws-s3-transfer-manager-rs/aws-s3-transfer-manager" }
 
 tracing-opentelemetry = "0.27"
 opentelemetry = { version = "0.26", features = ["trace"] }

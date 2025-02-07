@@ -4,9 +4,8 @@ use anyhow::Context;
 use async_trait::async_trait;
 use aws_s3_transfer_manager::{
     io::InputStream,
-    metrics::{unit::ByteUnit, Throughput},
     operation::upload::ChecksumStrategy,
-    types::{ConcurrencyMode, PartSize},
+    types::{ConcurrencyMode, PartSize, TargetThroughput},
 };
 use aws_sdk_s3::types::ChecksumAlgorithm;
 use bytes::{Buf, Bytes};
@@ -52,11 +51,9 @@ impl TransferManagerRunner {
         let random_data_for_upload = new_random_bytes(upload_data_size);
 
         let tm_config = aws_s3_transfer_manager::from_env()
-            // .concurrency(ConcurrencyMode::Explicit(total_concurrency))
             .concurrency(ConcurrencyMode::TargetThroughput(
-                Throughput::new_bytes_per_sec(
-                    (config.target_throughput_gigabits_per_sec
-                        * ByteUnit::Gigabit.as_bytes_u64() as f64) as u64,
+                TargetThroughput::new_gigabits_per_sec(
+                    config.target_throughput_gigabits_per_sec as u64,
                 ),
             ))
             .part_size(PartSize::Target(PART_SIZE))

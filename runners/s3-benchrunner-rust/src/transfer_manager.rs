@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use aws_s3_transfer_manager::{
     io::InputStream,
     operation::upload::ChecksumStrategy,
-    types::{ConcurrencySetting, PartSize},
+    types::{ConcurrencyMode, PartSize, TargetThroughput},
 };
 use aws_sdk_s3::types::ChecksumAlgorithm;
 use bytes::{Buf, Bytes};
@@ -33,9 +33,6 @@ struct Handle {
 
 impl TransferManagerRunner {
     pub async fn new(config: BenchmarkConfig) -> TransferManagerRunner {
-        // Blugh, the user shouldn't need to manually configure concurrency like this.
-        let total_concurrency = calculate_concurrency(config.target_throughput_gigabits_per_sec);
-
         // Create random buffer to upload
         let upload_data_size: usize = if config.workload.files_on_disk {
             0
@@ -54,7 +51,11 @@ impl TransferManagerRunner {
         let random_data_for_upload = new_random_bytes(upload_data_size);
 
         let tm_config = aws_s3_transfer_manager::from_env()
-            .concurrency(ConcurrencySetting::Explicit(total_concurrency))
+            .concurrency(ConcurrencyMode::TargetThroughput(
+                TargetThroughput::new_gigabits_per_sec(
+                    config.target_throughput_gigabits_per_sec as u64,
+                ),
+            ))
             .part_size(PartSize::Target(PART_SIZE))
             .load()
             .await;
@@ -261,15 +262,6 @@ impl RunBenchmark for TransferManagerRunner {
     fn config(&self) -> &BenchmarkConfig {
         &self.handle.config
     }
-}
-
-/// Calculate the best concurrency, given target throughput.
-/// This is based on aws-c-s3's math for determining max-http-connections, circa July 2024:
-/// https://github.com/awslabs/aws-c-s3/blob/94e3342c12833c519900516edd2e85c78dc1639d/source/s3_client.c#L57-L69
-/// These are magic numbers work well for large-object workloads.
-fn calculate_concurrency(target_throughput_gigabits_per_sec: f64) -> usize {
-    let concurrency = target_throughput_gigabits_per_sec * 2.5;
-    (concurrency as usize).max(10)
 }
 
 /// Find the common parent directory for all tasks.

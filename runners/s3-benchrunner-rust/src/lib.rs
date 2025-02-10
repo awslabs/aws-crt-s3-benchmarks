@@ -24,7 +24,7 @@ pub struct SkipBenchmarkError(String);
 #[macro_export]
 macro_rules! skip_benchmark {
     ($($args:tt)*) => {
-        Err(crate::SkipBenchmarkError(format!($($args)*)).into())
+        Err($crate::SkipBenchmarkError(format!($($args)*)).into())
     };
 }
 

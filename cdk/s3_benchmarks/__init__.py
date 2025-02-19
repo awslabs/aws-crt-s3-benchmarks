@@ -41,6 +41,9 @@ def _add(instance_type: InstanceType):
 _add(InstanceType("c5n.18xlarge", vcpu=72, mem_GiB=192,
                   bandwidth_Gbps=100, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_configuration=StorageConfiguration.EBS))
 
+_add(InstanceType("c7gn.16xlarge", vcpu=64, mem_GiB=128,
+                  bandwidth_Gbps=200, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_configuration=StorageConfiguration.EBS))
+
 _add(InstanceType("m6idn.24xlarge", vcpu=96, mem_GiB=384,
                   bandwidth_Gbps=150, quota_code=QUOTA_CODE_STANDARD_INSTANCES, storage_configuration=StorageConfiguration.INSTANCE_STORAGE))
 

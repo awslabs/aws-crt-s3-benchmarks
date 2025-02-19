@@ -398,7 +398,8 @@ class S3BenchmarksStack(Stack):
             self, f"PerInstanceDashboard-{storage_class}-{id_with_hyphens}",
             dashboard_name=f"S3Benchmarks-{storage_class}-{id_with_hyphens}",
         )
-        dashboard.apply_removal_policy(cdk.RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE)
+        dashboard.apply_removal_policy(
+            cdk.RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE)
 
         graph_per_workload = []
         for workload in DEFAULT_WORKLOADS:

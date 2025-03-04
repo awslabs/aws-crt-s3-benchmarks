@@ -40,7 +40,7 @@ struct BenchmarkConfig
     std::string bucket;
     std::string region;
     double targetThroughputGbps;
-    std::vector<std::string> network_interfaces;
+    std::vector<std::string> network_interface_names;
 
     BenchmarkConfig(
         std::string_view jsonFilepath,

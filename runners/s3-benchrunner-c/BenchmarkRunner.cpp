@@ -121,7 +121,7 @@ BenchmarkConfig::BenchmarkConfig(
         {
             if (!interface.empty())
             {
-                this->network_interfaces.push_back(interface);
+                this->network_interface_names.push_back(interface);
             }
         }
     }
@@ -221,16 +221,16 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
     if (argc != 7)
-        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE");
+        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE_NAMES");
 
     string s3ClientId = argv[1];
     string workload = argv[2];
     string bucket = argv[3];
     string region = argv[4];
     double targetThroughputGbps = stod(argv[5]);
-    string network_interfaces = argv[6];
+    string network_interface_names = argv[6];
 
-    auto config = BenchmarkConfig(workload, bucket, region, targetThroughputGbps, network_interfaces);
+    auto config = BenchmarkConfig(workload, bucket, region, targetThroughputGbps, network_interface_names);
     unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 

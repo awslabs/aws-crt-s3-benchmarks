@@ -181,16 +181,16 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     }
 
     struct aws_byte_cursor *network_interface_names_array = NULL;
-    if (config.network_interfaces.size())
+    if (config.network_interface_names.size())
     {
         network_interface_names_array = (struct aws_byte_cursor *)aws_mem_calloc(
-            alloc, config.network_interfaces.size(), sizeof(struct aws_byte_cursor));
-        for (size_t i = 0; i < config.network_interfaces.size(); i++)
+            alloc, config.network_interface_names.size(), sizeof(struct aws_byte_cursor));
+        for (size_t i = 0; i < config.network_interface_names.size(); i++)
         {
-            network_interface_names_array[i] = aws_byte_cursor_from_c_str(config.network_interfaces[i].c_str());
+            network_interface_names_array[i] = aws_byte_cursor_from_c_str(config.network_interface_names[i].c_str());
         }
 
-        s3ClientConfig.num_network_interface_names = config.network_interfaces.size();
+        s3ClientConfig.num_network_interface_names = config.network_interface_names.size();
         s3ClientConfig.network_interface_names_array = network_interface_names_array;
     }
 

@@ -82,7 +82,7 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view bucket,
     std::string_view region,
     double targetThroughputGbps,
-    std::string_view network_interfaces)
+    std::string_view network_interface_names)
     : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps)
 {
     auto f = ifstream(string(jsonFilepath));
@@ -113,9 +113,9 @@ BenchmarkConfig::BenchmarkConfig(
         task.size = taskJson["size"];
     }
 
-    if (!network_interfaces.empty() && network_interfaces != "default")
+    if (!network_interface_names.empty() && network_interface_names != "default")
     {
-        std::istringstream ss((std::string(network_interfaces)));
+        std::istringstream ss((std::string(network_interface_names)));
         std::string interface;
         while (std::getline(ss, interface, ','))
         {
@@ -221,7 +221,9 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
     if (argc != 7)
-        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE_NAMES");
+        fail(
+            string("usage: ") + argv[0] +
+            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE_NAMES");
 
     string s3ClientId = argv[1];
     string workload = argv[2];

@@ -45,9 +45,9 @@ parser.add_argument(
     help='If reporting metrics: branch being benchmarked')
 parser.add_argument(
     '--network-interface-names',
-    type=str,
-    default='default',
-    help='(Optional) A comma separated list of network interface names without any spaces like "ens5,ens6"')
+    nargs='+',
+    default=['default'],
+    help='(Optional) One or more network interface names (e.g. ens5 ens6)')
 
 args = parser.parse_args()
 
@@ -64,8 +64,10 @@ for workload in workloads:
     # in case runner-cmd has weird stuff like quotes, spaces, etc
     cmd = shlex.split(args.runner_cmd)
 
+    # Convert the list to a comma-separated string
+    network_interface_names_str = ','.join(args.network_interface_names)
     cmd += [args.s3_client, str(workload), args.bucket,
-            args.region, str(args.throughput), str(args.network_interface_names)]
+            args.region, str(args.throughput), network_interface_names_str]
 
     start_time = datetime.now(timezone.utc)
     result = run(cmd, check=False, capture_output=True)

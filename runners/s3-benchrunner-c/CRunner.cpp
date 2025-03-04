@@ -174,11 +174,21 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     s3ClientConfig.signing_config = &signingConfig;
     s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = config.targetThroughputGbps;
-
     if (isS3Express)
     {
         signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
         s3ClientConfig.enable_s3express = true;
+    }
+
+    struct aws_byte_cursor *network_interface_names_array = NULL;
+    if(config.network_interfaces.size()) {
+        network_interface_names_array = (struct aws_byte_cursor *) aws_mem_calloc(alloc, config.network_interfaces.size(), sizeof(struct aws_byte_cursor)); 
+         for (size_t i = 0; i < config.network_interfaces.size(); i++) {
+            network_interface_names_array[i] = aws_byte_cursor_from_c_str(config.network_interfaces[i].c_str());
+        }
+
+        s3ClientConfig.num_network_interface_names = config.network_interfaces.size();
+        s3ClientConfig.network_interface_names_array = network_interface_names_array;
     }
 
 #if defined(BACKPRESSURE_INITIAL_READ_WINDOW_MiB)
@@ -199,7 +209,13 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     // s3ClientConfig.monitoring_options = &httpMonitoringOpts;
 
     s3Client = aws_s3_client_new(alloc, &s3ClientConfig);
-    AWS_FATAL_ASSERT(s3Client != NULL);
+    if(s3Client == NULL) {
+        fail(string("Unable to create S3Client. Probably wrong network interface names?"));
+    }
+
+    if(network_interface_names_array) {
+        aws_mem_release(alloc, network_interface_names_array);
+    }
 }
 
 CRunner::~CRunner()
@@ -326,8 +342,7 @@ void Task::onFinished(
     Task *task = static_cast<Task *>(user_data);
     // TODO: report failed meta-requests instead of killing benchmark?
     if (meta_request_result->error_code != 0)
-    {
-        printf(
+    { printf(
             "Task[%zu] failed. action:%s key:%s error_code:%s\n",
             task->taskI,
             task->config.action.c_str(),

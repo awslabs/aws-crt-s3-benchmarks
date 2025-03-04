@@ -4,6 +4,9 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <string>
+#include <sstream>
+
 
 #include <aws/common/system_resource_util.h>
 
@@ -79,7 +82,8 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view jsonFilepath,
     std::string_view bucket,
     std::string_view region,
-    double targetThroughputGbps)
+    double targetThroughputGbps,
+    std::string_view network_interfaces)
     : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps)
 {
     auto f = ifstream(string(jsonFilepath));
@@ -108,6 +112,19 @@ BenchmarkConfig::BenchmarkConfig(
         task.action = taskJson["action"];
         task.key = taskJson["key"];
         task.size = taskJson["size"];
+    }
+
+    if (!network_interfaces.empty() && network_interfaces != "default")
+    {
+        std::istringstream ss((std::string(network_interfaces)));
+        std::string interface;
+        while (std::getline(ss, interface, ','))
+        {
+            if (!interface.empty())
+            {
+                this->network_interfaces.push_back(interface);
+            }
+        }
     }
 }
 
@@ -204,16 +221,17 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
-    if (argc != 6)
-        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT");
+    if (argc != 7)
+        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE");
 
     string s3ClientId = argv[1];
     string workload = argv[2];
     string bucket = argv[3];
     string region = argv[4];
     double targetThroughputGbps = stod(argv[5]);
+    string network_interfaces = argv[6];
 
-    auto config = BenchmarkConfig(workload, bucket, region, targetThroughputGbps);
+    auto config = BenchmarkConfig(workload, bucket, region, targetThroughputGbps, network_interfaces);
     unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 

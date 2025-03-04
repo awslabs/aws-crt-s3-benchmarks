@@ -43,7 +43,11 @@ parser.add_argument(
 parser.add_argument(
     '--metrics-branch',
     help='If reporting metrics: branch being benchmarked')
-
+parser.add_argument(
+    '--network-interface-names',
+    type=str,
+    default='default',
+    help='If reporting metrics: branch being benchmarked')
 
 args = parser.parse_args()
 
@@ -61,7 +65,7 @@ for workload in workloads:
     cmd = shlex.split(args.runner_cmd)
 
     cmd += [args.s3_client, str(workload), args.bucket,
-            args.region, str(args.throughput)]
+            args.region, str(args.throughput), str(args.network_interface_names)]
 
     start_time = datetime.now(timezone.utc)
     result = run(cmd, check=False, capture_output=True)

@@ -133,7 +133,7 @@ RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE_
 *   `TARGET_THROUGHPUT`: Target throughput, in gigabits per second.
         Floating point allowed. Enter the EC2 type's "Network Bandwidth (Gbps)"
         (e.g. "100.0" for [c5n.18xlarge](https://aws.amazon.com/ec2/instance-types/c5/))
-*   `NETWORK_INTERFACE_NAMES`: This is only support for crt-c for now.
+*   `NETWORK_INTERFACE_NAMES`: **This is only supported for crt-c Runner**
         A comma separated list of network interface names without any spaces like "ens5,ens6"
         You can provide "default" to use the default network interface.
 

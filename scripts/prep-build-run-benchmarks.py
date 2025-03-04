@@ -48,7 +48,7 @@ PARSER.add_argument(
     '--network-interface-names',
     type=str,
     default='default',
-    help='If reporting metrics: branch being benchmarked')
+    help='(Optional) A comma separated list of network interface names without any spaces like "ens5,ens6"')
 
 
 if __name__ == '__main__':
@@ -95,7 +95,7 @@ if __name__ == '__main__':
                 '--throughput', str(args.throughput),
                 '--files-dir', str(files_dir),
                 '--workloads', *[str(x) for x in workloads],
-                '--network-interface-names', str(args.network_interface_names), 
+                '--network-interface-names', str(args.network_interface_names),
             ]
             if args.report_metrics:
                 run_cmd += ['--report-metrics']

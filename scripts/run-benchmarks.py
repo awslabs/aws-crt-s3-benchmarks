@@ -47,7 +47,7 @@ parser.add_argument(
     '--network-interface-names',
     type=str,
     default='default',
-    help='If reporting metrics: branch being benchmarked')
+    help='(Optional) A comma separated list of network interface names without any spaces like "ens5,ens6"')
 
 args = parser.parse_args()
 

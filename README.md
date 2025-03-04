@@ -121,7 +121,7 @@ All runners have the same command line interface, and expect to be run from the
 ```sh
 cd FILES_DIR
 
-RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT
+RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT NETWORK_INTERFACE_NAMES
 ```
 
 *   `S3_CLIENT`: ID of S3 client to use (See [table](#s3-clients) above)
@@ -133,6 +133,10 @@ RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 *   `TARGET_THROUGHPUT`: Target throughput, in gigabits per second.
         Floating point allowed. Enter the EC2 type's "Network Bandwidth (Gbps)"
         (e.g. "100.0" for [c5n.18xlarge](https://aws.amazon.com/ec2/instance-types/c5/))
+*   `NETWORK_INTERFACE_NAMES`: This is only support for crt-c for now.
+        A comma separated list of network interface names without any spaces like "ens5,ens6"
+        You can provide "default" to use the default network interface.
+
 
 Most runners should search for AWS credentials
 [something like this](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#configure-precedence).

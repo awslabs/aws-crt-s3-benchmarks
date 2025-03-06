@@ -45,6 +45,7 @@ PARSER.add_argument(
     '--metrics-instance-type',
     help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
 
+
 if __name__ == '__main__':
     args = PARSER.parse_args()
     build_dir = Path(args.build_dir).resolve()

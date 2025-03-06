@@ -44,6 +44,7 @@ parser.add_argument(
     '--metrics-branch',
     help='If reporting metrics: branch being benchmarked')
 
+
 args = parser.parse_args()
 
 # run each workload

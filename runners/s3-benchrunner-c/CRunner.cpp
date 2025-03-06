@@ -174,11 +174,24 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     s3ClientConfig.signing_config = &signingConfig;
     s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = config.targetThroughputGbps;
-
     if (isS3Express)
     {
         signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
         s3ClientConfig.enable_s3express = true;
+    }
+
+    struct aws_byte_cursor *network_interface_names_array = NULL;
+    if (config.network_interface_names.size())
+    {
+        network_interface_names_array = (struct aws_byte_cursor *)aws_mem_calloc(
+            alloc, config.network_interface_names.size(), sizeof(struct aws_byte_cursor));
+        for (size_t i = 0; i < config.network_interface_names.size(); i++)
+        {
+            network_interface_names_array[i] = aws_byte_cursor_from_c_str(config.network_interface_names[i].c_str());
+        }
+
+        s3ClientConfig.num_network_interface_names = config.network_interface_names.size();
+        s3ClientConfig.network_interface_names_array = network_interface_names_array;
     }
 
 #if defined(BACKPRESSURE_INITIAL_READ_WINDOW_MiB)
@@ -199,7 +212,15 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     // s3ClientConfig.monitoring_options = &httpMonitoringOpts;
 
     s3Client = aws_s3_client_new(alloc, &s3ClientConfig);
-    AWS_FATAL_ASSERT(s3Client != NULL);
+    if (s3Client == NULL)
+    {
+        fail(string("Unable to create S3Client. Probably wrong network interface names?"));
+    }
+
+    if (network_interface_names_array)
+    {
+        aws_mem_release(alloc, network_interface_names_array);
+    }
 }
 
 CRunner::~CRunner()

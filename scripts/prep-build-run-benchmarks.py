@@ -44,11 +44,6 @@ PARSER.add_argument(
 PARSER.add_argument(
     '--metrics-instance-type',
     help='If reporting metrics: EC2 instance type (e.g. c5n.18xlarge)')
-PARSER.add_argument(
-    '--network-interface-names',
-    nargs='+',
-    default=['default'],
-    help='(Optional) One or more network interface names (e.g. ens5 ens6)')
 
 if __name__ == '__main__':
     args = PARSER.parse_args()
@@ -94,7 +89,6 @@ if __name__ == '__main__':
                 '--throughput', str(args.throughput),
                 '--files-dir', str(files_dir),
                 '--workloads', *[str(x) for x in workloads],
-                '--network-interface-names', *args.network_interface_names,
             ]
             if args.report_metrics:
                 run_cmd += ['--report-metrics']

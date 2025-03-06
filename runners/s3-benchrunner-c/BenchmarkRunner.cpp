@@ -221,9 +221,7 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
     if (argc != 6 && argc != 7)
-        fail(
-            string("usage: ") + argv[0] +
-            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [NETWORK_INTERFACE_NAMES]");
+        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [NETWORK_INTERFACES]");
 
     string s3ClientId = argv[1];
     string workload = argv[2];

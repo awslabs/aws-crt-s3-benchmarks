@@ -1,11 +1,11 @@
 #include "BenchmarkRunner.h"
 
-#include <future>
-#include <list>
-#include <string>
 #include <chrono>
+#include <future>
 #include <iomanip>
+#include <list>
 #include <sstream>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -256,32 +256,36 @@ static int runI = 0;
 static std::string dir_path;
 void CRunner::run()
 {
-    if(runI == 0) {
-        dir_path = []() {
+    if (runI == 0)
+    {
+        dir_path = []()
+        {
             // This lambda runs only once when dir_path is initialized
             auto now = std::chrono::system_clock::now();
             auto time_t_now = std::chrono::system_clock::to_time_t(now);
-            
+
             std::stringstream ss;
             ss << "telemetry/";
             ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d_%H-%M-%S");
-            
+
             // Create the directory on first access
             std::string path = ss.str();
-            int res=system(("mkdir -p \"" + path + "\"").c_str());
+            int res = system(("mkdir -p \"" + path + "\"").c_str());
             (void)res;
             return path;
         }();
     }
 
-    std::string file_path = dir_path + "/" +std::to_string(runI++) + ".csv";
+    std::string file_path = dir_path + "/" + std::to_string(runI++) + ".csv";
     this->csvFile = fopen(file_path.c_str(), "w");
-    fprintf(this->csvFile, "request_id,start_time,end_time,total_duration,"
-                            "send_start_time,send_end_time,sending_duration,"
-                            "receive_start_time,receive_end_time,receiving_duration,"
-                            "response_status,request_path_query,host_address,"
-                            "ip_address,connection_id,thread_id,stream_id,"
-                            "operation_name,request_type\n");
+    fprintf(
+        this->csvFile,
+        "request_id,start_time,end_time,total_duration,"
+        "send_start_time,send_end_time,sending_duration,"
+        "receive_start_time,receive_end_time,receiving_duration,"
+        "response_status,request_path_query,host_address,"
+        "ip_address,connection_id,thread_id,stream_id,"
+        "operation_name,request_type\n");
     // kick off all tasks
     list<Task> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
@@ -383,7 +387,6 @@ Task::Task(CRunner &runner, size_t taskI)
     aws_http_message_release(request);
 }
 
-
 void Task::onTelemetry(
     struct aws_s3_meta_request *meta_request,
     struct aws_s3_request_metrics *metrics,
@@ -439,22 +442,35 @@ void Task::onTelemetry(
     uint64_t sending_duration_ms = sending_duration / 1000000;
     uint64_t receiving_duration_ms = receiving_duration / 1000000;
     // Write the metrics data
-    fprintf(task->runner.csvFile, 
-            "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
-            aws_string_c_str(request_id), start_time, end_time, total_duration_ms, 
-            send_start_time, send_end_time, sending_duration_ms, 
-            receive_start_time, receive_end_time, receiving_duration_ms, 
-            response_status, aws_string_c_str(request_path_query), 
-            aws_string_c_str(host_address), aws_string_c_str(ip_address), 
-            connection_id, thread_id, stream_id, 
-            aws_string_c_str(operation_name), request_type);
+    fprintf(
+        task->runner.csvFile,
+        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
+        aws_string_c_str(request_id),
+        start_time,
+        end_time,
+        total_duration_ms,
+        send_start_time,
+        send_end_time,
+        sending_duration_ms,
+        receive_start_time,
+        receive_end_time,
+        receiving_duration_ms,
+        response_status,
+        aws_string_c_str(request_path_query),
+        aws_string_c_str(host_address),
+        aws_string_c_str(ip_address),
+        connection_id,
+        thread_id,
+        stream_id,
+        aws_string_c_str(operation_name),
+        request_type);
 
     // Destroy aws_string objects
-//    aws_string_destroy(request_id);
-//    aws_string_destroy(request_path_query);
-//    aws_string_destroy(host_address);
-//    aws_string_destroy(ip_address);
-//    aws_string_destroy(operation_name);
+    //    aws_string_destroy(request_id);
+    //    aws_string_destroy(request_path_query);
+    //    aws_string_destroy(host_address);
+    //    aws_string_destroy(ip_address);
+    //    aws_string_destroy(operation_name);
 }
 
 void Task::onFinished(
@@ -511,4 +527,3 @@ int main(int argc, char *argv[])
             fail("Unsupported S3_CLIENT. Options are: crt-c");
         });
 }
-

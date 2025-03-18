@@ -1,9 +1,9 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-import subprocess
 from typing import Optional
 
+from utils.execution import run
 
 REPO_DIR = Path(__file__).parent.parent.parent
 RUNNERS_DIR = REPO_DIR/'runners'
@@ -64,43 +64,6 @@ def workload_paths_from_args(workloads: Optional[list[str]]) -> list[Path]:
             raise Exception(f'no workload files found !?!')
 
     return workload_paths
-
-
-def run(cmd_args: list[str], check=True, capture_output=False) -> subprocess.CompletedProcess:
-    """Run a subprocess"""
-    print(f'{Path.cwd()}> {subprocess.list2cmdline(cmd_args)}', flush=True)
-
-    if capture_output:
-        # Subprocess doesn't have built-in support for capturing output
-        # AND printing while it comes in, so we have to do it ourselves.
-        # We're combining stderr with stdout, for simplicity.
-        with subprocess.Popen(
-            cmd_args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,  # line-buffered
-        ) as p:
-            lines = []
-            assert p.stdout is not None  # satisfy type checker
-            for line in p.stdout:
-                lines.append(line)
-                print(line, end='', flush=True)
-
-            p.wait()  # ensure process is 100% finished
-
-            completed = subprocess.CompletedProcess(
-                args=cmd_args,
-                returncode=p.returncode,
-                stdout="".join(lines),
-            )
-    else:
-        # simpler case: just run the command
-        completed = subprocess.run(cmd_args, text=True)
-
-    if check and completed.returncode != 0:
-        exit(f"FAILED running: {subprocess.list2cmdline(cmd_args)}")
-    return completed
 
 
 def fetch_git_repo(url: str, dir: Path, main_branch: str = 'main', preferred_branch: Optional[str] = None):

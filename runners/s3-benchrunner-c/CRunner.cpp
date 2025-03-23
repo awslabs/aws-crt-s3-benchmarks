@@ -6,6 +6,7 @@
 #include <list>
 #include <sstream>
 #include <string>
+#include <iostream>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -186,7 +187,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     s3ClientConfig.signing_config = &signingConfig;
     s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = config.targetThroughputGbps;
-    s3ClientConfig.memory_limit_in_bytes = 32L * 1024 * 1024 * 1024;
+    s3ClientConfig.memory_limit_in_bytes = 8L * 1024 * 1024 * 1024;
     if (isS3Express)
     {
         signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
@@ -252,11 +253,11 @@ CRunner::~CRunner()
     aws_s3_library_clean_up();
 }
 
-static int runI = 0;
+static int runI = 1;
 static std::string dir_path;
 void CRunner::run()
 {
-    if (runI == 0)
+    if (runI == 1)
     {
         dir_path = []()
         {
@@ -276,7 +277,7 @@ void CRunner::run()
         }();
     }
 
-    std::string file_path = dir_path + "/" + std::to_string(runI++) + ".csv";
+    std::string file_path = dir_path + "/" + std::to_string(runI) + ".csv";
     this->csvFile = fopen(file_path.c_str(), "w");
     fprintf(
         this->csvFile,
@@ -285,8 +286,16 @@ void CRunner::run()
         "receive_start_time,receive_end_time,receiving_duration,"
         "response_status,request_path_query,host_address,"
         "ip_address,connection_id,thread_id,stream_id,"
-        "operation_name,request_type\n");
+        "operation_name,request_type,part_number\n");
     // kick off all tasks
+    std::string log_file_path = dir_path + "/logs-" + std::to_string(runI++) + ".txt";
+    struct aws_logger_standard_options logOpts;
+    AWS_ZERO_STRUCT(logOpts);
+    logOpts.level = AWS_LL_DEBUG;
+    logOpts.filename = log_file_path.c_str();
+    AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
+    aws_logger_set(&logger);
+
     list<Task> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
         runningTasks.emplace_back(*this, i);
@@ -404,7 +413,7 @@ void Task::onTelemetry(
     const struct aws_string *request_id = nullptr;
     uint64_t start_time, end_time, total_duration;
     uint64_t send_start_time, send_end_time, sending_duration;
-    uint64_t receive_start_time, receive_end_time, receiving_duration;
+    uint64_t receive_start_time, receive_end_time, receiving_duration, part_number;
     int response_status;
     const struct aws_string *request_path_query = nullptr;
     const struct aws_string *host_address = nullptr;
@@ -435,6 +444,7 @@ void Task::onTelemetry(
     aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
     aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
     aws_s3_request_metrics_get_request_type(metrics, &request_type);
+    aws_s3_request_metrics_get_part_number(metrics, &part_number);
     // Write the metrics data
 
     // Convert durations from ns to ms
@@ -444,7 +454,7 @@ void Task::onTelemetry(
     // Write the metrics data
     fprintf(
         task->runner.csvFile,
-        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
+        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d,%lu\n",
         aws_string_c_str(request_id),
         start_time,
         end_time,
@@ -463,7 +473,8 @@ void Task::onTelemetry(
         thread_id,
         stream_id,
         aws_string_c_str(operation_name),
-        request_type);
+        request_type,
+        part_number);
 
     // Destroy aws_string objects
     //    aws_string_destroy(request_id);

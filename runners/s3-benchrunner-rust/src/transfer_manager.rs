@@ -2,12 +2,12 @@ use std::{cmp::min, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
+use aws_sdk_s3::types::ChecksumAlgorithm;
 use aws_sdk_s3_transfer_manager::{
     io::InputStream,
     operation::upload::ChecksumStrategy,
     types::{ConcurrencyMode, PartSize, TargetThroughput},
 };
-use aws_sdk_s3::types::ChecksumAlgorithm;
 use bytes::{Buf, Bytes};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -286,7 +286,11 @@ fn find_common_parent_dir(config: &BenchmarkConfig) -> Option<String> {
         }
 
         // S3Express requires that the prefix must end with delimiter
-        Some(format!("{}{}", common_root.to_str()?, std::path::MAIN_SEPARATOR))
+        Some(format!(
+            "{}{}",
+            common_root.to_str()?,
+            std::path::MAIN_SEPARATOR
+        ))
     } else {
         None
     }

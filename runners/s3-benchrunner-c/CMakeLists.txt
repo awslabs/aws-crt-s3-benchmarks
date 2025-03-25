@@ -33,4 +33,4 @@ FetchContent_MakeAvailable(argh_parser)
 
 find_package(aws-c-s3 REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE AWS::aws-c-s3 nlohmann_json argh)
+target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json argh)

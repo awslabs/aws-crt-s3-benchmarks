@@ -235,7 +235,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
 {
     // START Argument Parsing
     argh::parser cmdl;
-    // pre-register optional options to support --param_name param_value syntax
+    // pre-register optional named arguments to support --param_name param_value syntax
     cmdl.add_params({"--nic"});
     cmdl.parse(argc, argv);
 
@@ -254,7 +254,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     parsed_args.region = cmdl[4];
     parsed_args.targetThroughputGbps = stod(cmdl[5]);
 
-    // Parse optional named parameters
+    // Parse optional named arguments
     cmdl("nic") >> parsed_args.network_interface_names;
     // END argument parsing
 

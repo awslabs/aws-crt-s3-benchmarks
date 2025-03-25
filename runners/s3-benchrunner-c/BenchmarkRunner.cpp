@@ -242,7 +242,8 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     if (cmdl[{"-h", "--help"}] || cmdl.pos_args().size() < 6)
     {
         fail(
-            std::string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]");
+            std::string("usage: ") + argv[0] +
+            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]");
     }
 
     struct Args parsed_args;

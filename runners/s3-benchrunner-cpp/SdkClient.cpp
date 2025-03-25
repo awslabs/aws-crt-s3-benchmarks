@@ -101,7 +101,7 @@ class SdkClientRunner : public BenchmarkRunner
   public:
     SdkClientRunner(const BenchmarkConfig &config) : BenchmarkRunner(config) { createS3Client(); }
 
-    void run() override
+    void run(size_t runI) override
     {
         auto concurrencySemaphore = counting_semaphore(maxConcurrency());
 

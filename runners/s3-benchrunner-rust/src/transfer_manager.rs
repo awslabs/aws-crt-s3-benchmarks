@@ -2,12 +2,12 @@ use std::{cmp::min, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use aws_s3_transfer_manager::{
+use aws_sdk_s3::types::ChecksumAlgorithm;
+use aws_sdk_s3_transfer_manager::{
     io::InputStream,
     operation::upload::ChecksumStrategy,
     types::{ConcurrencyMode, PartSize, TargetThroughput},
 };
-use aws_sdk_s3::types::ChecksumAlgorithm;
 use bytes::{Buf, Bytes};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -26,7 +26,7 @@ pub struct TransferManagerRunner {
 
 struct Handle {
     config: BenchmarkConfig,
-    transfer_manager: aws_s3_transfer_manager::Client,
+    transfer_manager: aws_sdk_s3_transfer_manager::Client,
     random_data_for_upload: Bytes,
     transfer_path: Option<String>,
 }
@@ -50,7 +50,7 @@ impl TransferManagerRunner {
         };
         let random_data_for_upload = new_random_bytes(upload_data_size);
 
-        let tm_config = aws_s3_transfer_manager::from_env()
+        let tm_config = aws_sdk_s3_transfer_manager::from_env()
             .concurrency(ConcurrencyMode::TargetThroughput(
                 TargetThroughput::new_gigabits_per_sec(
                     config.target_throughput_gigabits_per_sec as u64,
@@ -60,7 +60,7 @@ impl TransferManagerRunner {
             .load()
             .await;
 
-        let transfer_manager = aws_s3_transfer_manager::Client::new(tm_config);
+        let transfer_manager = aws_sdk_s3_transfer_manager::Client::new(tm_config);
         let transfer_path = find_common_parent_dir(&config);
         TransferManagerRunner {
             handle: Arc::new(Handle {
@@ -91,7 +91,6 @@ impl TransferManagerRunner {
     async fn download_objects(&self) -> Result<()> {
         let path = self.handle.transfer_path.as_ref().unwrap();
         let dest = PathBuf::from(path);
-
         let download_objects_handle = self
             .handle
             .transfer_manager
@@ -285,7 +284,13 @@ fn find_common_parent_dir(config: &BenchmarkConfig) -> Option<String> {
                 panic!("Can't use directory for both download and upload");
             }
         }
-        Some(common_root.to_str()?.to_string())
+
+        // S3Express requires that the prefix must end with delimiter
+        Some(format!(
+            "{}{}",
+            common_root.to_str()?,
+            std::path::MAIN_SEPARATOR
+        ))
     } else {
         None
     }

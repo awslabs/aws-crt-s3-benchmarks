@@ -26,7 +26,6 @@ FetchContent_MakeAvailable(json)
 # CLI parser
 FetchContent_Declare(
     argh_parser
-    QUIET
     GIT_REPOSITORY https://github.com/adishavit/argh
     GIT_TAG v1.3.2
 )

@@ -9,7 +9,7 @@
 
 #include <aws/common/system_resource_util.h>
 
-#include "argh.h"
+#include <argh.h>
 #include <nlohmann/json.hpp>
 
 using namespace std;

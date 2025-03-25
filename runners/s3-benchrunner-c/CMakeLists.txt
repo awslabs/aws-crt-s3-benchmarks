@@ -23,6 +23,10 @@ include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+# CLI parser
+FetchContent_Declare(argh_parser URL https://github.com/adishavit/argh/archive/refs/tags/v1.3.2.tar.gz)
+FetchContent_MakeAvailable(argh_parser)
+
 find_package(aws-c-s3 REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json)
+target_link_libraries(${PROJECT_NAME} AWS::aws-c-s3 nlohmann_json argh)

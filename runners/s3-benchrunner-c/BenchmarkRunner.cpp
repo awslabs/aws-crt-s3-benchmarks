@@ -9,6 +9,7 @@
 
 #include <aws/common/system_resource_util.h>
 
+#include <argh.h>
 #include <nlohmann/json.hpp>
 
 using namespace std;
@@ -218,20 +219,53 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
 }
 
+struct Args
+{
+    string s3ClientId;
+    string workload;
+    string bucket;
+    string region;
+    double targetThroughputGbps;
+
+    // Optional arguments
+    string network_interface_names = "";
+};
+
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
-    if (argc != 6 && argc != 7)
-        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [NETWORK_INTERFACES]");
+    // START Argument Parsing
+    argh::parser cmdl;
+    // pre-register optional named arguments to support --param_name param_value syntax
+    cmdl.add_params({"--nic"});
+    cmdl.parse(argc, argv);
 
-    string s3ClientId = argv[1];
-    string workload = argv[2];
-    string bucket = argv[3];
-    string region = argv[4];
-    double targetThroughputGbps = stod(argv[5]);
-    string network_interface_names = (argc == 7) ? argv[6] : "";
+    if (cmdl[{"-h", "--help"}] || cmdl.pos_args().size() < 6)
+    {
+        fail(
+            std::string("usage: ") + argv[0] +
+            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]");
+    }
 
-    auto config = BenchmarkConfig(workload, bucket, region, targetThroughputGbps, network_interface_names);
-    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(s3ClientId, config);
+    struct Args parsed_args;
+
+    // Parse required positional parameters
+    parsed_args.s3ClientId = cmdl[1];
+    parsed_args.workload = cmdl[2];
+    parsed_args.bucket = cmdl[3];
+    parsed_args.region = cmdl[4];
+    parsed_args.targetThroughputGbps = stod(cmdl[5]);
+
+    // Parse optional named arguments
+    cmdl("nic") >> parsed_args.network_interface_names;
+    // END argument parsing
+
+    auto config = BenchmarkConfig(
+        parsed_args.workload,
+        parsed_args.bucket,
+        parsed_args.region,
+        parsed_args.targetThroughputGbps,
+        parsed_args.network_interface_names);
+    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs

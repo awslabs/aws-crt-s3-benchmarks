@@ -53,8 +53,7 @@ class CRunner : public BenchmarkRunner
     aws_credentials_provider *credentialsProvider = NULL;
     aws_s3_client *s3Client = NULL;
 
-    // telemetry
-    string base_telemetry_file_path = "";
+    string telemetry_file_base_path = "";
 
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     string endpoint;
@@ -236,9 +235,9 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         ss << "telemetry/";
         ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
 
-        base_telemetry_file_path = ss.str();
+        telemetry_file_base_path = ss.str();
         // Create the directory
-        if (system(("mkdir -p \"" + base_telemetry_file_path + "\"").c_str()) < 0)
+        if (system(("mkdir -p \"" + telemetry_file_base_path + "\"").c_str()) < 0)
         {
             fail(string("Unable to create directory for telemetry files"));
         }
@@ -269,9 +268,9 @@ CRunner::~CRunner()
 void CRunner::run(size_t runNumber)
 {
     FILE *telemetry = NULL;
-    if (base_telemetry_file_path.length())
+    if (telemetry_file_base_path.length())
     {
-        string file_path = base_telemetry_file_path + "/" + std::to_string(runNumber) + ".csv";
+        string file_path = telemetry_file_base_path + "/" + std::to_string(runNumber) + ".csv";
         telemetry = fopen(file_path.c_str(), "w");
     }
     // kick off all tasks

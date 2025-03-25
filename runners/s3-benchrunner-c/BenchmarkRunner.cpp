@@ -261,7 +261,6 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     cmdl("nic") >> parsed_args.network_interface_names;
     if (cmdl["telemetry"])
     {
-        cout << "enabling telemetry\n";
         parsed_args.telemetry = true;
     }
     // END argument parsing

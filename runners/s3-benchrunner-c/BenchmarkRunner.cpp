@@ -219,12 +219,13 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
 }
 
-struct Args {
+struct Args
+{
     std::string s3ClientId;
     std::string workload;
     std::string bucket;
     std::string region;
-    double targetThroughputGbps;  
+    double targetThroughputGbps;
 
     // Optional arguments
     std::string network_interface_names = "";
@@ -235,15 +236,17 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     // START Argument Parsing
     argh::parser cmdl;
     // pre-register optional options to support --param_name param_value syntax
-    cmdl.add_params({ "--nic" });
+    cmdl.add_params({"--nic"});
     cmdl.parse(argc, argv);
 
-    if (cmdl[{"-h", "--help"}] || cmdl.pos_args().size() < 6) {
-        fail(std::string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT --nic name1,name2");
+    if (cmdl[{"-h", "--help"}] || cmdl.pos_args().size() < 6)
+    {
+        fail(
+            std::string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT --nic name1,name2");
     }
 
     struct Args parsed_args;
-    
+
     // Parse required positional parameters
     parsed_args.s3ClientId = cmdl[1];
     parsed_args.workload = cmdl[2];
@@ -255,7 +258,12 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     cmdl("nic") >> parsed_args.network_interface_names;
     // END argument parsing
 
-    auto config = BenchmarkConfig(parsed_args.workload, parsed_args.bucket, parsed_args.region, parsed_args.targetThroughputGbps, parsed_args.network_interface_names);
+    auto config = BenchmarkConfig(
+        parsed_args.workload,
+        parsed_args.bucket,
+        parsed_args.region,
+        parsed_args.targetThroughputGbps,
+        parsed_args.network_interface_names);
     unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 

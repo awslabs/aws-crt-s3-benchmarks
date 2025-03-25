@@ -52,7 +52,6 @@ struct BenchmarkConfig
     uint64_t bytesPerRun() const;
 };
 
-
 // struct for a task in the benchmark's JSON config
 struct TaskConfig
 {

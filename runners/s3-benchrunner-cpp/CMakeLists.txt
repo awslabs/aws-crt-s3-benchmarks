@@ -34,11 +34,7 @@ FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download
 FetchContent_MakeAvailable(json)
 
 # CLI parser
-FetchContent_Declare(
-    argh_parser
-    GIT_REPOSITORY https://github.com/adishavit/argh
-    GIT_TAG v1.3.2
-)
+FetchContent_Declare(argh_parser URL https://github.com/adishavit/argh/archive/refs/tags/v1.3.2.tar.gz)
 FetchContent_MakeAvailable(argh_parser)
 
 # aws-sdk-cpp fails to link on MacOS unless we manually add zlib here:

@@ -33,10 +33,18 @@ include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+# CLI parser
+FetchContent_Declare(
+    argh_parser
+    GIT_REPOSITORY https://github.com/adishavit/argh
+    GIT_TAG v1.3.2
+)
+FetchContent_MakeAvailable(argh_parser)
+
 # aws-sdk-cpp fails to link on MacOS unless we manually add zlib here:
 # https://github.com/aws/aws-sdk-cpp/issues/2635#issuecomment-1708483628
 find_package(ZLIB REQUIRED)
 
 find_package(AWSSDK REQUIRED COMPONENTS s3-crt transfer)
 
-target_link_libraries(${PROJECT_NAME} nlohmann_json aws-cpp-sdk-s3-crt aws-cpp-sdk-transfer)
+target_link_libraries(${PROJECT_NAME} nlohmann_json argh aws-cpp-sdk-s3-crt aws-cpp-sdk-transfer)

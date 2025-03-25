@@ -221,14 +221,14 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 
 struct Args
 {
-    std::string s3ClientId;
-    std::string workload;
-    std::string bucket;
-    std::string region;
+    string s3ClientId;
+    string workload;
+    string bucket;
+    string region;
     double targetThroughputGbps;
 
     // Optional arguments
-    std::string network_interface_names = "";
+    string network_interface_names = "";
 };
 
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
@@ -252,7 +252,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     parsed_args.workload = cmdl[2];
     parsed_args.bucket = cmdl[3];
     parsed_args.region = cmdl[4];
-    parsed_args.targetThroughputGbps = std::stod(cmdl[5]);
+    parsed_args.targetThroughputGbps = stod(cmdl[5]);
 
     // Parse optional named parameters
     cmdl("nic") >> parsed_args.network_interface_names;

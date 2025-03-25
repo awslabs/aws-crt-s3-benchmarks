@@ -83,8 +83,9 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view bucket,
     std::string_view region,
     double targetThroughputGbps,
-    std::string_view network_interface_names)
-    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps)
+    std::string_view network_interface_names,
+    bool telemetry)
+    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps), telemetry(telemetry)
 {
     auto f = ifstream(string(jsonFilepath));
     if (!f)
@@ -229,6 +230,7 @@ struct Args
 
     // Optional arguments
     string network_interface_names = "";
+    bool telemetry = false;
 };
 
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
@@ -257,6 +259,11 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
 
     // Parse optional named arguments
     cmdl("nic") >> parsed_args.network_interface_names;
+    if (cmdl["telemetry"])
+    {
+        cout << "enabling telemetry\n";
+        parsed_args.telemetry = true;
+    }
     // END argument parsing
 
     auto config = BenchmarkConfig(
@@ -264,7 +271,8 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
         parsed_args.bucket,
         parsed_args.region,
         parsed_args.targetThroughputGbps,
-        parsed_args.network_interface_names);
+        parsed_args.network_interface_names,
+        parsed_args.telemetry);
     unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 
@@ -275,7 +283,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     {
         auto runStart = high_resolution_clock::now();
 
-        benchmark->run();
+        benchmark->run(runI + 1);
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();

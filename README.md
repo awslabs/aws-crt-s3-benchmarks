@@ -121,7 +121,7 @@ All runners have the same command line interface, and expect to be run from the
 ```sh
 cd FILES_DIR
 
-RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]
+RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2 --telemetry]
 ```
 
 *   `S3_CLIENT`: ID of S3 client to use (See [table](#s3-clients) above)
@@ -135,6 +135,8 @@ RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2
         (e.g. "100.0" for [c5n.18xlarge](https://aws.amazon.com/ec2/instance-types/c5/))
 *   `NETWORK_INTERFACES`: **This is optionally supported for crt-c Runner**
         A comma separated list of network interface names without any spaces like "--nic ens5,ens6"
+*   `TELEMETRY`: **This is optionally supported for crt-c Runner**
+        Pass `--telemetry` to enable telemetry. It will saved in `telemetry/current_data_time/runNumber.csv` 
 
 Most runners should search for AWS credentials
 [something like this](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#configure-precedence).

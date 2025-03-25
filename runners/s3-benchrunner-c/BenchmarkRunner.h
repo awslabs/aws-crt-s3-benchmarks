@@ -41,13 +41,15 @@ struct BenchmarkConfig
     std::string region;
     double targetThroughputGbps;
     std::vector<std::string> network_interface_names;
+    bool telemetry;
 
     BenchmarkConfig(
         std::string_view jsonFilepath,
         std::string_view bucket,
         std::string_view region,
         double targetThroughputGbps,
-        std::string_view network_interfaces);
+        std::string_view network_interfaces,
+        bool telemetry);
 
     uint64_t bytesPerRun() const;
 };
@@ -77,7 +79,7 @@ class BenchmarkRunner
     BenchmarkRunner &operator=(const BenchmarkRunner &) = delete;
 
     // A benchmark can be run repeatedly
-    virtual void run() = 0;
+    virtual void run(size_t runNumber) = 0;
 };
 
 using CreateRunnerFromNameFn =

@@ -1,8 +1,5 @@
 #include "BenchmarkRunner.h"
 
-#include <future>
-#include <list>
-
 #include <aws/auth/credentials.h>
 #include <aws/common/string.h>
 #include <aws/common/system_resource_util.h>
@@ -14,6 +11,11 @@
 #include <aws/io/stream.h>
 #include <aws/io/tls_channel_handler.h>
 #include <aws/s3/s3_client.h>
+
+#include <chrono>
+#include <future>
+#include <list>
+#include <sstream>
 
 using namespace std;
 
@@ -51,6 +53,9 @@ class CRunner : public BenchmarkRunner
     aws_credentials_provider *credentialsProvider = NULL;
     aws_s3_client *s3Client = NULL;
 
+    // telemetry
+    string base_telemetry_file_path = "";
+
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     string endpoint;
 
@@ -61,7 +66,7 @@ class CRunner : public BenchmarkRunner
     ~CRunner() override;
 
     // A benchmark can be run repeatedly
-    void run() override;
+    void run(size_t runNumber) override;
 
     friend class Task;
 };
@@ -75,6 +80,12 @@ class Task
     aws_s3_meta_request *metaRequest;
     promise<void> donePromise;
     future<void> doneFuture;
+    FILE *telemetry;
+
+    static void onTelemetry(
+        struct aws_s3_meta_request *meta_request,
+        struct aws_s3_request_metrics *metrics,
+        void *user_data);
 
     static void onFinished(
         struct aws_s3_meta_request *meta_request,
@@ -83,7 +94,7 @@ class Task
 
   public:
     // Creates the task and begins its work
-    Task(CRunner &runner, size_t taskI);
+    Task(CRunner &runner, size_t taskI, FILE *telemetry);
 
     void waitUntilDone() { return doneFuture.wait(); }
 };
@@ -217,6 +228,22 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         fail(string("Unable to create S3Client. Probably wrong network interface names?"));
     }
 
+    if (config.telemetry)
+    {
+        auto now = std::chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+        std::stringstream ss;
+        ss << "telemetry/";
+        ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+
+        base_telemetry_file_path = ss.str();
+        // Create the directory
+        if (system(("mkdir -p \"" + base_telemetry_file_path + "\"").c_str()) < 0)
+        {
+            fail(string("Unable to create directory for telemetry files"));
+        }
+    }
+
     if (network_interface_names_array)
     {
         aws_mem_release(alloc, network_interface_names_array);
@@ -239,16 +266,27 @@ CRunner::~CRunner()
     aws_s3_library_clean_up();
 }
 
-void CRunner::run()
+void CRunner::run(size_t runNumber)
 {
+    FILE *telemetry = NULL;
+    if (base_telemetry_file_path.length())
+    {
+        string file_path = base_telemetry_file_path + "/" + std::to_string(runNumber) + ".csv";
+        telemetry = fopen(file_path.c_str(), "w");
+    }
     // kick off all tasks
     list<Task> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
-        runningTasks.emplace_back(*this, i);
+        runningTasks.emplace_back(*this, i, telemetry);
 
     // wait until all tasks are done
     for (auto &&task : runningTasks)
         task.waitUntilDone();
+
+    if (telemetry)
+    {
+        fclose(telemetry);
+    }
 }
 
 void addHeader(aws_http_message *request, string_view name, string_view value)
@@ -257,7 +295,7 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
     aws_http_message_add_header(request, header);
 }
 
-Task::Task(CRunner &runner, size_t taskI)
+Task::Task(CRunner &runner, size_t taskI, FILE *telemetry)
     : runner(runner), taskI(taskI), config(runner.config.tasks[taskI]), donePromise(),
       doneFuture(donePromise.get_future())
 {
@@ -332,11 +370,97 @@ Task::Task(CRunner &runner, size_t taskI)
         checksumConfig.validate_response_checksum = true;
         options.checksum_config = &checksumConfig;
     }
-
+    if (telemetry != NULL)
+    {
+        options.telemetry_callback = Task::onTelemetry;
+        this->telemetry = telemetry;
+        fprintf(
+            telemetry,
+            "request_id,start_time,end_time,total_duration_ns,"
+            "send_start_time,send_end_time,sending_duration_ns,"
+            "receive_start_time,receive_end_time,receiving_duration_ns,"
+            "response_status,request_path_query,host_address,"
+            "ip_address,connection_id,thread_id,stream_id,"
+            "operation_name,request_type\n");
+    }
     metaRequest = aws_s3_client_make_meta_request(runner.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
 
     aws_http_message_release(request);
+}
+
+void Task::onTelemetry(
+    struct aws_s3_meta_request *meta_request,
+    struct aws_s3_request_metrics *metrics,
+    void *user_data)
+{
+    int error_code = aws_s3_request_metrics_get_error_code(metrics);
+    if (error_code != 0)
+    {
+        return;
+    }
+
+    Task *task = static_cast<Task *>(user_data);
+
+    // Variables to hold the metric values
+    const struct aws_string *request_id = nullptr;
+    uint64_t start_time, end_time, total_duration;
+    uint64_t send_start_time, send_end_time, sending_duration;
+    uint64_t receive_start_time, receive_end_time, receiving_duration, part_number;
+    int response_status;
+    const struct aws_string *request_path_query = nullptr;
+    const struct aws_string *host_address = nullptr;
+    const struct aws_string *ip_address = nullptr;
+    size_t connection_id;
+    aws_thread_id_t thread_id;
+    uint32_t stream_id;
+    const struct aws_string *operation_name = nullptr;
+    enum aws_s3_request_type request_type;
+
+    // Retrieve metrics
+    aws_s3_request_metrics_get_request_id(metrics, &request_id);
+    aws_s3_request_metrics_get_start_timestamp_ns(metrics, &start_time);
+    aws_s3_request_metrics_get_end_timestamp_ns(metrics, &end_time);
+    aws_s3_request_metrics_get_total_duration_ns(metrics, &total_duration);
+    aws_s3_request_metrics_get_send_start_timestamp_ns(metrics, &send_start_time);
+    aws_s3_request_metrics_get_send_end_timestamp_ns(metrics, &send_end_time);
+    aws_s3_request_metrics_get_sending_duration_ns(metrics, &sending_duration);
+    aws_s3_request_metrics_get_receive_start_timestamp_ns(metrics, &receive_start_time);
+    aws_s3_request_metrics_get_receive_end_timestamp_ns(metrics, &receive_end_time);
+    aws_s3_request_metrics_get_receiving_duration_ns(metrics, &receiving_duration);
+    aws_s3_request_metrics_get_response_status_code(metrics, &response_status);
+    aws_s3_request_metrics_get_request_path_query(metrics, &request_path_query);
+    aws_s3_request_metrics_get_host_address(metrics, &host_address);
+    aws_s3_request_metrics_get_ip_address(metrics, &ip_address);
+    aws_s3_request_metrics_get_connection_id(metrics, &connection_id);
+    aws_s3_request_metrics_get_thread_id(metrics, &thread_id);
+    aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
+    aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
+    aws_s3_request_metrics_get_request_type(metrics, &request_type);
+
+    // Write the metrics data
+    fprintf(
+        task->telemetry,
+        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d,%lu\n",
+        aws_string_c_str(request_id),
+        start_time,
+        end_time,
+        total_duration,
+        send_start_time,
+        send_end_time,
+        sending_duration,
+        receive_start_time,
+        receive_end_time,
+        receiving_duration,
+        response_status,
+        aws_string_c_str(request_path_query),
+        aws_string_c_str(host_address),
+        aws_string_c_str(ip_address),
+        connection_id,
+        thread_id,
+        stream_id,
+        aws_string_c_str(operation_name),
+        request_type);
 }
 
 void Task::onFinished(

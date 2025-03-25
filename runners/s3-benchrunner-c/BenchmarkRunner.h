@@ -26,17 +26,6 @@ double bytesToGigabit(uint64_t bytes);
 // use standardized part-size across all benchmarks
 #define PART_SIZE (8 * 1024 * 1024)
 
-struct Args {
-    std::string s3ClientId;
-    std::string workload;
-    std::string bucket;
-    std::string region;
-    double targetThroughputGbps;  
-
-    // Optional arguments
-    std::string network_interface_names = "";
-};
-
 // struct for a benchmark config, loaded from JSON
 struct BenchmarkConfig
 {

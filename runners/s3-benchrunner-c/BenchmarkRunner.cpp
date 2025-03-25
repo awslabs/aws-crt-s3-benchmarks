@@ -9,7 +9,7 @@
 
 #include <aws/common/system_resource_util.h>
 
-#include <CLI/CLI.hpp>
+#include "argh.h"
 #include <nlohmann/json.hpp>
 
 using namespace std;
@@ -219,31 +219,40 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
 }
 
+struct Args {
+    std::string s3ClientId;
+    std::string workload;
+    std::string bucket;
+    std::string region;
+    double targetThroughputGbps;  
+
+    // Optional arguments
+    std::string network_interface_names = "";
+};
+
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
 {
     // START Argument Parsing
-    if (argc < 6)
-        fail(string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [OPTIONAL_ARGUMENTS]");
+    argh::parser cmdl;
+    // pre-register optional options to support --param_name param_value syntax
+    cmdl.add_params({ "--nic" });
+    cmdl.parse(argc, argv);
 
-    CLI::App app{"C/C++ Benchmark Runner"};
-    argv = app.ensure_utf8(argv);
+    if (cmdl[{"-h", "--help"}] || cmdl.pos_args().size() < 6) {
+        fail(std::string("usage: ") + argv[0] + " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT --nic name1,name2");
+    }
 
     struct Args parsed_args;
-    // Required positional options (these must appear in order)
-    app.add_option("s3_client", parsed_args.s3ClientId, "S3 Client Name")
-        ->required();
-    app.add_option("workload", parsed_args.workload, "Workload")
-        ->required();
-    app.add_option("bucket", parsed_args.bucket, "S3 bucket name")
-        ->required();
-    app.add_option("region", parsed_args.region, "Region")
-        ->required();
-    app.add_option("target_throughput", parsed_args.targetThroughputGbps, "Target throughput in Gbps")
-        ->required();
+    
+    // Parse required positional parameters
+    parsed_args.s3ClientId = cmdl[1];
+    parsed_args.workload = cmdl[2];
+    parsed_args.bucket = cmdl[3];
+    parsed_args.region = cmdl[4];
+    parsed_args.targetThroughputGbps = std::stod(cmdl[5]);
 
-    // Optional named arguments (these can appear in any order)
-    app.add_option("--network-interfaces,--nic", parsed_args.network_interface_names, "Comma separated network interface names");
-    CLI11_PARSE(app, argc, argv);
+    // Parse optional named parameters
+    cmdl("nic") >> parsed_args.network_interface_names;
     // END argument parsing
 
     auto config = BenchmarkConfig(parsed_args.workload, parsed_args.bucket, parsed_args.region, parsed_args.targetThroughputGbps, parsed_args.network_interface_names);

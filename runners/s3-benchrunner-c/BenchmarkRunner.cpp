@@ -163,13 +163,14 @@ BenchmarkRunner::~BenchmarkRunner() = default;
 FILE *statsFile = NULL;
 
 // Print to both stdout and statsFile
-template<typename... Args>
-void StatsPrintf(const char* fmt, Args... args) {
+template <typename... Args> void StatsPrintf(const char *fmt, Args... args)
+{
     // Print to stdout
     printf(fmt, args...);
-    
+
     // Print to statsFile if it exists
-    if (statsFile) {
+    if (statsFile)
+    {
         fprintf(statsFile, fmt, args...);
         fflush(statsFile);
     }

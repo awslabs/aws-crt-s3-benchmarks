@@ -424,23 +424,11 @@ void Task::onTelemetry(
 
     // Write the metrics data
     std::stringstream ss;
-    ss << aws_string_c_str(request_id) << ","
-       << start_time << ","
-       << end_time << ","
-       << total_duration << ","
-       << send_start_time << ","
-       << send_end_time << ","
-       << sending_duration << ","
-       << receive_start_time << ","
-       << receive_end_time << ","
-       << receiving_duration << ","
-       << response_status << ","
-       << aws_string_c_str(request_path_query) << ","
-       << aws_string_c_str(host_address) << ","
-       << aws_string_c_str(ip_address) << ","
-       << connection_id << ","
-       << thread_id << ","
-       << stream_id << ","
+    ss << aws_string_c_str(request_id) << "," << start_time << "," << end_time << "," << total_duration << ","
+       << send_start_time << "," << send_end_time << "," << sending_duration << "," << receive_start_time << ","
+       << receive_end_time << "," << receiving_duration << "," << response_status << ","
+       << aws_string_c_str(request_path_query) << "," << aws_string_c_str(host_address) << ","
+       << aws_string_c_str(ip_address) << "," << connection_id << "," << thread_id << "," << stream_id << ","
        << aws_string_c_str(operation_name) << std::endl;
     fprintf(task->telemetryFile, "%s", ss.str().c_str());
 }

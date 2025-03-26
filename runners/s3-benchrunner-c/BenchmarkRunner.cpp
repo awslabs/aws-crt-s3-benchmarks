@@ -245,7 +245,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     {
         fail(
             std::string("usage: ") + argv[0] +
-            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]");
+            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2] [--telemetry]");
     }
 
     struct Args parsed_args;

@@ -16,6 +16,7 @@
 #include <future>
 #include <list>
 #include <sstream>
+#include <filesystem>
 
 using namespace std;
 
@@ -79,7 +80,7 @@ class Task
     aws_s3_meta_request *metaRequest;
     promise<void> donePromise;
     future<void> doneFuture;
-    FILE *telemetry;
+    FILE *telemetryFile;
 
     static void onTelemetry(
         struct aws_s3_meta_request *meta_request,
@@ -93,7 +94,7 @@ class Task
 
   public:
     // Creates the task and begins its work
-    Task(CRunner &runner, size_t taskI, FILE *telemetry);
+    Task(CRunner &runner, size_t taskI, FILE *telemetryFile);
 
     void waitUntilDone() { return doneFuture.wait(); }
 };
@@ -229,17 +230,19 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
 
     if (config.telemetry)
     {
-        auto now = std::chrono::system_clock::to_time_t(chrono::system_clock::now());
+        auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
-        std::stringstream ss;
+        stringstream ss;
         ss << "telemetry/";
-        ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+        ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
 
         telemetry_file_base_path = ss.str();
         // Create the directory
-        if (system(("mkdir -p \"" + telemetry_file_base_path + "\"").c_str()) < 0)
+        error_code ec;
+        filesystem::create_directories(telemetry_file_base_path, ec);
+        if (ec)
         {
-            fail(string("Unable to create directory for telemetry files"));
+            fail(string("Unable to create directory for telemetry files: ") + ec.message());
         }
     }
 
@@ -267,24 +270,25 @@ CRunner::~CRunner()
 
 void CRunner::run(size_t runNumber)
 {
-    FILE *telemetry = NULL;
+    FILE *telemetryFile = NULL;
     if (telemetry_file_base_path.length())
     {
-        string file_path = telemetry_file_base_path + "/" + std::to_string(runNumber) + ".csv";
-        telemetry = fopen(file_path.c_str(), "w");
+        // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
+        string file_path = telemetry_file_base_path + "/" + std::format("{:02d}", runNumber) + ".csv";
+        telemetryFile = fopen(file_path.c_str(), "w");
     }
     // kick off all tasks
     list<Task> runningTasks;
     for (size_t i = 0; i < config.tasks.size(); ++i)
-        runningTasks.emplace_back(*this, i, telemetry);
+        runningTasks.emplace_back(*this, i, telemetryFile);
 
     // wait until all tasks are done
     for (auto &&task : runningTasks)
         task.waitUntilDone();
 
-    if (telemetry)
+    if (telemetryFile != NULL)
     {
-        fclose(telemetry);
+        fclose(telemetryFile);
     }
 }
 
@@ -294,7 +298,7 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
     aws_http_message_add_header(request, header);
 }
 
-Task::Task(CRunner &runner, size_t taskI, FILE *telemetry)
+Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
     : runner(runner), taskI(taskI), config(runner.config.tasks[taskI]), donePromise(),
       doneFuture(donePromise.get_future())
 {
@@ -369,12 +373,12 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetry)
         checksumConfig.validate_response_checksum = true;
         options.checksum_config = &checksumConfig;
     }
-    if (telemetry != NULL)
+    if (telemetryFile != NULL)
     {
         options.telemetry_callback = Task::onTelemetry;
-        this->telemetry = telemetry;
+        this->telemetryFile = telemetryFile;
         fprintf(
-            telemetry,
+            telemetryFile,
             "request_id,start_time,end_time,total_duration_ns,"
             "send_start_time,send_end_time,sending_duration_ns,"
             "receive_start_time,receive_end_time,receiving_duration_ns,"
@@ -439,8 +443,8 @@ void Task::onTelemetry(
 
     // Write the metrics data
     fprintf(
-        task->telemetry,
-        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d,%lu\n",
+        task->telemetryFile,
+        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
         aws_string_c_str(request_id),
         start_time,
         end_time,

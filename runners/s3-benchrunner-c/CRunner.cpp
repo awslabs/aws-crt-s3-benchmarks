@@ -252,7 +252,7 @@ CRunner::~CRunner()
 void CRunner::run(size_t runNumber)
 {
     FILE *telemetryFile = NULL;
-    if (telemetryFileBasePath.length())
+    if (!telemetryFileBasePath.empty())
     {
         // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
         string file_path = telemetryFileBasePath + "/" + std::format("{:02d}", runNumber) + ".csv";

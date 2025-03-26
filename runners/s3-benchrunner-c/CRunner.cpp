@@ -13,10 +13,10 @@
 #include <aws/s3/s3_client.h>
 
 #include <chrono>
+#include <filesystem>
 #include <future>
 #include <list>
 #include <sstream>
-#include <filesystem>
 
 using namespace std;
 
@@ -102,6 +102,25 @@ class Task
 std::unique_ptr<BenchmarkRunner> createCRunner(const BenchmarkConfig &config)
 {
     return make_unique<CRunner>(config);
+}
+
+/**
+ * Extracts the workload name from a path.
+ * Given "path/to/my-workload.run.json" returns "my-workload".
+ */
+string workload_name(string_view path)
+{
+    // Get the filename without the path
+    string filename = filesystem::path(path).filename().string();
+
+    // Get everything before the first dot
+    auto first_dot = filename.find('.');
+    if (first_dot != string::npos)
+    {
+        return filename.substr(0, first_dot);
+    }
+
+    return filename;
 }
 
 // Instantiates S3 Client, does not run the benchmark yet
@@ -234,6 +253,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
 
         stringstream ss;
         ss << "telemetry/";
+        ss << workload_name(config.jsonFilepath) << "/";
         ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
 
         telemetry_file_base_path = ss.str();

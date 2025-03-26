@@ -39,6 +39,7 @@ struct BenchmarkConfig
     // passed on cmdline...
     std::string bucket;
     std::string region;
+    std::string jsonFilepath;
     double targetThroughputGbps;
     std::vector<std::string> network_interface_names;
     bool telemetry;

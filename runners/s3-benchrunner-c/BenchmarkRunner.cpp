@@ -85,7 +85,7 @@ BenchmarkConfig::BenchmarkConfig(
     double targetThroughputGbps,
     std::string_view network_interface_names,
     bool telemetry)
-    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps), telemetry(telemetry)
+    : bucket(bucket), region(region), jsonFilepath(jsonFilepath), targetThroughputGbps(targetThroughputGbps), telemetry(telemetry)
 {
     auto f = ifstream(string(jsonFilepath));
     if (!f)

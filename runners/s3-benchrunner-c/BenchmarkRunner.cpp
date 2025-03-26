@@ -159,7 +159,7 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
 BenchmarkRunner::~BenchmarkRunner() = default;
 
-// If telemetry is enabled, output stats for each run to ./telemetry/<current_date_time>/stats.txt
+// If telemetry is enabled, output stats for each run to ./telemetry/<workload_name>/<current_date_time>/stats.txt
 FILE *statsFile = NULL;
 // Print to both stdout and statsFile
 #define statsPrintf(fmt, ...)                                                                                          \

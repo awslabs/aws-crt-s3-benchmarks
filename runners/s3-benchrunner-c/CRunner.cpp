@@ -191,18 +191,18 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         s3ClientConfig.enable_s3express = true;
     }
 
-    struct aws_byte_cursor *networkInterfaceNames_array = NULL;
+    struct aws_byte_cursor *networkInterfaceNamesArray = NULL;
     if (config.networkInterfaceNames.size())
     {
-        networkInterfaceNames_array = (struct aws_byte_cursor *)aws_mem_calloc(
+        networkInterfaceNamesArray = (struct aws_byte_cursor *)aws_mem_calloc(
             alloc, config.networkInterfaceNames.size(), sizeof(struct aws_byte_cursor));
         for (size_t i = 0; i < config.networkInterfaceNames.size(); i++)
         {
-            networkInterfaceNames_array[i] = aws_byte_cursor_from_c_str(config.networkInterfaceNames[i].c_str());
+            networkInterfaceNamesArray[i] = aws_byte_cursor_from_c_str(config.networkInterfaceNames[i].c_str());
         }
 
-        s3ClientConfig.num_networkInterfaceNames = config.networkInterfaceNames.size();
-        s3ClientConfig.networkInterfaceNames_array = networkInterfaceNames_array;
+        s3ClientConfig.num_network_interface_names = config.networkInterfaceNames.size();
+        s3ClientConfig.network_interface_names_array = networkInterfaceNamesArray;
     }
 
 #if defined(BACKPRESSURE_INITIAL_READ_WINDOW_MiB)
@@ -229,9 +229,9 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     }
     telemetryFileBasePath = config.telemetryFileBasePath;
 
-    if (networkInterfaceNames_array)
+    if (networkInterfaceNamesArray)
     {
-        aws_mem_release(alloc, networkInterfaceNames_array);
+        aws_mem_release(alloc, networkInterfaceNamesArray);
     }
 }
 

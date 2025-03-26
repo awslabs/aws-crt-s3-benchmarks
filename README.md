@@ -121,7 +121,7 @@ All runners have the same command line interface, and expect to be run from the
 ```sh
 cd FILES_DIR
 
-RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2 --telemetry]
+RUNNER_CMD S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2] [--telemetry]
 ```
 
 *   `S3_CLIENT`: ID of S3 client to use (See [table](#s3-clients) above)

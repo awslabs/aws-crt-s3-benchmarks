@@ -84,8 +84,9 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view region,
     double targetThroughputGbps,
     std::string_view network_interface_names,
-    bool telemetry)
-    : bucket(bucket), region(region), jsonFilepath(jsonFilepath), targetThroughputGbps(targetThroughputGbps), telemetry(telemetry)
+    std::string_view telemetry_file_base_path)
+    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps),
+      telemetry_file_base_path(telemetry_file_base_path)
 {
     auto f = ifstream(string(jsonFilepath));
     if (!f)
@@ -158,6 +159,11 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
 BenchmarkRunner::~BenchmarkRunner() = default;
 
+FILE *statsFile = NULL;
+// Print to both stdout and a File
+#define statsPrintf(fmt, ...)                                                                                          \
+    (printf(fmt, ##__VA_ARGS__), (statsFile ? fprintf(statsFile, fmt, ##__VA_ARGS__), fflush(statsFile) : 0))
+
 // Print all kinds of stats about these values (median, mean, min, max, etc)
 void printValueStats(const char *label, vector<double> values)
 {
@@ -193,7 +199,7 @@ void printValueStats(const char *label, vector<double> values)
 
     double stdDev = std::sqrt(variance);
 
-    printf(
+    statsPrintf(
         "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
         label,
         median,
@@ -217,7 +223,26 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
-    printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+    statsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+}
+
+/**
+ * Extracts the workload name from a path.
+ * Given "path/to/my-workload.run.json" returns "my-workload".
+ */
+string workload_name(string_view path)
+{
+    // Get the filename without the path
+    string filename = filesystem::path(path).filename().string();
+
+    // Get everything before the first dot
+    auto first_dot = filename.find('.');
+    if (first_dot != string::npos)
+    {
+        return filename.substr(0, first_dot);
+    }
+
+    return filename;
 }
 
 struct Args
@@ -259,11 +284,33 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
 
     // Parse optional named arguments
     cmdl("nic") >> parsed_args.network_interface_names;
+
     if (cmdl["telemetry"])
     {
         parsed_args.telemetry = true;
     }
+
     // END argument parsing
+
+    string telemetry_file_base_path = "";
+    if (parsed_args.telemetry)
+    {
+        auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        stringstream ss;
+        ss << "telemetry/";
+        ss << workload_name(parsed_args.workload) << "/";
+        ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
+
+        telemetry_file_base_path = ss.str();
+        // Create the directory
+        error_code ec;
+        filesystem::create_directories(telemetry_file_base_path, ec);
+        if (ec)
+        {
+            fail(string("Unable to create directory for telemetry files: ") + ec.message());
+        }
+        statsFile = fopen((telemetry_file_base_path + "/stats.txt").c_str(), "w");
+    }
 
     auto config = BenchmarkConfig(
         parsed_args.workload,
@@ -271,7 +318,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
         parsed_args.region,
         parsed_args.targetThroughputGbps,
         parsed_args.network_interface_names,
-        parsed_args.telemetry);
+        telemetry_file_base_path);
     unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 
@@ -288,7 +335,7 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
         fflush(stderr);
-        printf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
+        statsPrintf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs
@@ -298,6 +345,11 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     }
 
     printAllStats(bytesPerRun, durations);
+
+    if (statsFile != NULL)
+    {
+        fclose(statsFile);
+    }
 
     return 0;
 }

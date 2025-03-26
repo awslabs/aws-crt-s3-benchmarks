@@ -104,25 +104,6 @@ std::unique_ptr<BenchmarkRunner> createCRunner(const BenchmarkConfig &config)
     return make_unique<CRunner>(config);
 }
 
-/**
- * Extracts the workload name from a path.
- * Given "path/to/my-workload.run.json" returns "my-workload".
- */
-string workload_name(string_view path)
-{
-    // Get the filename without the path
-    string filename = filesystem::path(path).filename().string();
-
-    // Get everything before the first dot
-    auto first_dot = filename.find('.');
-    if (first_dot != string::npos)
-    {
-        return filename.substr(0, first_dot);
-    }
-
-    return filename;
-}
-
 // Instantiates S3 Client, does not run the benchmark yet
 CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
 {
@@ -246,25 +227,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     {
         fail(string("Unable to create S3Client. Probably wrong network interface names?"));
     }
-
-    if (config.telemetry)
-    {
-        auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-
-        stringstream ss;
-        ss << "telemetry/";
-        ss << workload_name(config.jsonFilepath) << "/";
-        ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
-
-        telemetry_file_base_path = ss.str();
-        // Create the directory
-        error_code ec;
-        filesystem::create_directories(telemetry_file_base_path, ec);
-        if (ec)
-        {
-            fail(string("Unable to create directory for telemetry files: ") + ec.message());
-        }
-    }
+    telemetry_file_base_path = config.telemetry_file_base_path;
 
     if (network_interface_names_array)
     {

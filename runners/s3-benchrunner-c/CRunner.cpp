@@ -12,9 +12,9 @@
 #include <aws/io/tls_channel_handler.h>
 #include <aws/s3/s3_client.h>
 
+#include <format>
 #include <future>
 #include <list>
-#include <format>
 
 using namespace std;
 

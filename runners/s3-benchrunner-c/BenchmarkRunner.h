@@ -40,9 +40,9 @@ struct BenchmarkConfig
     std::string bucket;
     std::string region;
     double targetThroughputGbps;
-    std::vector<std::string> network_interface_names;
+    std::vector<std::string> networkInterfaceNames;
 
-    std::string telemetry_file_base_path = "";
+    std::string telemetryFileBasePath = "";
 
     BenchmarkConfig(
         std::string_view jsonFilepath,
@@ -50,7 +50,7 @@ struct BenchmarkConfig
         std::string_view region,
         double targetThroughputGbps,
         std::string_view network_interfaces,
-        std::string_view telemetry_file_base_path);
+        std::string_view telemetryFileBasePath);
 
     uint64_t bytesPerRun() const;
 };

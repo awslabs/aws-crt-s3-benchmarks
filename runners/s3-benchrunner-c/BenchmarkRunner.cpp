@@ -83,10 +83,10 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view bucket,
     std::string_view region,
     double targetThroughputGbps,
-    std::string_view network_interface_names,
-    std::string_view telemetry_file_base_path)
+    std::string_view networkInterfaceNames,
+    std::string_view telemetryFileBasePath)
     : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps),
-      telemetry_file_base_path(telemetry_file_base_path)
+      telemetryFileBasePath(telemetryFileBasePath)
 {
     auto f = ifstream(string(jsonFilepath));
     if (!f)
@@ -116,15 +116,15 @@ BenchmarkConfig::BenchmarkConfig(
         task.size = taskJson["size"];
     }
 
-    if (!network_interface_names.empty())
+    if (!networkInterfaceNames.empty())
     {
-        std::istringstream ss((std::string(network_interface_names)));
+        std::istringstream ss((std::string(networkInterfaceNames)));
         std::string interface;
         while (std::getline(ss, interface, ','))
         {
             if (!interface.empty())
             {
-                this->network_interface_names.push_back(interface);
+                this->networkInterfaceNames.push_back(interface);
             }
         }
     }
@@ -254,7 +254,7 @@ struct Args
     double targetThroughputGbps;
 
     // Optional arguments
-    string network_interface_names = "";
+    string networkInterfaceNames = "";
     bool telemetry = false;
 };
 
@@ -273,53 +273,53 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
             " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2] [--telemetry]");
     }
 
-    struct Args parsed_args;
+    struct Args parsedArgs;
 
     // Parse required positional parameters
-    parsed_args.s3ClientId = cmdl[1];
-    parsed_args.workload = cmdl[2];
-    parsed_args.bucket = cmdl[3];
-    parsed_args.region = cmdl[4];
-    parsed_args.targetThroughputGbps = stod(cmdl[5]);
+    parsedArgs.s3ClientId = cmdl[1];
+    parsedArgs.workload = cmdl[2];
+    parsedArgs.bucket = cmdl[3];
+    parsedArgs.region = cmdl[4];
+    parsedArgs.targetThroughputGbps = stod(cmdl[5]);
 
     // Parse optional named arguments
-    cmdl("nic") >> parsed_args.network_interface_names;
+    cmdl("nic") >> parsedArgs.networkInterfaceNames;
 
     if (cmdl["telemetry"])
     {
-        parsed_args.telemetry = true;
+        parsedArgs.telemetry = true;
     }
 
     // END argument parsing
 
-    string telemetry_file_base_path = "";
-    if (parsed_args.telemetry)
+    string telemetryFileBasePath = "";
+    if (parsedArgs.telemetry)
     {
         auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         stringstream ss;
         ss << "telemetry/";
-        ss << workload_name(parsed_args.workload) << "/";
+        ss << workload_name(parsedArgs.workload) << "/";
         ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
 
-        telemetry_file_base_path = ss.str();
+        telemetryFileBasePath = ss.str();
         // Create the directory
         error_code ec;
-        filesystem::create_directories(telemetry_file_base_path, ec);
+        filesystem::create_directories(telemetryFileBasePath, ec);
         if (ec)
         {
             fail(string("Unable to create directory for telemetry files: ") + ec.message());
         }
-        statsFile = fopen((telemetry_file_base_path + "/stats.txt").c_str(), "w");
+        statsFile = fopen((telemetryFileBasePath + "/stats.txt").c_str(), "w");
     }
 
     auto config = BenchmarkConfig(
-        parsed_args.workload,
-        parsed_args.bucket,
-        parsed_args.region,
-        parsed_args.targetThroughputGbps,
-        parsed_args.network_interface_names,
-        telemetry_file_base_path);
-    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
+        parsedArgs.workload,
+        parsedArgs.bucket,
+        parsedArgs.region,
+        parsedArgs.targetThroughputGbps,
+        parsedArgs.networkInterfaceNames,
+        telemetryFileBasePath);
+    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsedArgs.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs

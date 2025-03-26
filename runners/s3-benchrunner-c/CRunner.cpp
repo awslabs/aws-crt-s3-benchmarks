@@ -54,7 +54,7 @@ class CRunner : public BenchmarkRunner
     aws_credentials_provider *credentialsProvider = NULL;
     aws_s3_client *s3Client = NULL;
 
-    string telemetry_file_base_path = "";
+    string telemetryFileBasePath = "";
 
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     string endpoint;
@@ -191,18 +191,18 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
         s3ClientConfig.enable_s3express = true;
     }
 
-    struct aws_byte_cursor *network_interface_names_array = NULL;
-    if (config.network_interface_names.size())
+    struct aws_byte_cursor *networkInterfaceNames_array = NULL;
+    if (config.networkInterfaceNames.size())
     {
-        network_interface_names_array = (struct aws_byte_cursor *)aws_mem_calloc(
-            alloc, config.network_interface_names.size(), sizeof(struct aws_byte_cursor));
-        for (size_t i = 0; i < config.network_interface_names.size(); i++)
+        networkInterfaceNames_array = (struct aws_byte_cursor *)aws_mem_calloc(
+            alloc, config.networkInterfaceNames.size(), sizeof(struct aws_byte_cursor));
+        for (size_t i = 0; i < config.networkInterfaceNames.size(); i++)
         {
-            network_interface_names_array[i] = aws_byte_cursor_from_c_str(config.network_interface_names[i].c_str());
+            networkInterfaceNames_array[i] = aws_byte_cursor_from_c_str(config.networkInterfaceNames[i].c_str());
         }
 
-        s3ClientConfig.num_network_interface_names = config.network_interface_names.size();
-        s3ClientConfig.network_interface_names_array = network_interface_names_array;
+        s3ClientConfig.num_networkInterfaceNames = config.networkInterfaceNames.size();
+        s3ClientConfig.networkInterfaceNames_array = networkInterfaceNames_array;
     }
 
 #if defined(BACKPRESSURE_INITIAL_READ_WINDOW_MiB)
@@ -227,11 +227,11 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     {
         fail(string("Unable to create S3Client. Probably wrong network interface names?"));
     }
-    telemetry_file_base_path = config.telemetry_file_base_path;
+    telemetryFileBasePath = config.telemetryFileBasePath;
 
-    if (network_interface_names_array)
+    if (networkInterfaceNames_array)
     {
-        aws_mem_release(alloc, network_interface_names_array);
+        aws_mem_release(alloc, networkInterfaceNames_array);
     }
 }
 
@@ -254,10 +254,10 @@ CRunner::~CRunner()
 void CRunner::run(size_t runNumber)
 {
     FILE *telemetryFile = NULL;
-    if (telemetry_file_base_path.length())
+    if (telemetryFileBasePath.length())
     {
         // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
-        string file_path = telemetry_file_base_path + "/" + std::format("{:02d}", runNumber) + ".csv";
+        string file_path = telemetryFileBasePath + "/" + std::format("{:02d}", runNumber) + ".csv";
         telemetryFile = fopen(file_path.c_str(), "w");
     }
     // kick off all tasks

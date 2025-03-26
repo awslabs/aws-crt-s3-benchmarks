@@ -161,9 +161,19 @@ BenchmarkRunner::~BenchmarkRunner() = default;
 
 // If telemetry is enabled, output stats for each run to ./telemetry/<workload_name>/<current_date_time>/stats.txt
 FILE *statsFile = NULL;
+
 // Print to both stdout and statsFile
-#define statsPrintf(fmt, ...)                                                                                          \
-    (printf(fmt, ##__VA_ARGS__), (statsFile ? fprintf(statsFile, fmt, ##__VA_ARGS__), fflush(statsFile) : 0))
+template<typename... Args>
+void StatsPrintf(const char* fmt, Args... args) {
+    // Print to stdout
+    printf(fmt, args...);
+    
+    // Print to statsFile if it exists
+    if (statsFile) {
+        fprintf(statsFile, fmt, args...);
+        fflush(statsFile);
+    }
+}
 
 // Print all kinds of stats about these values (median, mean, min, max, etc)
 void printValueStats(const char *label, vector<double> values)
@@ -200,7 +210,7 @@ void printValueStats(const char *label, vector<double> values)
 
     double stdDev = std::sqrt(variance);
 
-    statsPrintf(
+    StatsPrintf(
         "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
         label,
         median,
@@ -224,7 +234,7 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
-    statsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+    StatsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
 }
 
 /**
@@ -326,17 +336,17 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
     std::vector<double> durations;
     auto appStart = high_resolution_clock::now();
-    for (int runI = 0; runI < config.maxRepeatCount; ++runI)
+    for (int runNumber = 1; runNumber <= config.maxRepeatCount; ++runNumber)
     {
         auto runStart = high_resolution_clock::now();
 
-        benchmark->run(runI + 1);
+        benchmark->run(runNumber);
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
         fflush(stderr);
-        statsPrintf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
+        StatsPrintf("Run:%d Secs:%f Gb/s:%f\n", runNumber, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs

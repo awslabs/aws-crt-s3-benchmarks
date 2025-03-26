@@ -15,6 +15,7 @@
 #include <format>
 #include <future>
 #include <list>
+#include <sstream>
 
 using namespace std;
 
@@ -365,7 +366,7 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
             "receive_start_time,receive_end_time,receiving_duration_ns,"
             "response_status,request_path_query,host_address,"
             "ip_address,connection_id,thread_id,stream_id,"
-            "operation_name,request_type\n");
+            "operation_name\n");
     }
     metaRequest = aws_s3_client_make_meta_request(runner.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
@@ -420,31 +421,28 @@ void Task::onTelemetry(
     aws_s3_request_metrics_get_thread_id(metrics, &thread_id);
     aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
     aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
-    aws_s3_request_metrics_get_request_type(metrics, &request_type);
 
     // Write the metrics data
-    fprintf(
-        task->telemetryFile,
-        "%s,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%s,%s,%s,%zu,%lu,%u,%s,%d\n",
-        aws_string_c_str(request_id),
-        start_time,
-        end_time,
-        total_duration,
-        send_start_time,
-        send_end_time,
-        sending_duration,
-        receive_start_time,
-        receive_end_time,
-        receiving_duration,
-        response_status,
-        aws_string_c_str(request_path_query),
-        aws_string_c_str(host_address),
-        aws_string_c_str(ip_address),
-        connection_id,
-        thread_id,
-        stream_id,
-        aws_string_c_str(operation_name),
-        request_type);
+    std::stringstream ss;
+    ss << aws_string_c_str(request_id) << ","
+       << start_time << ","
+       << end_time << ","
+       << total_duration << ","
+       << send_start_time << ","
+       << send_end_time << ","
+       << sending_duration << ","
+       << receive_start_time << ","
+       << receive_end_time << ","
+       << receiving_duration << ","
+       << response_status << ","
+       << aws_string_c_str(request_path_query) << ","
+       << aws_string_c_str(host_address) << ","
+       << aws_string_c_str(ip_address) << ","
+       << connection_id << ","
+       << thread_id << ","
+       << stream_id << ","
+       << aws_string_c_str(operation_name) << std::endl;
+    fprintf(task->telemetryFile, "%s", ss.str().c_str());
 }
 
 void Task::onFinished(

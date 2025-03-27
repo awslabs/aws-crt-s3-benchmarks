@@ -83,8 +83,10 @@ BenchmarkConfig::BenchmarkConfig(
     std::string_view bucket,
     std::string_view region,
     double targetThroughputGbps,
-    std::string_view network_interface_names)
-    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps)
+    std::string_view networkInterfaceNames,
+    std::string_view telemetryFileBasePath)
+    : bucket(bucket), region(region), targetThroughputGbps(targetThroughputGbps),
+      telemetryFileBasePath(telemetryFileBasePath)
 {
     auto f = ifstream(string(jsonFilepath));
     if (!f)
@@ -114,15 +116,15 @@ BenchmarkConfig::BenchmarkConfig(
         task.size = taskJson["size"];
     }
 
-    if (!network_interface_names.empty())
+    if (!networkInterfaceNames.empty())
     {
-        std::istringstream ss((std::string(network_interface_names)));
+        std::istringstream ss((std::string(networkInterfaceNames)));
         std::string interface;
         while (std::getline(ss, interface, ','))
         {
             if (!interface.empty())
             {
-                this->network_interface_names.push_back(interface);
+                this->networkInterfaceNames.push_back(interface);
             }
         }
     }
@@ -156,6 +158,23 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 }
 
 BenchmarkRunner::~BenchmarkRunner() = default;
+
+// If telemetry is enabled, output stats for each run to ./telemetry/<workload_name>/<current_date_time>/stats.txt
+FILE *statsFile = NULL;
+
+// Print to both stdout and statsFile
+template <typename... Args> void StatsPrintf(const char *fmt, Args... args)
+{
+    // Print to stdout
+    printf(fmt, args...);
+
+    // Print to statsFile if it exists
+    if (statsFile)
+    {
+        fprintf(statsFile, fmt, args...);
+        fflush(statsFile);
+    }
+}
 
 // Print all kinds of stats about these values (median, mean, min, max, etc)
 void printValueStats(const char *label, vector<double> values)
@@ -192,7 +211,7 @@ void printValueStats(const char *label, vector<double> values)
 
     double stdDev = std::sqrt(variance);
 
-    printf(
+    StatsPrintf(
         "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
         label,
         median,
@@ -216,7 +235,26 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
 
-    printf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+    StatsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+}
+
+/**
+ * Extracts the workload name from a path.
+ * Given "path/to/my-workload.run.json" returns "my-workload".
+ */
+string workload_name(string_view path)
+{
+    // Get the filename without the path
+    string filename = filesystem::path(path).filename().string();
+
+    // Get everything before the first dot
+    auto first_dot = filename.find('.');
+    if (first_dot != string::npos)
+    {
+        return filename.substr(0, first_dot);
+    }
+
+    return filename;
 }
 
 struct Args
@@ -228,7 +266,8 @@ struct Args
     double targetThroughputGbps;
 
     // Optional arguments
-    string network_interface_names = "";
+    string networkInterfaceNames = "";
+    bool telemetry = false;
 };
 
 int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &createRunnerFromName)
@@ -243,45 +282,72 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     {
         fail(
             std::string("usage: ") + argv[0] +
-            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2]");
+            " S3_CLIENT WORKLOAD BUCKET REGION TARGET_THROUGHPUT [--nic name1,name2] [--telemetry]");
     }
 
-    struct Args parsed_args;
+    struct Args parsedArgs;
 
     // Parse required positional parameters
-    parsed_args.s3ClientId = cmdl[1];
-    parsed_args.workload = cmdl[2];
-    parsed_args.bucket = cmdl[3];
-    parsed_args.region = cmdl[4];
-    parsed_args.targetThroughputGbps = stod(cmdl[5]);
+    parsedArgs.s3ClientId = cmdl[1];
+    parsedArgs.workload = cmdl[2];
+    parsedArgs.bucket = cmdl[3];
+    parsedArgs.region = cmdl[4];
+    parsedArgs.targetThroughputGbps = stod(cmdl[5]);
 
     // Parse optional named arguments
-    cmdl("nic") >> parsed_args.network_interface_names;
+    cmdl("nic") >> parsedArgs.networkInterfaceNames;
+
+    if (cmdl["telemetry"])
+    {
+        parsedArgs.telemetry = true;
+    }
+
     // END argument parsing
 
+    string telemetryFileBasePath = "";
+    if (parsedArgs.telemetry)
+    {
+        auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        stringstream ss;
+        ss << "telemetry/";
+        ss << workload_name(parsedArgs.workload) << "/";
+        ss << put_time(localtime(&now), "%Y-%m-%d_%H-%M-%S");
+
+        telemetryFileBasePath = ss.str();
+        // Create the directory
+        error_code ec;
+        filesystem::create_directories(telemetryFileBasePath, ec);
+        if (ec)
+        {
+            fail(string("Unable to create directory for telemetry files: ") + ec.message());
+        }
+        statsFile = fopen((telemetryFileBasePath + "/stats.txt").c_str(), "w");
+    }
+
     auto config = BenchmarkConfig(
-        parsed_args.workload,
-        parsed_args.bucket,
-        parsed_args.region,
-        parsed_args.targetThroughputGbps,
-        parsed_args.network_interface_names);
-    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsed_args.s3ClientId, config);
+        parsedArgs.workload,
+        parsedArgs.bucket,
+        parsedArgs.region,
+        parsedArgs.targetThroughputGbps,
+        parsedArgs.networkInterfaceNames,
+        telemetryFileBasePath);
+    unique_ptr<BenchmarkRunner> benchmark = createRunnerFromName(parsedArgs.s3ClientId, config);
     uint64_t bytesPerRun = config.bytesPerRun();
 
     // Repeat benchmark until we exceed maxRepeatCount or maxRepeatSecs
     std::vector<double> durations;
     auto appStart = high_resolution_clock::now();
-    for (int runI = 0; runI < config.maxRepeatCount; ++runI)
+    for (int runNumber = 1; runNumber <= config.maxRepeatCount; ++runNumber)
     {
         auto runStart = high_resolution_clock::now();
 
-        benchmark->run();
+        benchmark->run(runNumber);
 
         duration<double> runDurationSecs = high_resolution_clock::now() - runStart;
         double runSecs = runDurationSecs.count();
         durations.push_back(runSecs);
         fflush(stderr);
-        printf("Run:%d Secs:%f Gb/s:%f\n", runI + 1, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
+        StatsPrintf("Run:%d Secs:%f Gb/s:%f\n", runNumber, runSecs, bytesToGigabit(bytesPerRun) / runSecs);
         fflush(stdout);
 
         // break out if we've exceeded maxRepeatSecs
@@ -291,6 +357,11 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     }
 
     printAllStats(bytesPerRun, durations);
+
+    if (statsFile != NULL)
+    {
+        fclose(statsFile);
+    }
 
     return 0;
 }

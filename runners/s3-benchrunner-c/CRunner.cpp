@@ -12,8 +12,8 @@
 #include <aws/io/tls_channel_handler.h>
 #include <aws/s3/s3_client.h>
 
-#include <format>
 #include <future>
+#include <iomanip>
 #include <list>
 #include <sstream>
 
@@ -255,9 +255,13 @@ void CRunner::run(size_t runNumber)
     FILE *telemetryFile = NULL;
     if (!telemetryFileBasePath.empty())
     {
+        stringstream filePath;
+        filePath << telemetryFileBasePath << "/";
         // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
-        string file_path = telemetryFileBasePath + "/" + std::format("{:02d}", runNumber) + ".csv";
-        telemetryFile = fopen(file_path.c_str(), "w");
+        filePath << setfill('0') << setw(2) << runNumber;
+        filePath << ".csv";
+        telemetryFile = fopen(filePath.str().c_str(), "w");
+        telemetryFile = fopen(filePath.str().c_str(), "w");
     }
     // kick off all tasks
     list<Task> runningTasks;

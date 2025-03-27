@@ -12,10 +12,10 @@
 #include <aws/io/tls_channel_handler.h>
 #include <aws/s3/s3_client.h>
 
-#include <format>
 #include <future>
 #include <list>
 #include <sstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -256,7 +256,9 @@ void CRunner::run(size_t runNumber)
     if (!telemetryFileBasePath.empty())
     {
         // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
-        string file_path = telemetryFileBasePath + "/" + std::format("{:02d}", runNumber) + ".csv";
+        stringstream ss;
+        ss << setfill('0') << setw(2) << runNumber;
+        string file_path = telemetryFileBasePath + "/" + ss.str() + ".csv";
         telemetryFile = fopen(file_path.c_str(), "w");
     }
     // kick off all tasks

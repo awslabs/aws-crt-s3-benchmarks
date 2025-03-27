@@ -255,11 +255,11 @@ void CRunner::run(size_t runNumber)
     FILE *telemetryFile = NULL;
     if (!telemetryFileBasePath.empty())
     {
-        // pad the numbers like 01,02 instead 1,2 for asciibetically sorting.
-        stringstream ss;
-        ss << setfill('0') << setw(2) << runNumber;
-        string file_path = telemetryFileBasePath + "/" + ss.str() + ".csv";
-        telemetryFile = fopen(file_path.c_str(), "w");
+        stringstream filePath; 
+        filePath << telemetryFileBasePath << "/"; 
+        // pad the numbers like 01,02 instead 1,2 for asciibetically sorting. 
+        filePath << setfill('0') << setw(2) << runNumber; filePath << ".csv"; telemetryFile = fopen(filePath.str().c_str(), "w");
+        telemetryFile = fopen(filePath.str().c_str(), "w");
     }
     // kick off all tasks
     list<Task> runningTasks;

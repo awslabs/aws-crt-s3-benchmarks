@@ -105,7 +105,11 @@ async fn execute(args: &Args) -> Result<()> {
                 run_num,
             ));
         }
-
+        let _ = runner.flush_buffer_to_file(&trace_file_name(
+                workload_name,
+                &run_start_datetime,
+                run_num,
+        ));
         eprintln!(
             "Run:{} Secs:{:.6} Gb/s:{:.6}",
             run_num,

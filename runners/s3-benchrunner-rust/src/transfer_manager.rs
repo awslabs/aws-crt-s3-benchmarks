@@ -166,7 +166,6 @@ impl TransferManagerRunner {
             }
         }
 
-        download_handle.flush_buffer_to_file("./telemetry.txt");
         assert_eq!(total_size, task_config.size);
 
         Ok(())
@@ -261,6 +260,10 @@ impl RunBenchmark for TransferManagerRunner {
 
     fn config(&self) -> &BenchmarkConfig {
         &self.handle.config
+    }
+
+    fn flush_buffer_to_file(&self, path: &str) -> std::io::Result<usize> {
+        self.handle.transfer_manager.flush_buffer_to_file(path)
     }
 }
 

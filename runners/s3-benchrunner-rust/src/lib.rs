@@ -116,6 +116,7 @@ impl BenchmarkConfig {
 pub trait RunBenchmark {
     async fn run(&self) -> Result<()>;
     fn config(&self) -> &BenchmarkConfig;
+    fn flush_buffer_to_file(&self, path: &str) -> std::io::Result<usize>;
 }
 
 // Do prep work between runs, before timers starts (e.g. create intermediate directories)

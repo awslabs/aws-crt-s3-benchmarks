@@ -273,7 +273,6 @@ dependencies = [
 [[package]]
 name = "aws-sdk-s3-transfer-manager"
 version = "0.1.1"
-source = "git+https://github.com/awslabs/aws-s3-transfer-manager-rs.git?rev=ff570c69c04c1a9bcd1efa17b756759af449e41e#ff570c69c04c1a9bcd1efa17b756759af449e41e"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -291,6 +290,7 @@ dependencies = [
  "path-clean",
  "pin-project-lite",
  "tokio",
+ "tokio-metrics",
  "tokio-util",
  "tower",
  "tracing",
@@ -2680,6 +2680,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tokio-metrics"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb2bb07a8451c4c6fa8b3497ad198510d8b8dffa5df5cfb97a64102a58b113c8"
+dependencies = [
+ "futures-util",
+ "pin-project-lite",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]

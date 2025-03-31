@@ -166,6 +166,7 @@ impl TransferManagerRunner {
             }
         }
 
+        download_handle.flush_buffer_to_file("./telemetry.txt");
         assert_eq!(total_size, task_config.size);
 
         Ok(())

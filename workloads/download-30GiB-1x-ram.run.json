@@ -3,7 +3,7 @@
     "comment": "",
     "filesOnDisk": false,
     "checksum": null,
-    "maxRepeatCount": 10,
+    "maxRepeatCount": 4,
     "maxRepeatSecs": 600,
     "tasks": [
         {

@@ -155,5 +155,5 @@ fn trace_file_name(
     run_num: u32,
 ) -> String {
     let run_start = run_start.format("%Y%m%dT%H%M%SZ").to_string();
-    format!("trace_{run_start}_{workload}_run{run_num:02}.json")
+    format!("trace_{run_start}_{workload}_run{run_num:02}.csv")
 }

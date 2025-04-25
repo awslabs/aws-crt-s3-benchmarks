@@ -162,14 +162,14 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
         // Fill the buffer by repeating the random block
         size_t bytesWritten = 0;
-        while (bytesWritten < maxUploadSize) {
+        while (bytesWritten < maxUploadSize)
+        {
             // Calculate how many bytes to copy in this iteration
             size_t bytesToCopy = std::min(randomBlockSize, maxUploadSize - bytesWritten);
 
             // Copy the bytes from the random block to the target buffer
-            std::copy(randomBlock.begin(),
-                    randomBlock.begin() + bytesToCopy,
-                    randomDataForUpload.begin() + bytesWritten);
+            std::copy(
+                randomBlock.begin(), randomBlock.begin() + bytesToCopy, randomDataForUpload.begin() + bytesWritten);
 
             bytesWritten += bytesToCopy;
         }

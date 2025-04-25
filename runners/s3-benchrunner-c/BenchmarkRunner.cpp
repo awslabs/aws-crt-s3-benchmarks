@@ -146,14 +146,33 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
     // All uploads will use this same buffer, so make it big enough for the largest file.
     if (!config.filesOnDisk)
     {
+        const size_t randomBlockSize = 8 * 1024 * 1024; // 8MB
+        std::vector<uint8_t> randomBlock(randomBlockSize);
         size_t maxUploadSize = 0;
         for (auto &&task : config.tasks)
             if (task.action == "upload")
                 maxUploadSize = std::max(maxUploadSize, (size_t)task.size);
 
-        randomDataForUpload.resize(maxUploadSize);
+        // Generate 8MB of total random data
         independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-        generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);
+        generate(randomBlock.begin(), randomBlock.end(), randEngine);
+
+        // Resize the buffer to the maximum upload size
+        randomDataForUpload.resize(maxUploadSize);
+
+        // Fill the buffer by repeating the random block
+        size_t bytesWritten = 0;
+        while (bytesWritten < maxUploadSize) {
+            // Calculate how many bytes to copy in this iteration
+            size_t bytesToCopy = std::min(randomBlockSize, maxUploadSize - bytesWritten);
+
+            // Copy the bytes from the random block to the target buffer
+            std::copy(randomBlock.begin(),
+                    randomBlock.begin() + bytesToCopy,
+                    randomDataForUpload.begin() + bytesWritten);
+
+            bytesWritten += bytesToCopy;
+        }
     }
 }
 

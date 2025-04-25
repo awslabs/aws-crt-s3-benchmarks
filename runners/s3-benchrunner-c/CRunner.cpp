@@ -353,6 +353,8 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
             checksumConfig.checksum_algorithm = AWS_SCA_SHA1;
         else if (runner.config.checksum == "SHA256")
             checksumConfig.checksum_algorithm = AWS_SCA_SHA256;
+        else if (runner.config.checksum == "CRC64")
+            checksumConfig.checksum_algorithm = AWS_SCA_CRC64NVME;
         else
             fail(string("Unknown checksum: ") + runner.config.checksum);
         checksumConfig.location = AWS_SCL_HEADER;

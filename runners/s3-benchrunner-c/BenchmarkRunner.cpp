@@ -156,7 +156,7 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
         // We don't want any parts to be identical.
         // Use something that won't fall on a part boundary as we copy it.
-        const size_t randomBlockSize = std::min(31415926, maxUploadSize); // approx 30MiB, digits of pi
+        const size_t randomBlockSize = std::min((size_t)31415926, maxUploadSize); // approx 30MiB, digits of pi
         std::vector<uint8_t> randomBlock(randomBlockSize);
         independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
         generate(randomBlock.begin(), randomBlock.end(), randEngine);

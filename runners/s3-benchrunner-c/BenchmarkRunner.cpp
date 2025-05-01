@@ -151,9 +151,32 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
             if (task.action == "upload")
                 maxUploadSize = std::max(maxUploadSize, (size_t)task.size);
 
-        randomDataForUpload.resize(maxUploadSize);
+        // Generating randomness is slower then copying memory. Therefore, only fill SOME
+        // of the buffer with randomness, and fill the rest with copies of that randomness.
+
+        // We don't want any parts to be identical.
+        // Use something that won't fall on a part boundary as we copy it.
+        const size_t randomBlockSize = std::min((size_t)31415926, maxUploadSize); // approx 30MiB, digits of pi
+        std::vector<uint8_t> randomBlock(randomBlockSize);
         independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-        generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);
+        generate(randomBlock.begin(), randomBlock.end(), randEngine);
+
+        // Resize the buffer to the maximum upload size
+        randomDataForUpload.resize(maxUploadSize);
+
+        // Fill the buffer by repeating the random block
+        size_t bytesWritten = 0;
+        while (bytesWritten < maxUploadSize)
+        {
+            // Calculate how many bytes to copy in this iteration
+            size_t bytesToCopy = std::min(randomBlockSize, maxUploadSize - bytesWritten);
+
+            // Copy the bytes from the random block to the target buffer
+            std::copy(
+                randomBlock.begin(), randomBlock.begin() + bytesToCopy, randomDataForUpload.begin() + bytesWritten);
+
+            bytesWritten += bytesToCopy;
+        }
     }
 }
 

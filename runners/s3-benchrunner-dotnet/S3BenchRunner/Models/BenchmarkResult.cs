@@ -21,6 +21,11 @@ public class BenchmarkResult
                $"{ThroughputMbps:F2},{Success},{ErrorMessage ?? ""}";
     }
 
+    public string ToConsoleString()
+    {
+        return $"Run:{RunNumber} Secs:{Duration.TotalSeconds:F6} Gb/s:{ThroughputMbps/1000:F6}";
+    }
+
     public static string GetCsvHeader()
     {
         return "Operation,S3Key,LocalPath,SizeBytes,RunNumber," +

@@ -54,6 +54,16 @@ For workloads with multiple tasks:
 - Each run executes all tasks concurrently
 - Reports total time and aggregate throughput for the run
 
+File Handling:
+- When filesOnDisk is true (default):
+  * Downloads write to local files
+  * Uploads read from local files
+  * Files are cleaned up between runs
+- When filesOnDisk is false:
+  * Downloads write to /dev/null
+  * Uploads use random data from memory
+  * No files are created on disk
+
 Example output:
 ```
 Run:1 Secs:0.056775 Gb/s:0.009235

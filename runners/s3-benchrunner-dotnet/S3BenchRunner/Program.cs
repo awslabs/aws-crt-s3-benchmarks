@@ -70,7 +70,7 @@ Arguments:
                 var bytesPerRun = workloadConfig.Tasks.Sum(t => t.Size);
 
                 // Create client once and reuse for all runs
-                using var client = new TransferUtilityClient(bucket, region);
+                using var client = new TransferUtilityClient(bucket, region, workloadConfig.FilesOnDisk, workloadConfig.Tasks, workloadConfig.Checksum);
 
                 // Track overall start time for max duration check
                 var appStartTime = DateTimeOffset.UtcNow;

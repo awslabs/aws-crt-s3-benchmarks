@@ -16,6 +16,7 @@ This project is under active development and subject to change.
     *   JDK17+ (e.g. corretto, openjdk)
     *   Maven
     *   Python C extension headers and libraries (e.g. python3-devel)
+    *   .NET 8.0 SDK
 
 To benchmark **ALL** the workloads, your machine needs 300+ GiB of disk space available,
 and fast enough internet to upload a terabyte to S3 within your lifetime.
@@ -28,9 +29,13 @@ Your machine must have AWS credentials, with permission to read and write to an 
 First, clone this repo.
 
 Then install the [requirements](#requirements) listed above.
-On Amazon Linux 2023, you can simply run this script:
+On Amazon Linux 2023, you can run these scripts:
 ```sh
+# For C/C++/Java/Python/Rust dependencies
 ./aws-crt-s3-benchmarks/scripts/install-tools-AL2023.py
+
+# For .NET SDK dependencies
+./aws-crt-s3-benchmarks/scripts/install-tools-AL2023-dotnet.py
 ```
 
 Then, install packages needed by the python scripts:
@@ -86,6 +91,7 @@ Here are the IDs used for various S3 Clients, and the runner you must build to b
 | `sdk-cpp-client-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) S3Client | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
 | `sdk-cpp-tm-classic` | [aws-sdk-cpp](https://github.com/aws/aws-sdk-cpp) with (non-CRT) TransferManager | `cpp` | [runners/s3-benchrunner-cpp](runners/s3-benchrunner-cpp/) |
 | `sdk-rust-tm` | [aws-s3-transfer-manager-rs](https://github.com/awslabs/aws-s3-transfer-manager-rs/) | `rust` | [runners/s3-benchrunner-rust](runners/s3-benchrunner-rust/) |
+| `sdk-dotnet-tm` | [AWS SDK for .NET](https://github.com/aws/aws-sdk-net) TransferUtility | `dotnet` | [runners/s3-benchrunner-dotnet](runners/s3-benchrunner-dotnet/) |
 
 ### Build a Runner
 
@@ -93,13 +99,13 @@ You must build a "runner" for the S3 client you'll be benchmarking. For example,
 
 Run `scripts/build-runner.py`:
 ```sh
-usage: build-runner.py [-h] --lang {c,python,java} --build-dir BUILD_DIR [--branch BRANCH]
+usage: build-runner.py [-h] --lang {c,python,java,rust,dotnet} --build-dir BUILD_DIR [--branch BRANCH]
 
 Build a runner and its dependencies
 
 optional arguments:
   -h, --help            show this help message and exit
-  --lang {c,python,java}
+  --lang {c,python,java,rust,dotnet}
                         Build s3-benchrunner-<lang>
   --build-dir BUILD_DIR
                         Root dir for build artifacts

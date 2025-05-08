@@ -69,9 +69,11 @@ Arguments:
                 // Calculate total bytes per run (sum of all task sizes)
                 var bytesPerRun = workloadConfig.Tasks.Sum(t => t.Size);
 
+                // Create client once and reuse for all runs
+                using var client = new TransferUtilityClient(bucket, region);
+
                 // Track overall start time for max duration check
                 var appStartTime = DateTimeOffset.UtcNow;
-                using var client = new TransferUtilityClient(bucket, region);
 
                 // Run benchmarks
                 for (int run = 1; run <= workloadConfig.MaxRepeatCount; run++)

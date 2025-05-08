@@ -88,29 +88,33 @@ Arguments:
                     var runStartTime = DateTimeOffset.UtcNow;
                     var success = true;
 
-                    // Execute all tasks in this run
-                    foreach (var task in workloadConfig.Tasks)
+                    try
                     {
-                        BenchmarkResult taskResult;
-                        if (task.Action == "download")
-                        {
-                            taskResult = await client.DownloadAsync(task.S3Key, task.LocalPath, run);
-                        }
-                        else if (task.Action == "upload")
-                        {
-                            taskResult = await client.UploadAsync(task.LocalPath, task.S3Key, run);
-                        }
-                        else
-                        {
-                            throw new ArgumentException($"Unsupported action: {task.Action}");
-                        }
+                        // Execute all tasks in parallel
+                        var tasks = workloadConfig.Tasks.Select(task => 
+                            task.Action == "download" 
+                                ? client.DownloadAsync(task.S3Key, task.LocalPath, run)
+                                : task.Action == "upload"
+                                    ? client.UploadAsync(task.LocalPath, task.S3Key, run)
+                                    : throw new ArgumentException($"Unsupported action: {task.Action}")
+                        ).ToList();
 
-                        if (!taskResult.Success)
+                        // Wait for all tasks to complete
+                        var taskResults = await Task.WhenAll(tasks);
+
+                        // Check if any task failed
+                        if (taskResults.Any(result => !result.Success))
                         {
                             success = false;
                             Environment.ExitCode = 1;
                             break;
                         }
+                    }
+                    catch (Exception)
+                    {
+                        success = false;
+                        Environment.ExitCode = 1;
+                        break;
                     }
 
                     if (!success)

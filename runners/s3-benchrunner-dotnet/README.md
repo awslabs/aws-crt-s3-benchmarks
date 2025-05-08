@@ -49,7 +49,10 @@ Where:
 - Secs: Duration of executing all tasks in the workload
 - Gb/s: Throughput in gigabits per second (based on total bytes transferred)
 
-For workloads with multiple tasks, each run executes all tasks and reports the total time and aggregate throughput.
+For workloads with multiple tasks:
+- Tasks are executed in parallel using async/await
+- Each run executes all tasks concurrently
+- Reports total time and aggregate throughput for the run
 
 Example output:
 ```

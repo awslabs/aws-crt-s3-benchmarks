@@ -11,8 +11,8 @@ public class TransferUtilityClient : IDisposable
     private readonly string _bucketName;
     private readonly bool _filesOnDisk;
     private readonly byte[]? _randomData;
-
     private readonly string? _checksum;
+    private readonly TransferUtilityConfig _transferConfig;
 
     public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks, string? checksum)
     {
@@ -24,7 +24,12 @@ public class TransferUtilityClient : IDisposable
             ForcePathStyle = true
         };
         _s3Client = new AmazonS3Client(config);
-        _transferUtility = new TransferUtility(_s3Client);
+        // Configure transfer utility with concurrent requests based on number of tasks
+        _transferConfig = new TransferUtilityConfig
+        {
+            ConcurrentServiceRequests = tasks.Count()
+        };
+        _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
         _checksum = checksum;
 
@@ -45,7 +50,34 @@ public class TransferUtilityClient : IDisposable
         }
     }
 
-    public async Task<BenchmarkResult> DownloadAsync(string s3Key, string localPath, int runNumber)
+    private string GetCommonRootDirectory(IEnumerable<WorkloadTask> tasks)
+    {
+        if (!tasks.Any())
+            throw new ArgumentException("No tasks provided");
+
+        var firstPath = Path.GetDirectoryName(tasks.First().S3Key) 
+            ?? throw new ArgumentException($"Invalid S3 key path: {tasks.First().S3Key}");
+        if (string.IsNullOrEmpty(firstPath))
+            throw new ArgumentException("Tasks must be in a directory");
+
+        var commonRoot = firstPath;
+        foreach (var task in tasks.Skip(1))
+        {
+            var taskPath = Path.GetDirectoryName(task.S3Key)
+                ?? throw new ArgumentException($"Invalid S3 key path: {task.S3Key}");
+            while (!string.IsNullOrEmpty(commonRoot) && !taskPath.StartsWith(commonRoot))
+            {
+                commonRoot = Path.GetDirectoryName(commonRoot);
+            }
+
+            if (string.IsNullOrEmpty(commonRoot))
+                throw new ArgumentException("Tasks must share a common root directory");
+        }
+
+        return commonRoot;
+    }
+
+    public async Task<BenchmarkResult> DownloadAsync(string s3Key, string localPath, int runNumber, IEnumerable<WorkloadTask>? allTasks = null)
     {
         var result = new BenchmarkResult
         {
@@ -62,7 +94,50 @@ public class TransferUtilityClient : IDisposable
             var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
             result.SizeBytes = metadata.ContentLength;
 
-            if (_filesOnDisk)
+            // If we have multiple tasks, use directory download
+            if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
+            {
+                var commonRoot = GetCommonRootDirectory(allTasks);
+                var localDir = Path.GetDirectoryName(localPath);
+
+                // Clean up existing files first
+                if (Directory.Exists(localDir))
+                {
+                    Directory.Delete(localDir, true);
+                }
+
+                // Ensure directory exists
+                Directory.CreateDirectory(localDir);
+
+                // Download the directory
+                var downloadRequest = new TransferUtilityDownloadDirectoryRequest
+                {
+                    BucketName = _bucketName,
+                    LocalDirectory = localDir,
+                    S3Directory = commonRoot,
+                    DownloadFilesConcurrently = true
+                };
+
+                await _transferUtility.DownloadDirectoryAsync(downloadRequest);
+
+                // Verify downloaded files
+                foreach (var task in allTasks)
+                {
+                    var taskLocalPath = Path.Combine(localDir, Path.GetFileName(task.S3Key));
+                    if (!File.Exists(taskLocalPath))
+                    {
+                        throw new Exception($"File was not created after download: {taskLocalPath}");
+                    }
+
+                    var fileInfo = new FileInfo(taskLocalPath);
+                    var taskMetadata = await _s3Client.GetObjectMetadataAsync(_bucketName, task.S3Key);
+                    if (fileInfo.Length != taskMetadata.ContentLength)
+                    {
+                        throw new Exception($"Downloaded file size ({fileInfo.Length}) does not match expected size ({taskMetadata.ContentLength})");
+                    }
+                }
+            }
+            else if (_filesOnDisk)
             {
                 // Clean up existing file first
                 if (File.Exists(localPath))
@@ -82,7 +157,7 @@ public class TransferUtilityClient : IDisposable
                 {
                     BucketName = _bucketName,
                     Key = s3Key,
-                    FilePath = localPath
+                    FilePath = localPath,
                 };
 
                 await _transferUtility.DownloadAsync(downloadRequest);
@@ -131,7 +206,7 @@ public class TransferUtilityClient : IDisposable
         return result;
     }
 
-    public async Task<BenchmarkResult> UploadAsync(string localPath, string s3Key, int runNumber)
+    public async Task<BenchmarkResult> UploadAsync(string localPath, string s3Key, int runNumber, IEnumerable<WorkloadTask>? allTasks = null)
     {
         var result = new BenchmarkResult
         {
@@ -144,7 +219,48 @@ public class TransferUtilityClient : IDisposable
 
         try
         {
-            if (_filesOnDisk)
+            if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
+            {
+                var commonRoot = GetCommonRootDirectory(allTasks);
+                var localDir = Path.GetDirectoryName(localPath);
+
+                if (!Directory.Exists(localDir))
+                {
+                    throw new DirectoryNotFoundException($"Source directory not found: {localDir}");
+                }
+
+                // Upload the directory
+                var uploadRequest = new TransferUtilityUploadDirectoryRequest
+                {
+                    Directory = localDir,
+                    BucketName = _bucketName,
+                    KeyPrefix = commonRoot,
+                    SearchPattern = "*",
+                    SearchOption = SearchOption.AllDirectories
+                };
+
+                await _transferUtility.UploadDirectoryAsync(uploadRequest);
+
+                // Verify uploaded files
+                foreach (var task in allTasks)
+                {
+                    var taskLocalPath = Path.Combine(localDir, Path.GetFileName(task.S3Key));
+                    if (!File.Exists(taskLocalPath))
+                    {
+                        throw new FileNotFoundException($"Source file not found: {taskLocalPath}");
+                    }
+
+                    var fileInfo = new FileInfo(taskLocalPath);
+                    var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, task.S3Key);
+                    if (metadata.ContentLength != fileInfo.Length)
+                    {
+                        throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match source size ({fileInfo.Length})");
+                    }
+                }
+
+                result.SizeBytes = allTasks.Sum(t => new FileInfo(Path.Combine(localDir, Path.GetFileName(t.S3Key))).Length);
+            }
+            else if (_filesOnDisk)
             {
                 if (!File.Exists(localPath))
                 {

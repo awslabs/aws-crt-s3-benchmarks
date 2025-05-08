@@ -90,17 +90,46 @@ Arguments:
 
                     try
                     {
-                        // Execute all tasks in parallel
-                        var tasks = workloadConfig.Tasks.Select(task => 
-                            task.Action == "download" 
-                                ? client.DownloadAsync(task.S3Key, task.LocalPath, run)
-                                : task.Action == "upload"
-                                    ? client.UploadAsync(task.LocalPath, task.S3Key, run)
-                                    : throw new ArgumentException($"Unsupported action: {task.Action}")
-                        ).ToList();
+                        // Group tasks by action type
+                        var downloadTasks = workloadConfig.Tasks.Where(t => t.Action == "download").ToList();
+                        var uploadTasks = workloadConfig.Tasks.Where(t => t.Action == "upload").ToList();
 
-                        // Wait for all tasks to complete
-                        var taskResults = await Task.WhenAll(tasks);
+                        List<BenchmarkResult> taskResults = new();
+
+                        // Handle downloads
+                        if (downloadTasks.Any())
+                        {
+                            // For multiple downloads, pass all tasks to enable directory-based download
+                            if (downloadTasks.Count > 1)
+                            {
+                                var firstTask = downloadTasks[0];
+                                var downloadResult = await client.DownloadAsync(firstTask.S3Key, firstTask.LocalPath, run, downloadTasks);
+                                taskResults.Add(downloadResult);
+                            }
+                            else
+                            {
+                                var task = downloadTasks[0];
+                                var downloadResult = await client.DownloadAsync(task.S3Key, task.LocalPath, run);
+                                taskResults.Add(downloadResult);
+                            }
+                        }
+
+                        // Handle uploads
+                        if (uploadTasks.Any())
+                        {
+                            if (uploadTasks.Count > 1)
+                            {
+                                var firstTask = uploadTasks[0];
+                                var uploadResult = await client.UploadAsync(firstTask.LocalPath, firstTask.S3Key, run, uploadTasks);
+                                taskResults.Add(uploadResult);
+                            }
+                            else
+                            {
+                                var task = uploadTasks[0];
+                                var uploadResult = await client.UploadAsync(task.LocalPath, task.S3Key, run);
+                                taskResults.Add(uploadResult);
+                            }
+                        }
 
                         // Check if any task failed
                         if (taskResults.Any(result => !result.Success))
@@ -123,7 +152,7 @@ Arguments:
                     }
 
                     var runEndTime = DateTimeOffset.UtcNow;
-                    var result = new BenchmarkResult
+                    var runResult = new BenchmarkResult
                     {
                         Operation = workloadConfig.Tasks[0].Action, // Use first task's action type
                         S3Key = string.Join(",", workloadConfig.Tasks.Select(t => t.S3Key)),
@@ -136,7 +165,7 @@ Arguments:
                     };
 
                     // Write console format to stdout for user display
-                    Console.WriteLine(result.ToConsoleString());
+                    Console.WriteLine(runResult.ToConsoleString());
                 }
             }
             catch (Exception ex)

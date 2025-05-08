@@ -33,6 +33,13 @@ jobs:
     - name: Lint s3-benchrunner-rust
       run: python scripts/lint.py rust
 
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0'
+
+    - name: Lint s3-benchrunner-dotnet
+      run: python scripts/lint.py dotnet
+
     - name: Check that workload.run.json files are up to date
       # build workloads and see if any files change
       run: |
@@ -50,6 +57,7 @@ jobs:
           - java
           - python
           - rust
+          - dotnet
     steps:
     - uses: actions/checkout@v4
 
@@ -67,6 +75,11 @@ jobs:
 
     - if: matrix.runner == 'cpp'
       run: sudo apt update && sudo apt install libcurl4-openssl-dev
+
+    - if: matrix.runner == 'dotnet'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0'
 
     - name: Build
       run: python scripts/build-runner.py --lang ${{ matrix.runner }} --build-dir ${{runner.temp}}/build

@@ -72,6 +72,13 @@ def _lint_rust():
     run(['cargo', 'fmt', '--check'])
 
 
+def _lint_dotnet():
+    runner_dir = RUNNERS['dotnet'].dir
+    os.chdir(runner_dir)
+    # Use dotnet format to check code formatting
+    run(['dotnet', 'format', 'S3BenchRunner/S3BenchRunner.csproj', '--verify-no-changes'])
+
+
 if __name__ == '__main__':
     args = PARSER.parse_args()
 
@@ -82,6 +89,7 @@ if __name__ == '__main__':
         'python': _lint_python,
         'java': _lint_java,
         'rust': _lint_rust,
+        'dotnet': _lint_dotnet,
     }
     lint_fn = lint_functions[args.lang]
     lint_fn()

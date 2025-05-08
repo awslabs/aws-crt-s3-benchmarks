@@ -66,9 +66,6 @@ Arguments:
                 var workloadConfig = JsonConvert.DeserializeObject<WorkloadConfig>(workloadJson)
                     ?? throw new InvalidOperationException("Failed to parse workload config");
 
-                // Write CSV header to stderr for data collection
-                Console.Error.WriteLine(BenchmarkResult.GetCsvHeader());
-
                 // Run benchmarks
                 using var client = new TransferUtilityClient(bucket, region);
                 foreach (var task in workloadConfig.Tasks)
@@ -96,8 +93,6 @@ Arguments:
                             throw new ArgumentException($"Unsupported action: {task.Action}");
                         }
 
-                        // Write CSV to stderr for data collection
-                        Console.Error.WriteLine(result.ToString());
                         // Write console format to stdout for user display
                         Console.WriteLine(result.ToConsoleString());
 

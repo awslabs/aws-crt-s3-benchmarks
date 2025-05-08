@@ -25,10 +25,4 @@ public class BenchmarkResult
     {
         return $"Run:{RunNumber} Secs:{Duration.TotalSeconds:F6} Gb/s:{ThroughputMbps/1000:F6}";
     }
-
-    public static string GetCsvHeader()
-    {
-        return "Operation,S3Key,LocalPath,SizeBytes,RunNumber," +
-               "StartTime,EndTime,DurationSeconds,ThroughputMbps,Success,ErrorMessage";
-    }
 }

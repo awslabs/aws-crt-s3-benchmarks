@@ -29,7 +29,7 @@ Arguments:
 - `WORKLOAD`: Path to workload .run.json file
 - `BUCKET`: S3 bucket name
 - `REGION`: AWS region (e.g., us-west-2)
-- `TARGET_THROUGHPUT`: Target throughput in Gbps (floating point)
+- `TARGET_THROUGHPUT`: Target throughput in Gbps (floating point). This parameter not used for now.
 
 Example:
 ```bash

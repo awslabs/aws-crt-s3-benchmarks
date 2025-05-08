@@ -66,42 +66,71 @@ Arguments:
                 var workloadConfig = JsonConvert.DeserializeObject<WorkloadConfig>(workloadJson)
                     ?? throw new InvalidOperationException("Failed to parse workload config");
 
-                // Run benchmarks
-                using var client = new TransferUtilityClient(bucket, region);
-                foreach (var task in workloadConfig.Tasks)
-                {
-                    var startTime = DateTimeOffset.UtcNow;
-                    for (int run = 1; run <= workloadConfig.MaxRepeatCount; run++)
-                    {
-                        // Check if we've exceeded the time limit
-                        if ((DateTimeOffset.UtcNow - startTime).TotalSeconds > workloadConfig.MaxRepeatSecs)
-                        {
-                            break;
-                        }
+                // Calculate total bytes per run (sum of all task sizes)
+                var bytesPerRun = workloadConfig.Tasks.Sum(t => t.Size);
 
-                        BenchmarkResult result;
+                // Track overall start time for max duration check
+                var appStartTime = DateTimeOffset.UtcNow;
+                using var client = new TransferUtilityClient(bucket, region);
+
+                // Run benchmarks
+                for (int run = 1; run <= workloadConfig.MaxRepeatCount; run++)
+                {
+                    // Check if we've exceeded the time limit
+                    if ((DateTimeOffset.UtcNow - appStartTime).TotalSeconds > workloadConfig.MaxRepeatSecs)
+                    {
+                        break;
+                    }
+
+                    // Time each complete run of all tasks
+                    var runStartTime = DateTimeOffset.UtcNow;
+                    var success = true;
+
+                    // Execute all tasks in this run
+                    foreach (var task in workloadConfig.Tasks)
+                    {
+                        BenchmarkResult taskResult;
                         if (task.Action == "download")
                         {
-                            result = await client.DownloadAsync(task.S3Key, task.LocalPath, run);
+                            taskResult = await client.DownloadAsync(task.S3Key, task.LocalPath, run);
                         }
                         else if (task.Action == "upload")
                         {
-                            result = await client.UploadAsync(task.LocalPath, task.S3Key, run);
+                            taskResult = await client.UploadAsync(task.LocalPath, task.S3Key, run);
                         }
                         else
                         {
                             throw new ArgumentException($"Unsupported action: {task.Action}");
                         }
 
-                        // Write console format to stdout for user display
-                        Console.WriteLine(result.ToConsoleString());
-
-                        if (!result.Success)
+                        if (!taskResult.Success)
                         {
+                            success = false;
                             Environment.ExitCode = 1;
                             break;
                         }
                     }
+
+                    if (!success)
+                    {
+                        break;
+                    }
+
+                    var runEndTime = DateTimeOffset.UtcNow;
+                    var result = new BenchmarkResult
+                    {
+                        Operation = workloadConfig.Tasks[0].Action, // Use first task's action type
+                        S3Key = string.Join(",", workloadConfig.Tasks.Select(t => t.S3Key)),
+                        LocalPath = string.Join(",", workloadConfig.Tasks.Select(t => t.LocalPath)),
+                        SizeBytes = bytesPerRun,
+                        RunNumber = run,
+                        StartTime = runStartTime,
+                        EndTime = runEndTime,
+                        Success = true
+                    };
+
+                    // Write console format to stdout for user display
+                    Console.WriteLine(result.ToConsoleString());
                 }
             }
             catch (Exception ex)

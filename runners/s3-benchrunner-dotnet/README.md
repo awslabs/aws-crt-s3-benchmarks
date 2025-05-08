@@ -44,10 +44,12 @@ Run:N Secs:X.XXXXXX Gb/s:X.XXXXXX
 ```
 
 Where:
-- N: Run number
+- N: Run number (1 to maxRepeatCount)
 - X.XXXXXX: Values with 6 decimal precision
-- Secs: Duration of operation in seconds
-- Gb/s: Throughput in gigabits per second
+- Secs: Duration of executing all tasks in the workload
+- Gb/s: Throughput in gigabits per second (based on total bytes transferred)
+
+For workloads with multiple tasks, each run executes all tasks and reports the total time and aggregate throughput.
 
 Example output:
 ```

@@ -10,6 +10,9 @@ public class BenchmarkResult
     public DateTimeOffset StartTime { get; set; }
     public DateTimeOffset EndTime { get; set; }
     public TimeSpan Duration => EndTime - StartTime;
+    
+    // Calculate throughput in Mbps based on total bytes transferred in this run
+    // For workloads with multiple tasks, SizeBytes is the sum of all task sizes
     public double ThroughputMbps => (SizeBytes * 8.0) / (1_000_000 * Duration.TotalSeconds);
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
@@ -23,6 +26,9 @@ public class BenchmarkResult
 
     public string ToConsoleString()
     {
+        // Each run represents a complete execution of all tasks in the workload
+        // Duration is the time taken to execute all tasks
+        // ThroughputMbps is calculated using the sum of all task sizes
         return $"Run:{RunNumber} Secs:{Duration.TotalSeconds:F6} Gb/s:{ThroughputMbps/1000:F6}";
     }
 }

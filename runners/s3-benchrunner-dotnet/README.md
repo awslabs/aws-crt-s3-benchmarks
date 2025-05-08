@@ -38,15 +38,20 @@ dotnet run -c Release -- sdk-dotnet-tm workloads/download-1MB-1.run.json my-test
 
 ## Output
 
-Results are written to stdout in CSV format with the following columns:
-- Operation: "download" or "upload"
-- S3Key: S3 object key
-- LocalPath: Local file path
-- SizeBytes: Size of file in bytes
-- RunNumber: Current run number for this operation
-- StartTime: Operation start time (ISO 8601)
-- EndTime: Operation end time (ISO 8601)
-- DurationSeconds: Operation duration in seconds
-- ThroughputMbps: Throughput in megabits per second
-- Success: true/false
-- ErrorMessage: Error message if operation failed, empty if successful
+Results are written to stdout in a user-friendly format:
+```
+Run:N Secs:X.XXXXXX Gb/s:X.XXXXXX
+```
+
+Where:
+- N: Run number
+- X.XXXXXX: Values with 6 decimal precision
+- Secs: Duration of operation in seconds
+- Gb/s: Throughput in gigabits per second
+
+Example output:
+```
+Run:1 Secs:0.056775 Gb/s:0.009235
+Run:2 Secs:0.027504 Gb/s:0.019063
+Run:3 Secs:0.057251 Gb/s:0.009158
+```

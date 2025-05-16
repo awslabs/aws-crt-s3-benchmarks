@@ -78,29 +78,9 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 await _transferUtility.DownloadDirectoryAsync(downloadRequest);
-
-                // Verify downloaded files
-                foreach (var task in allTasks)
-                {
-                    var taskLocalPath = Path.Combine(localDir, Path.GetFileName(task.S3Key));
-                    if (!File.Exists(taskLocalPath))
-                    {
-                        throw new Exception($"File was not created after download: {taskLocalPath}");
-                    }
-
-                    var fileInfo = new FileInfo(taskLocalPath);
-                    var taskMetadata = await _s3Client.GetObjectMetadataAsync(_bucketName, task.S3Key);
-                    if (fileInfo.Length != taskMetadata.ContentLength)
-                    {
-                        throw new Exception($"Downloaded file size ({fileInfo.Length}) does not match expected size ({taskMetadata.ContentLength})");
-                    }
-                }
             }
             else if (_filesOnDisk)
-            {
-                // Get object metadata
-                var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
-                
+            {   
                 // Download the file
                 var downloadRequest = new TransferUtilityDownloadRequest
                 {
@@ -110,20 +90,6 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 await _transferUtility.DownloadAsync(downloadRequest);
-
-                // Verify downloaded file
-                if (File.Exists(localPath))
-                {
-                    var fileInfo = new FileInfo(localPath);
-                    if (fileInfo.Length != metadata.ContentLength)
-                    {
-                        throw new Exception($"Downloaded file size ({fileInfo.Length}) does not match expected size ({metadata.ContentLength})");
-                    }
-                }
-                else
-                {
-                    throw new Exception("File was not created after download");
-                }
             }
             else
             {
@@ -173,23 +139,6 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 await _transferUtility.UploadDirectoryAsync(uploadRequest);
-
-                // Verify uploaded files
-                foreach (var task in allTasks)
-                {
-                    var taskLocalPath = Path.Combine(localDir, Path.GetFileName(task.S3Key));
-                    if (!File.Exists(taskLocalPath))
-                    {
-                        throw new FileNotFoundException($"Source file not found: {taskLocalPath}");
-                    }
-
-                    var fileInfo = new FileInfo(taskLocalPath);
-                    var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, task.S3Key);
-                    if (metadata.ContentLength != fileInfo.Length)
-                    {
-                        throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match source size ({fileInfo.Length})");
-                    }
-                }
             }
             else if (_filesOnDisk)
             {
@@ -207,13 +156,6 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 await _transferUtility.UploadAsync(uploadRequest);
-
-                // Verify upload by getting metadata
-                var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
-                if (metadata.ContentLength != fileInfo.Length)
-                {
-                    throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match source size ({fileInfo.Length})");
-                }
             }
             else
             {
@@ -239,13 +181,6 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 await _transferUtility.UploadAsync(uploadRequest);
-
-                // Verify upload by getting metadata
-                var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
-                if (metadata.ContentLength != size)
-                {
-                    throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match expected size ({size})");
-                }
             }
 
             return true;

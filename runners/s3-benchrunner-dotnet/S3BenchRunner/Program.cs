@@ -94,8 +94,6 @@ Arguments:
                         var downloadTasks = workloadConfig.Tasks.Where(t => t.Action == "download").ToList();
                         var uploadTasks = workloadConfig.Tasks.Where(t => t.Action == "upload").ToList();
 
-                        List<BenchmarkResult> taskResults = new();
-
                         // Handle downloads
                         if (downloadTasks.Any())
                         {
@@ -103,14 +101,18 @@ Arguments:
                             if (downloadTasks.Count > 1)
                             {
                                 var firstTask = downloadTasks[0];
-                                var downloadResult = await client.DownloadAsync(firstTask.S3Key, firstTask.LocalPath, run, downloadTasks);
-                                taskResults.Add(downloadResult);
+                                success = await client.DownloadAsync(firstTask.S3Key, firstTask.LocalPath, downloadTasks);
                             }
                             else
                             {
                                 var task = downloadTasks[0];
-                                var downloadResult = await client.DownloadAsync(task.S3Key, task.LocalPath, run);
-                                taskResults.Add(downloadResult);
+                                success = await client.DownloadAsync(task.S3Key, task.LocalPath);
+                            }
+                            
+                            if (!success)
+                            {
+                                Environment.ExitCode = 1;
+                                break;
                             }
                         }
 
@@ -120,23 +122,19 @@ Arguments:
                             if (uploadTasks.Count > 1)
                             {
                                 var firstTask = uploadTasks[0];
-                                var uploadResult = await client.UploadAsync(firstTask.LocalPath, firstTask.S3Key, run, uploadTasks);
-                                taskResults.Add(uploadResult);
+                                success = await client.UploadAsync(firstTask.LocalPath, firstTask.S3Key, uploadTasks);
                             }
                             else
                             {
                                 var task = uploadTasks[0];
-                                var uploadResult = await client.UploadAsync(task.LocalPath, task.S3Key, run);
-                                taskResults.Add(uploadResult);
+                                success = await client.UploadAsync(task.LocalPath, task.S3Key);
                             }
-                        }
-
-                        // Check if any task failed
-                        if (taskResults.Any(result => !result.Success))
-                        {
-                            success = false;
-                            Environment.ExitCode = 1;
-                            break;
+                            
+                            if (!success)
+                            {
+                                Environment.ExitCode = 1;
+                                break;
+                            }
                         }
                     }
                     catch (Exception)

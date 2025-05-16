@@ -77,23 +77,10 @@ public class TransferUtilityClient : IDisposable
         return commonRoot;
     }
 
-    public async Task<BenchmarkResult> DownloadAsync(string s3Key, string localPath, int runNumber, IEnumerable<WorkloadTask>? allTasks = null)
+    public async Task<bool> DownloadAsync(string s3Key, string localPath, IEnumerable<WorkloadTask>? allTasks = null)
     {
-        var result = new BenchmarkResult
-        {
-            Operation = "download",
-            S3Key = s3Key,
-            LocalPath = localPath,
-            RunNumber = runNumber,
-            StartTime = DateTimeOffset.UtcNow
-        };
-
         try
         {
-            // Get object metadata to set SizeBytes
-            var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
-            result.SizeBytes = metadata.ContentLength;
-
             // If we have multiple tasks, use directory download
             if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
             {
@@ -139,6 +126,9 @@ public class TransferUtilityClient : IDisposable
             }
             else if (_filesOnDisk)
             {
+                // Get object metadata
+                var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
+                
                 // Clean up existing file first
                 if (File.Exists(localPath))
                 {
@@ -191,32 +181,16 @@ public class TransferUtilityClient : IDisposable
                 await s3Stream.CopyToAsync(nullStream);
             }
 
-            result.Success = true;
+            return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            result.Success = false;
-            result.ErrorMessage = ex.Message;
+            return false;
         }
-        finally
-        {
-            result.EndTime = DateTimeOffset.UtcNow;
-        }
-
-        return result;
     }
 
-    public async Task<BenchmarkResult> UploadAsync(string localPath, string s3Key, int runNumber, IEnumerable<WorkloadTask>? allTasks = null)
+    public async Task<bool> UploadAsync(string localPath, string s3Key, IEnumerable<WorkloadTask>? allTasks = null)
     {
-        var result = new BenchmarkResult
-        {
-            Operation = "upload",
-            S3Key = s3Key,
-            LocalPath = localPath,
-            RunNumber = runNumber,
-            StartTime = DateTimeOffset.UtcNow
-        };
-
         try
         {
             if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
@@ -257,8 +231,6 @@ public class TransferUtilityClient : IDisposable
                         throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match source size ({fileInfo.Length})");
                     }
                 }
-
-                result.SizeBytes = allTasks.Sum(t => new FileInfo(Path.Combine(localDir, Path.GetFileName(t.S3Key))).Length);
             }
             else if (_filesOnDisk)
             {
@@ -268,7 +240,6 @@ public class TransferUtilityClient : IDisposable
                 }
 
                 var fileInfo = new FileInfo(localPath);
-                result.SizeBytes = fileInfo.Length;
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     FilePath = localPath,
@@ -291,8 +262,8 @@ public class TransferUtilityClient : IDisposable
                 if (_randomData == null)
                     throw new InvalidOperationException("Random data buffer not initialized");
 
-                result.SizeBytes = result.SizeBytes > 0 ? result.SizeBytes : _randomData.Length;
-                using var stream = new MemoryStream(_randomData, 0, (int)result.SizeBytes);
+                long size = _randomData.Length;
+                using var stream = new MemoryStream(_randomData, 0, (int)size);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     InputStream = stream,
@@ -305,25 +276,18 @@ public class TransferUtilityClient : IDisposable
 
                 // Verify upload by getting metadata
                 var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
-                if (metadata.ContentLength != result.SizeBytes)
+                if (metadata.ContentLength != size)
                 {
-                    throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match expected size ({result.SizeBytes})");
+                    throw new Exception($"Uploaded file size ({metadata.ContentLength}) does not match expected size ({size})");
                 }
             }
 
-            result.Success = true;
+            return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            result.Success = false;
-            result.ErrorMessage = ex.Message;
+            return false;
         }
-        finally
-        {
-            result.EndTime = DateTimeOffset.UtcNow;
-        }
-
-        return result;
     }
 
     public void Dispose()

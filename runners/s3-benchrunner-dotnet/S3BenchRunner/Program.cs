@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using Newtonsoft.Json;
-using S3BenchRunner.Client;
 using S3BenchRunner.Models;
 
 namespace S3BenchRunner;
@@ -69,8 +68,8 @@ Arguments:
                 // Calculate total bytes per run (sum of all task sizes)
                 var bytesPerRun = workloadConfig.Tasks.Sum(t => t.Size);
 
-                // Create client once and reuse for all runs
-                using var client = new TransferUtilityClient(bucket, region, workloadConfig.FilesOnDisk, workloadConfig.Tasks, workloadConfig.Checksum);
+                // Create benchmark runner
+                var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput);
 
                 // Track overall start time for max duration check
                 var appStartTime = DateTimeOffset.UtcNow;
@@ -84,58 +83,16 @@ Arguments:
                         break;
                     }
 
+                    // Prepare for this run (clean up files)
+                    benchmarkRunner.PrepareRun();
+
                     // Time each complete run of all tasks
                     var runStartTime = DateTimeOffset.UtcNow;
                     var success = true;
 
                     try
                     {
-                        // Group tasks by action type
-                        var downloadTasks = workloadConfig.Tasks.Where(t => t.Action == "download").ToList();
-                        var uploadTasks = workloadConfig.Tasks.Where(t => t.Action == "upload").ToList();
-
-                        // Handle downloads
-                        if (downloadTasks.Any())
-                        {
-                            // For multiple downloads, pass all tasks to enable directory-based download
-                            if (downloadTasks.Count > 1)
-                            {
-                                var firstTask = downloadTasks[0];
-                                success = await client.DownloadAsync(firstTask.S3Key, firstTask.LocalPath, downloadTasks);
-                            }
-                            else
-                            {
-                                var task = downloadTasks[0];
-                                success = await client.DownloadAsync(task.S3Key, task.LocalPath);
-                            }
-                            
-                            if (!success)
-                            {
-                                Environment.ExitCode = 1;
-                                break;
-                            }
-                        }
-
-                        // Handle uploads
-                        if (uploadTasks.Any())
-                        {
-                            if (uploadTasks.Count > 1)
-                            {
-                                var firstTask = uploadTasks[0];
-                                success = await client.UploadAsync(firstTask.LocalPath, firstTask.S3Key, uploadTasks);
-                            }
-                            else
-                            {
-                                var task = uploadTasks[0];
-                                success = await client.UploadAsync(task.LocalPath, task.S3Key);
-                            }
-                            
-                            if (!success)
-                            {
-                                Environment.ExitCode = 1;
-                                break;
-                            }
-                        }
+                        await benchmarkRunner.RunAsync();
                     }
                     catch (Exception)
                     {

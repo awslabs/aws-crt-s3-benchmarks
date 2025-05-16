@@ -10,11 +10,9 @@ public class TransferUtilityClient : IDisposable
     private readonly ITransferUtility _transferUtility;
     private readonly string _bucketName;
     private readonly bool _filesOnDisk;
-    private readonly byte[]? _randomData;
-    private readonly string? _checksum;
     private readonly TransferUtilityConfig _transferConfig;
 
-    public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks, string? checksum)
+    public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks)
     {
         _bucketName = bucketName;
         var config = new AmazonS3Config
@@ -31,23 +29,6 @@ public class TransferUtilityClient : IDisposable
         };
         _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
-        _checksum = checksum;
-
-        // If we're not using files on disk, generate random data for uploads
-        if (!filesOnDisk)
-        {
-            // Find largest upload size from tasks, matching Python's implementation
-            var largestUpload = tasks
-                .Where(t => t.Action == "upload")
-                .DefaultIfEmpty(new WorkloadTask { Size = 0 })
-                .Max(t => t.Size);
-
-            if (largestUpload > 0)
-            {
-                _randomData = new byte[largestUpload];
-                Random.Shared.NextBytes(_randomData);
-            }
-        }
     }
 
     private string GetCommonRootDirectory(IEnumerable<WorkloadTask> tasks)
@@ -87,15 +68,6 @@ public class TransferUtilityClient : IDisposable
                 var commonRoot = GetCommonRootDirectory(allTasks);
                 var localDir = Path.GetDirectoryName(localPath);
 
-                // Clean up existing files first
-                if (Directory.Exists(localDir))
-                {
-                    Directory.Delete(localDir, true);
-                }
-
-                // Ensure directory exists
-                Directory.CreateDirectory(localDir);
-
                 // Download the directory
                 var downloadRequest = new TransferUtilityDownloadDirectoryRequest
                 {
@@ -129,19 +101,6 @@ public class TransferUtilityClient : IDisposable
                 // Get object metadata
                 var metadata = await _s3Client.GetObjectMetadataAsync(_bucketName, s3Key);
                 
-                // Clean up existing file first
-                if (File.Exists(localPath))
-                {
-                    File.Delete(localPath);
-                }
-
-                // Ensure directory exists
-                var directory = Path.GetDirectoryName(localPath);
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
                 // Download the file
                 var downloadRequest = new TransferUtilityDownloadRequest
                 {
@@ -259,9 +218,16 @@ public class TransferUtilityClient : IDisposable
             else
             {
                 // Upload from memory using random data
-                if (_randomData == null)
-                    throw new InvalidOperationException("Random data buffer not initialized");
+                // If we're not using files on disk, generate random data for uploads
 
+                // Find largest upload size from tasks, matching Python's implementation
+                var largestUpload = allTasks
+                        .Where(t => t.Action == "upload")
+                        .DefaultIfEmpty(new WorkloadTask { Size = 0 })
+                        .Max(t => t.Size);
+                
+                var _randomData = new byte[largestUpload];
+                Random.Shared.NextBytes(_randomData);
                 long size = _randomData.Length;
                 using var stream = new MemoryStream(_randomData, 0, (int)size);
                 var uploadRequest = new TransferUtilityUploadRequest

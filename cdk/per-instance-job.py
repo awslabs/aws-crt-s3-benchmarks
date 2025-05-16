@@ -99,6 +99,11 @@ if __name__ == '__main__':
         run([sys.executable,
             str(benchmarks_dir/'scripts/install-tools-AL2023.py')])
 
+        # install .NET tools if any .NET client is being used
+        if any(client.startswith('sdk-dotnet') for client in args.s3_clients):
+            run([sys.executable,
+                str(benchmarks_dir/'scripts/install-tools-AL2023-dotnet.py')])
+
         # install python packages
         run([sys.executable, '-m', 'pip', 'install', '-r',
             str(benchmarks_dir/'scripts/requirements.txt')])

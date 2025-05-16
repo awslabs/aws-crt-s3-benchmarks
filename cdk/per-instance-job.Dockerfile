@@ -1,6 +1,6 @@
 FROM amazonlinux:2023
 
-RUN dnf install -y git
+RUN dnf install -y git tar findutils
 
 # Installing rustup is a pain, because you need to modify the shell afterwards.
 # Easier to just do it here, vs later via install-tools-AL2023.py

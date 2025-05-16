@@ -84,7 +84,7 @@ if __name__ == '__main__':
     print(f"Using tmp dir: {tmp_dir}")
 
     # git clone aws-crt-s3-benchmarks
-    run(['git', 'clone', 'https://github.com/awslabs/aws-crt-s3-benchmarks.git'])
+    run(['git', 'clone', 'https://github.com/GarrettBeatty/aws-crt-s3-benchmarks.git'])
     benchmarks_dir = Path('aws-crt-s3-benchmarks')
 
     # if branch specified, try to check it out

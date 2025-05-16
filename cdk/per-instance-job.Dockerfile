@@ -7,6 +7,17 @@ RUN dnf install -y git
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install .NET SDK using the official install script
+RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh && \
+    chmod +x ./dotnet-install.sh && \
+    ./dotnet-install.sh --version latest && \
+    rm dotnet-install.sh
+
+# Add .NET tools to PATH
+ENV PATH="/root/.dotnet/tools:${PATH}"
+ENV DOTNET_ROOT="/root/.dotnet"
+ENV PATH="${DOTNET_ROOT}:${PATH}"
+
 # s3_benchmarks/__init__.py is shared by CDK Stack and Batch jobs
 COPY s3_benchmarks/__init__.py /s3_benchmarks/
 

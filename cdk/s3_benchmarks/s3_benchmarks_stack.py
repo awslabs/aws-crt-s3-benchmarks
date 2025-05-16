@@ -49,6 +49,7 @@ DEFAULT_S3_CLIENTS = {
     'crt-python': S3ClientProps(color=cloudwatch.Color.BLUE),
     'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
     'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
+    'sdk-dotnet-tm': S3ClientProps(color='#512bd4'),  # .NET purple
 }
 
 # The "default" set of workloads to benchmark.

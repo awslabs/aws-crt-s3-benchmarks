@@ -11,6 +11,8 @@ public class TransferUtilityClient : IDisposable
     private readonly string _bucketName;
     private readonly bool _filesOnDisk;
     private readonly TransferUtilityConfig _transferConfig;
+    private readonly byte[]? _randomData;
+
 
     public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks)
     {
@@ -29,6 +31,17 @@ public class TransferUtilityClient : IDisposable
         };
         _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
+
+        if (!_filesOnDisk)
+        {
+            // Find largest upload size from tasks
+            var largestUpload = tasks
+                .Where(t => t.Action == "upload")
+                .DefaultIfEmpty(new WorkloadTask { Size = 0 })
+                .Max(t => t.Size);
+            _randomData = new byte[largestUpload];
+            Random.Shared.NextBytes(_randomData);
+        }
     }
 
     private string GetCommonRootDirectory(IEnumerable<WorkloadTask> tasks)
@@ -137,7 +150,7 @@ public class TransferUtilityClient : IDisposable
                     SearchPattern = "*",
                     SearchOption = SearchOption.AllDirectories
                 };
-
+                
                 await _transferUtility.UploadDirectoryAsync(uploadRequest);
             }
             else if (_filesOnDisk)
@@ -159,19 +172,8 @@ public class TransferUtilityClient : IDisposable
             }
             else
             {
-                // Upload from memory using random data
-                // If we're not using files on disk, generate random data for uploads
 
-                // Find largest upload size from tasks, matching Python's implementation
-                var largestUpload = allTasks
-                        .Where(t => t.Action == "upload")
-                        .DefaultIfEmpty(new WorkloadTask { Size = 0 })
-                        .Max(t => t.Size);
-                
-                var _randomData = new byte[largestUpload];
-                Random.Shared.NextBytes(_randomData);
-                long size = _randomData.Length;
-                using var stream = new MemoryStream(_randomData, 0, (int)size);
+                using var stream = new MemoryStream(_randomData, 0, _randomData.Length);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     InputStream = stream,

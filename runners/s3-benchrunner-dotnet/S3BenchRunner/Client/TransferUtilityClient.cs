@@ -114,7 +114,7 @@ public class TransferUtilityClient : IDisposable
         }
     }
 
-    public async Task<bool> UploadAsync(string localPath, string s3Key, IEnumerable<WorkloadTask>? allTasks = null)
+    public async Task<bool> UploadAsync(string localPath, string s3Key, IEnumerable<WorkloadTask> allTasks)
     {
         try
         {

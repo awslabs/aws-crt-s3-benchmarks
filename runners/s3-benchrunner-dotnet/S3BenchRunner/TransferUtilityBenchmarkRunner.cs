@@ -35,7 +35,7 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
             else
             {
                 var task = downloadTasks[0];
-                var success = await _client.DownloadAsync(task.S3Key, task.LocalPath);
+                var success = await _client.DownloadAsync(task.S3Key, task.LocalPath, downloadTasks);
                 if (!success)
                 {
                     throw new Exception("Download failed");
@@ -58,7 +58,7 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
             else
             {
                 var task = uploadTasks[0];
-                var success = await _client.UploadAsync(task.LocalPath, task.S3Key);
+                var success = await _client.UploadAsync(task.LocalPath, task.S3Key, uploadTasks);
                 if (!success)
                 {
                     throw new Exception("Upload failed");

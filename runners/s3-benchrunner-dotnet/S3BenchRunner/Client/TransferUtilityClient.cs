@@ -58,7 +58,7 @@ public class TransferUtilityClient : IDisposable
         return commonRoot;
     }
 
-    public async Task<bool> DownloadAsync(string s3Key, string localPath, IEnumerable<WorkloadTask>? allTasks = null)
+    public async Task<bool> DownloadAsync(string s3Key, string localPath, IEnumerable<WorkloadTask> allTasks)
     {
         try
         {

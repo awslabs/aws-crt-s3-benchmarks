@@ -1,5 +1,5 @@
 {
-  "app": "python3 app.py",
+  "app": "python app.py",
   "watch": {
     "include": [
       "**"
@@ -11,7 +11,9 @@
       "source.bat",
       "**/__init__.py",
       "**/__pycache__",
-      "tests"
+      "tests",
+      "cdk.out",
+      "source.bat"
     ]
   },
   "context": {

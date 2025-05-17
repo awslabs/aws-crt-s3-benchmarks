@@ -84,7 +84,7 @@ if __name__ == '__main__':
     print(f"Using tmp dir: {tmp_dir}")
 
     # git clone aws-crt-s3-benchmarks
-    run(['git', 'clone', 'https://github.com/awslabs/aws-crt-s3-benchmarks.git'])
+    run(['git', 'clone', 'https://github.com/GarrettBeatty/aws-crt-s3-benchmarks.git'])
     benchmarks_dir = Path('aws-crt-s3-benchmarks')
 
     # if branch specified, try to check it out
@@ -98,6 +98,11 @@ if __name__ == '__main__':
     if not args.skip_installs:
         run([sys.executable,
             str(benchmarks_dir/'scripts/install-tools-AL2023.py')])
+
+        # install .NET tools if any .NET client is being used
+        if any(client.startswith('sdk-dotnet') for client in args.s3_clients):
+            run([sys.executable,
+                str(benchmarks_dir/'scripts/install-tools-AL2023-dotnet.py')])
 
         # install python packages
         run([sys.executable, '-m', 'pip', 'install', '-r',

@@ -20,49 +20,24 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
         var uploadTasks = Config.Tasks.Where(t => t.Action == "upload").ToList();
 
         // Handle downloads
-        if (downloadTasks.Any())
+        if (downloadTasks.Count() > 0)
         {
-            // For multiple downloads, pass all tasks to enable directory-based download
-            if (downloadTasks.Count > 1)
+            var task = downloadTasks[0];
+            var success = await _client.DownloadAsync(task.S3Key, task.LocalPath, downloadTasks);
+            if (!success)
             {
-                var firstTask = downloadTasks[0];
-                var success = await _client.DownloadAsync(firstTask.S3Key, firstTask.LocalPath, downloadTasks);
-                if (!success)
-                {
-                    throw new Exception("Download failed");
-                }
-            }
-            else
-            {
-                var task = downloadTasks[0];
-                var success = await _client.DownloadAsync(task.S3Key, task.LocalPath, downloadTasks);
-                if (!success)
-                {
-                    throw new Exception("Download failed");
-                }
+                throw new Exception("Download failed");
             }
         }
 
         // Handle uploads
-        if (uploadTasks.Any())
+        if (uploadTasks.Count() > 0)
         {
-            if (uploadTasks.Count > 1)
+            var task = uploadTasks[0];
+            var success = await _client.UploadAsync(task.LocalPath, task.S3Key, uploadTasks);
+            if (!success)
             {
-                var firstTask = uploadTasks[0];
-                var success = await _client.UploadAsync(firstTask.LocalPath, firstTask.S3Key, uploadTasks);
-                if (!success)
-                {
-                    throw new Exception("Upload failed");
-                }
-            }
-            else
-            {
-                var task = uploadTasks[0];
-                var success = await _client.UploadAsync(task.LocalPath, task.S3Key, uploadTasks);
-                if (!success)
-                {
-                    throw new Exception("Upload failed");
-                }
+                throw new Exception("Upload failed");
             }
         }
     }

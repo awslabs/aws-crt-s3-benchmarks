@@ -148,7 +148,8 @@ public class TransferUtilityClient : IDisposable
                     BucketName = _bucketName,
                     KeyPrefix = commonRoot,
                     SearchPattern = "*",
-                    SearchOption = SearchOption.AllDirectories
+                    SearchOption = SearchOption.AllDirectories,
+                    UploadFilesConcurrently = true
                 };
                 
                 await _transferUtility.UploadDirectoryAsync(uploadRequest);

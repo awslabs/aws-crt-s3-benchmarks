@@ -1,5 +1,6 @@
 # Created by https://www.toptal.com/developers/gitignore/api/c++,python,node,java,visualstudiocode,intellij,pycharm,clion,macos,windows,visualstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,python,node,java,visualstudiocode,intellij,pycharm,clion,macos,windows,visualstudio
+*.dll
 
 ### C++ ###
 # Prerequisites

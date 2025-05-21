@@ -2,6 +2,9 @@ FROM amazonlinux:2023
 
 RUN dnf install -y git tar findutils libicu
 
+RUN dnf install -y python3-pip \
+    && python3 -m pip install boto3
+
 # Installing rustup is a pain, because you need to modify the shell afterwards.
 # Easier to just do it here, vs later via install-tools-AL2023.py
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

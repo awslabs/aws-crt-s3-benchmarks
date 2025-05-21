@@ -21,13 +21,15 @@ public class TransferUtilityClient : IDisposable
         {
             RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region),
             // Use path style addressing for compatibility with benchmark infrastructure
-            ForcePathStyle = true
+            ForcePathStyle = true,
+            LogResponse = true,
+            LogMetrics = true
         };
         _s3Client = new AmazonS3Client(config);
         // Configure transfer utility with concurrent requests based on number of tasks
         _transferConfig = new TransferUtilityConfig
         {
-            ConcurrentServiceRequests = 10 // TODO possibly update
+            ConcurrentServiceRequests = 100 // TODO possibly update
         };
         _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
@@ -75,9 +77,12 @@ public class TransferUtilityClient : IDisposable
     {
         try
         {
+            Console.WriteLine($"Starting download: s3Key={s3Key}, localPath={localPath}, taskCount={allTasks.Count()}");
+            
             // If we have multiple tasks, use directory download
             if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
             {
+                Console.WriteLine($"Using directory download");
                 var commonRoot = GetCommonRootDirectory(allTasks);
                 var localDir = Path.GetDirectoryName(localPath);
 
@@ -90,10 +95,13 @@ public class TransferUtilityClient : IDisposable
                     DownloadFilesConcurrently = true
                 };
 
+                Console.WriteLine($"Directory download request: bucket={_bucketName}, localDir={localDir}, s3Dir={commonRoot}");
                 await _transferUtility.DownloadDirectoryAsync(downloadRequest);
+                Console.WriteLine("Directory download complete");
             }
             else if (_filesOnDisk)
             {   
+                Console.WriteLine($"Using single file download");
                 // Download the file
                 var downloadRequest = new TransferUtilityDownloadRequest
                 {
@@ -102,7 +110,12 @@ public class TransferUtilityClient : IDisposable
                     FilePath = localPath,
                 };
 
+                Console.WriteLine($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
                 await _transferUtility.DownloadAsync(downloadRequest);
+                
+                // Add file size check
+                var fileInfo = new FileInfo(localPath);
+                Console.WriteLine($"Download complete: Size={fileInfo.Length:N0} bytes");
             }
             else
             {
@@ -121,8 +134,10 @@ public class TransferUtilityClient : IDisposable
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine($"Download failed: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             return false;
         }
     }

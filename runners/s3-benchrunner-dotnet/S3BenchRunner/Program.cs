@@ -4,6 +4,7 @@ using S3BenchRunner.Models;
 
 namespace S3BenchRunner;
 
+
 public class Program
 {
     public static async Task<int> Main(string[] args)
@@ -65,8 +66,21 @@ Arguments:
                 var workloadConfig = JsonConvert.DeserializeObject<WorkloadConfig>(workloadJson)
                     ?? throw new InvalidOperationException("Failed to parse workload config");
 
+                // Log workload configuration
+                Console.WriteLine("\nWorkload Configuration:");
+                Console.WriteLine($"- MaxRepeatCount: {workloadConfig.MaxRepeatCount}");
+                Console.WriteLine($"- MaxRepeatSecs: {workloadConfig.MaxRepeatSecs}");
+                Console.WriteLine($"- FilesOnDisk: {workloadConfig.FilesOnDisk}");
+                Console.WriteLine("\nTasks:");
+                foreach (var task in workloadConfig.Tasks)
+                {
+                    Console.WriteLine($"- Task: action={task.Action}, size={task.Size:N0} bytes, key={task.S3Key}");
+                }
+                Console.WriteLine();
+
                 // Calculate total bytes per run (sum of all task sizes)
                 var bytesPerRun = workloadConfig.Tasks.Sum(t => t.Size);
+                Console.WriteLine($"Total bytes per run: {bytesPerRun:N0}\n");
 
                 // Create benchmark runner
                 var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput);
@@ -94,8 +108,11 @@ Arguments:
                     {
                         await benchmarkRunner.RunAsync();
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"\nError during run {run}:");
+                        Console.WriteLine($"- Message: {ex.Message}");
+                        Console.WriteLine($"- Stack trace: {ex.StackTrace}\n");
                         success = false;
                         Environment.ExitCode = 1;
                         break;
@@ -125,7 +142,9 @@ Arguments:
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error: {ex.Message}");
+                Console.Error.WriteLine($"\nError:");
+                Console.Error.WriteLine($"- Message: {ex.Message}");
+                Console.Error.WriteLine($"- Stack trace: {ex.StackTrace}\n");
                 Environment.ExitCode = 1;
             }
         },

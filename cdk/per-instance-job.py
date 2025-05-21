@@ -106,22 +106,23 @@ if __name__ == '__main__':
                 str(benchmarks_dir/'scripts/install-tools-AL2023-dotnet.py')])
             
             # Download custom S3 DLL using boto3
-            print("Downloading custom S3 DLL...")
-            benchmark_dir = benchmarks_dir/'runners'/'s3-benchrunner-dotnet'/'S3BenchRunner'
-            dll_path = benchmark_dir/'AWSSDK.S3.dll'
-            try:
-                s3_client = boto3.client('s3', region_name=args.region)
-                s3_client.download_file(
-                    's3dllgarrett',
-                    'AWSSDK.S3.dll',
-                    str(dll_path)
-                )
-                os.chmod(str(dll_path), 0o644)
-                print("Custom S3 DLL downloaded successfully and permissions set")
-            except Exception as e:
-                print(f"Error downloading custom S3 DLL: {e}")
-                print("Please ensure the DLL exists in the s3dllgarrett bucket and the instance has proper permissions")
-                sys.exit(1)
+            # only use this is you want to reference a local custom S3 DLL
+            # print("Downloading custom S3 DLL...")
+            # benchmark_dir = benchmarks_dir/'runners'/'s3-benchrunner-dotnet'/'S3BenchRunner'
+            # dll_path = benchmark_dir/'AWSSDK.S3.dll'
+            # try:
+            #     s3_client = boto3.client('s3', region_name=args.region)
+            #     s3_client.download_file(
+            #         's3dllgarrett',
+            #         'AWSSDK.S3.dll',
+            #         str(dll_path)
+            #     )
+            #     os.chmod(str(dll_path), 0o644)
+            #     print("Custom S3 DLL downloaded successfully and permissions set")
+            # except Exception as e:
+            #     print(f"Error downloading custom S3 DLL: {e}")
+            #     print("Please ensure the DLL exists in the s3dllgarrett bucket and the instance has proper permissions")
+            #     sys.exit(1)
 
         # install python packages
         run([sys.executable, '-m', 'pip', 'install', '-r',

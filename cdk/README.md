@@ -51,6 +51,10 @@ CDK Python project that sets up infrastructure to automatically run the S3 bench
     ```sh
     cdk deploy -c settings=<myname.settings.json>
     ```
+   Depending upon your host machine architecture and Docker image architecture, you might get an error like "/bin/sh: exec format error". Install binfmt to fix it.
+   ```sh
+   docker run --privileged --rm tonistiigi/binfmt --install all
+   ```
 
 ## Running benchmarks
 

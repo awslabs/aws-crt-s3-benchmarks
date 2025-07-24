@@ -1,0 +1,43 @@
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+scripts/prep-s3-files.py --bucket aws-c-s3-test-bucket-269381 --region us-west-2 --files-dir /data/aws-crt-s3-benchmarks/files --workloads /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x.run.json
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x-ram.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x-ram.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x-ram.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x-ram.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+aws s3api get-object-attributes --bucket aws-c-s3-test-bucket-269381--usw2-az1--x-s3 --region us-west-2 --key upload/30GiB-1x/1 --object-attributes "ObjectParts"
+
+
+../scripts/prep-s3-files.py --bucket aws-c-s3-test-bucket-269381 --region us-west-2 --files-dir /data/aws-crt-s3-benchmarks/files --workloads /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-20x.run.json
+
+../scripts/build-workloads.py /data/aws-crt-s3-benchmarks/workloads/upload-1GiB-1x.src.json /data/aws-crt-s3-benchmarks/workloads/upload-32MiB-1x.src.json
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x-ram.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-10GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/files/python/venv/bin/python3 /data/aws-crt-s3-benchmarks/runners/s3-benchrunner-python/main.py cli-crt /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-64KiB-1_000x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-20x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-500GiB-1x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-client-crt /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-client-classic /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+/data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-tm-classic /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200

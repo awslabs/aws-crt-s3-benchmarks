@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "comment": "",
+    "filesOnDisk": true,
+    "checksum": null,
+    "maxRepeatCount": 1,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload/5TiB-1x/1",
+            "size": 5497558138880
+        }
+    ]
+}

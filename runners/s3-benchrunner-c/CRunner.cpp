@@ -367,6 +367,7 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
             telemetryFile,
             "request_id,start_time,end_time,total_duration_ns,"
             "send_start_time,send_end_time,sending_duration_ns,"
+            "body_read_start_timestamp_ns,body_read_end_timestamp_ns,body_read_duration_ns,body_read_total_ns,"
             "receive_start_time,receive_end_time,receiving_duration_ns,"
             "response_status,request_path_query,host_address,"
             "ip_address,connection_id,thread_id,stream_id,"
@@ -393,9 +394,9 @@ void Task::onTelemetry(
 
     // Variables to hold the metric values
     const struct aws_string *request_id = nullptr;
-    uint64_t start_time, end_time, total_duration;
-    uint64_t send_start_time, send_end_time, sending_duration;
-    uint64_t receive_start_time, receive_end_time, receiving_duration, part_number;
+    uint64_t start_time, end_time, total_duration = 0;
+    uint64_t send_start_time, send_end_time, sending_duration = 0;
+    uint64_t receive_start_time, receive_end_time, receiving_duration, part_number = 0;
     int response_status;
     const struct aws_string *request_path_query = nullptr;
     const struct aws_string *host_address = nullptr;
@@ -405,6 +406,7 @@ void Task::onTelemetry(
     uint32_t stream_id;
     const struct aws_string *operation_name = nullptr;
     enum aws_s3_request_type request_type;
+    int64_t body_read_total_ns, body_read_duration_ns, body_read_start_timestamp_ns, body_read_end_timestamp_ns = 0;
 
     // Retrieve metrics
     aws_s3_request_metrics_get_request_id(metrics, &request_id);
@@ -429,8 +431,9 @@ void Task::onTelemetry(
     // Write the metrics data
     std::stringstream ss;
     ss << aws_string_c_str(request_id) << "," << start_time << "," << end_time << "," << total_duration << ","
-       << send_start_time << "," << send_end_time << "," << sending_duration << "," << receive_start_time << ","
-       << receive_end_time << "," << receiving_duration << "," << response_status << ","
+       << send_start_time << "," << send_end_time << "," << sending_duration << "," << body_read_start_timestamp_ns
+       << "," << body_read_end_timestamp_ns << "," << body_read_duration_ns << "," << body_read_total_ns << ","
+       << receive_start_time << "," << receive_end_time << "," << receiving_duration << "," << response_status << ","
        << aws_string_c_str(request_path_query) << "," << aws_string_c_str(host_address) << ","
        << aws_string_c_str(ip_address) << "," << connection_id << "," << thread_id << "," << stream_id << ","
        << aws_string_c_str(operation_name) << std::endl;

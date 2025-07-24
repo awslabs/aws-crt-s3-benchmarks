@@ -1,0 +1,93 @@
+fio --name=random-read --ioengine=libaio --rw=randread --bs=4k --numjobs=1 --size=1g --runtime=60 --time_based --filename=/tmp/test
+
+# Read existing file with fio
+fio --debug=file,mem --name=file-read --filename=/path/to/your/file --rw=read --bs=4k --numjobs=1 --time_based --runtime=60
+
+# Or for sequential large block reads
+fio --debug=file,mem --name=file-read --filename=/path/to/your/file --rw=read --bs=1m --numjobs=1 --output=output.txt
+
+/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/2
+
+/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5GiB-1x/1
+fio --debug=file,mem --name=file-read --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5GiB-1x/1 --rw=read --bs=1m --numjobs=96 --thread --output=output.txt
+
+fio --debug=file,mem --name=file-read --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/2 --rw=read --bs=1m --numjobs=99 --thread --offset_increment=55G --size=55G --output=output.txt --eta=always  --time_based
+
+fio --name=cached-1000-thread-read-test \
+    --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/2 \
+    --direct=0 \
+    --rw=read \
+    --bs=1M \
+    --ioengine=libaio \
+    --iodepth=4 \
+    --runtime=300 \
+    --numjobs=1000 \
+    --time_based \
+    --group_reporting \
+    --offset_increment=5G \
+    --size=5G \
+    --thread \
+    --status-interval=10 \
+    --output=output-1000-nodirect-3.txt
+
+    718,432,960
+    64,376.724
+
+
+fio --name=cached-read-test \
+    --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/1 \
+    --direct=1 \
+    --rw=read \
+    --bs=1M \
+    --runtime=300 \
+    --numjobs=100 \
+    --time_based \
+    --group_reporting \
+    --offset_increment=50G \
+    --size=50G \
+    --thread \
+    --status-interval=10 \
+    --output=../fiologs/direct-without
+
+fio --name=direct-read-test \
+    --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/1 \
+    --direct=1 \
+    --rw=read \
+    --bs=1M \
+    --runtime=300 \
+    --numjobs=16 \
+    --time_based \
+    --group_reporting \
+    --offset_increment=50G \
+    --size=50G
+    --thread \
+    --status-interval=10 \
+    --output=../fiologs/direct-without
+
+
+
+    echo "/mnt/raid0/aws-crt-s3-benchmarks/files/dump/core-%e-%p-%t" > /proc/sys/kernel/core_pattern
+
+
+fio \
+  --name=memory-pressure-test \
+  --rw=read \
+  --bs=1M \
+  --numjobs=100 \
+  --iodepth=4 \
+  --runtime=180 \
+  --filename=/mnt/raid0/aws-crt-s3-benchmarks/files/upload/5TiB-1x/2 \
+  --output-format=json \
+  --write_lat_log=detailed_lat \
+  --write_bw_log=detailed_bw \
+  --log_avg_msec=1000 \
+  --log_hist_msec=5000 \
+  --write_hist_log=latency_hist \
+  --percentile_list=50:90:95:99:99.9:99.99:99.999 \
+  --status-interval=10 \
+  --eta-newline=5 \
+   --offset_increment=50G \
+   --size=50G \
+   --thread \
+  --output=fiologs/comprehensive_results.json \
+  --debug=mutex,io 2>&1 | tee fiologs/test_output.log

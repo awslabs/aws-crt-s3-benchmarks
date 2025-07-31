@@ -141,7 +141,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
     aws_logger_set(&logger);
 
-    eventLoopGroup = aws_event_loop_group_new_default(alloc, 0 /*max-threads*/, NULL /*shutdown-options*/);
+    eventLoopGroup = aws_event_loop_group_new_default(alloc, 32 /*max-threads*/, NULL /*shutdown-options*/);
     AWS_FATAL_ASSERT(eventLoopGroup != NULL);
 
     aws_host_resolver_default_options resolverOpts;
@@ -372,7 +372,7 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
             "receive_start_time,receive_end_time,receiving_duration_ns,"
             "response_status,request_path_query,host_address,"
             "ip_address,connection_id,thread_id,stream_id,"
-            "operation_name\n");
+            "operation_name,start_get_connection_timestamp_ns,finish_get_connection_timestamp_ns\n");
     }
     metaRequest = aws_s3_client_make_meta_request(runner.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
@@ -410,6 +410,7 @@ void Task::onTelemetry(
     int64_t body_read_total_ns = 0, body_read_duration_ns = 0, body_read_start_timestamp_ns = 0,
             body_read_end_timestamp_ns = 0, body_read_total_without_reset_ns = 0;
     void *request_ptr = nullptr;
+    int64_t start_get_connection_timestamp_ns = 0, finish_get_connection_timestamp_ns = 0;
 
     // Retrieve metrics
     aws_s3_request_metrics_get_request_id(metrics, &request_id);
@@ -431,17 +432,18 @@ void Task::onTelemetry(
     aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
     aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
     aws_s3_request_metrics_get_request_type(metrics, &request_type);
-    aws_s3_request_metrics_get_part_number(metrics, &part_number);
     aws_s3_request_metrics_get_body_read_start_timestamp_ns(metrics, &body_read_start_timestamp_ns);
     aws_s3_request_metrics_get_body_read_end_timestamp_ns(metrics, &body_read_end_timestamp_ns);
     aws_s3_request_metrics_get_body_read_duration_ns(metrics, &body_read_duration_ns);
     aws_s3_request_metrics_get_body_read_total_ns(metrics, &body_read_total_ns);
     aws_s3_request_metrics_get_body_read_total_without_reset_ns(metrics, &body_read_total_without_reset_ns);
     aws_s3_request_metrics_get_request_ptr(metrics, &request_ptr);
+    aws_s3_request_metrics_get_start_get_connection_timestamp_ns(metrics, &start_get_connection_timestamp_ns);
+    aws_s3_request_metrics_get_finish_get_connection_timestamp_ns(metrics, &finish_get_connection_timestamp_ns);
 
     // Write the metrics data
     std::stringstream ss;
-    ss << (request_id ? aws_string_c_str(request_id) : "null") << (request_ptr ? request_ptr : "null") << ","
+    ss << (request_id ? aws_string_c_str(request_id) : "null") << "," << (request_ptr ? request_ptr : "null") << ","
        << start_time << "," << end_time << "," << total_duration << "," << send_start_time << "," << send_end_time
        << "," << sending_duration << "," << body_read_start_timestamp_ns << "," << body_read_end_timestamp_ns << ","
        << body_read_duration_ns << "," << body_read_total_ns << "," << body_read_total_without_reset_ns << ","
@@ -449,8 +451,10 @@ void Task::onTelemetry(
        << (request_path_query ? aws_string_c_str(request_path_query) : "null") << ","
        << (host_address ? aws_string_c_str(host_address) : "null") << ","
        << (ip_address ? aws_string_c_str(ip_address) : "null") << "," << connection_id << "," << thread_id << ","
-       << stream_id << "," << (operation_name ? aws_string_c_str(operation_name) : "null") << std::endl;
+       << stream_id << "," << (operation_name ? aws_string_c_str(operation_name) : "null") << ","
+       << start_get_connection_timestamp_ns << "," << finish_get_connection_timestamp_ns << std::endl;
     fprintf(task->telemetryFile, "%s", ss.str().c_str());
+    fflush(task->telemetryFile);
 }
 
 void Task::onFinished(

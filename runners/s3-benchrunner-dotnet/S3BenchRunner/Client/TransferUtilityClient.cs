@@ -44,60 +44,14 @@ public class TransferUtilityClient : IDisposable
         }
     }
 
-    private string GetCommonRootDirectory(IEnumerable<WorkloadTask> tasks)
-    {
-        if (!tasks.Any())
-            throw new ArgumentException("No tasks provided");
 
-        var firstPath = Path.GetDirectoryName(tasks.First().S3Key) 
-            ?? throw new ArgumentException($"Invalid S3 key path: {tasks.First().S3Key}");
-        if (string.IsNullOrEmpty(firstPath))
-            throw new ArgumentException("Tasks must be in a directory");
-
-        var commonRoot = firstPath;
-        foreach (var task in tasks.Skip(1))
-        {
-            var taskPath = Path.GetDirectoryName(task.S3Key)
-                ?? throw new ArgumentException($"Invalid S3 key path: {task.S3Key}");
-            while (!string.IsNullOrEmpty(commonRoot) && !taskPath.StartsWith(commonRoot))
-            {
-                commonRoot = Path.GetDirectoryName(commonRoot);
-            }
-
-            if (string.IsNullOrEmpty(commonRoot))
-                throw new ArgumentException("Tasks must share a common root directory");
-        }
-
-        return commonRoot;
-    }
-
-    public async Task<bool> DownloadAsync(string s3Key, string localPath, IEnumerable<WorkloadTask> allTasks)
+    public async Task<bool> DownloadAsync(string s3Key, string localPath)
     {
         try
         {
-            Console.WriteLine($"Starting download: s3Key={s3Key}, localPath={localPath}, taskCount={allTasks.Count()}");
+            Logger.LogVerbose($"Starting download: s3Key={s3Key}, localPath={localPath}");
             
-            // If we have multiple tasks, use directory download
-            if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
-            {
-                Console.WriteLine($"Using directory download");
-                var commonRoot = GetCommonRootDirectory(allTasks);
-                var localDir = Path.GetDirectoryName(localPath);
-
-                // Download the directory
-                var downloadRequest = new TransferUtilityDownloadDirectoryRequest
-                {
-                    BucketName = _bucketName,
-                    LocalDirectory = localDir,
-                    S3Directory = commonRoot,
-                    DownloadFilesConcurrently = true
-                };
-
-                Console.WriteLine($"Directory download request: bucket={_bucketName}, localDir={localDir}, s3Dir={commonRoot}");
-                await _transferUtility.DownloadDirectoryAsync(downloadRequest);
-                Console.WriteLine("Directory download complete");
-            }
-            else if (_filesOnDisk)
+            if (_filesOnDisk)
             {   
                 Console.WriteLine($"Using single file download");
                 // Download the file
@@ -140,41 +94,17 @@ public class TransferUtilityClient : IDisposable
         }
     }
 
-    public async Task<bool> UploadAsync(string localPath, string s3Key, IEnumerable<WorkloadTask> allTasks)
+    public async Task<bool> UploadAsync(string localPath, string s3Key)
     {
         try
         {
-            if (_filesOnDisk && allTasks != null && allTasks.Count() > 1)
-            {
-                var commonRoot = GetCommonRootDirectory(allTasks);
-                var localDir = Path.GetDirectoryName(localPath);
-
-                if (!Directory.Exists(localDir))
-                {
-                    throw new DirectoryNotFoundException($"Source directory not found: {localDir}");
-                }
-
-                // Upload the directory
-                var uploadRequest = new TransferUtilityUploadDirectoryRequest
-                {
-                    Directory = localDir,
-                    BucketName = _bucketName,
-                    KeyPrefix = commonRoot,
-                    SearchPattern = "*",
-                    SearchOption = SearchOption.AllDirectories,
-                    UploadFilesConcurrently = true
-                };
-                
-                await _transferUtility.UploadDirectoryAsync(uploadRequest);
-            }
-            else if (_filesOnDisk)
+            if (_filesOnDisk)
             {
                 if (!File.Exists(localPath))
                 {
                     throw new FileNotFoundException($"Source file not found: {localPath}");
                 }
 
-                var fileInfo = new FileInfo(localPath);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     FilePath = localPath,
@@ -186,7 +116,6 @@ public class TransferUtilityClient : IDisposable
             }
             else
             {
-
                 using var stream = new MemoryStream(_randomData, 0, _randomData.Length);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {

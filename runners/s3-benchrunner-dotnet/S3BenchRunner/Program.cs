@@ -5,10 +5,17 @@ using S3BenchRunner.Models;
 namespace S3BenchRunner;
 
 
+
 public class Program
 {
+
     public static async Task<int> Main(string[] args)
     {
+        // Amazon.AWSConfigs.LoggingConfig.LogMetrics = false;
+        // Amazon.AWSConfigs.LoggingConfig.LogResponses = Amazon.ResponseLoggingOption.Never;
+        // Amazon.AWSConfigs.LoggingConfig.LogTo = Amazon.LoggingOptions.Console;
+
+
         // Define command line arguments as positional arguments
         var s3ClientArg = new Argument<string>(
             name: "s3-client",

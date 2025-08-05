@@ -15,26 +15,20 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
 
     public override async Task RunAsync()
     {
-        // Group tasks by action type
-        var downloadTasks = Config.Tasks.Where(t => t.Action == "download").ToList();
-        var uploadTasks = Config.Tasks.Where(t => t.Action == "upload").ToList();
-
-        // Handle downloads
-        if (downloadTasks.Count() > 0)
+        // Process each download task individually
+        foreach (var task in Config.Tasks.Where(t => t.Action == "download"))
         {
-            var task = downloadTasks[0];
-            var success = await _client.DownloadAsync(task.S3Key, task.LocalPath, downloadTasks);
+            var success = await _client.DownloadAsync(task.S3Key, task.LocalPath);
             if (!success)
             {
                 throw new Exception("Download failed");
             }
         }
 
-        // Handle uploads
-        if (uploadTasks.Count() > 0)
+        // Process each upload task individually
+        foreach (var task in Config.Tasks.Where(t => t.Action == "upload"))
         {
-            var task = uploadTasks[0];
-            var success = await _client.UploadAsync(task.LocalPath, task.S3Key, uploadTasks);
+            var success = await _client.UploadAsync(task.LocalPath, task.S3Key);
             if (!success)
             {
                 throw new Exception("Upload failed");

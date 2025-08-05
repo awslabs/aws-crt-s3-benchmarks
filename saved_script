@@ -36,8 +36,34 @@ aws s3api get-object-attributes --bucket aws-c-s3-test-bucket-269381--usw2-az1--
 /data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
 /data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-500GiB-1x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
 
-/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/data/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /data/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200 --telemetry
 
 /data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-client-crt /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
 /data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-client-classic /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
 /data/aws-crt-s3-benchmarks/build-cpp/cpp/install/bin/s3-benchrunner-cpp sdk-cpp-tm-classic /data/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json aws-c-s3-test-bucket-269381--usw2-az1--x-s3 us-west-2 200
+
+
+# Create RAID0
+sudo sysctl -w kernel.core_pattern="/data/aws-crt-s3-benchmarks/coredump/coredump"
+
+lsblk
+
+sudo mdadm --create --verbose /dev/md0 --level=0 --raid-devices=4 /dev/nvme5n1 /dev/nvme2n1 /dev/nvme3n1 /dev/nvme4n1 /dev/nvme5n1 /dev/nvme6n1 /dev/nvme7n1 /dev/nvme8n1 /dev/nvme9n1 /dev/nvme10n1
+sudo mkfs.xfs /dev/nvme1n1
+sudo mount /dev/md0 /files
+
+# Make RAID0 consistent for AL2023
+sudo mdadm --detail --scan | sudo tee /etc/mdadm.conf
+
+# TODO: add to /etc/fstab, but don't do that yet. Seems like problematic.
+
+
+# randread throughput test
+sudo fio --directory=./test --name fio_test_file --direct=1 --rw=randread --bs=16k --size=1G --numjobs=16 --time_based --runtime=180 --group_reporting --norandommap
+
+# monitor the realtime disk usage
+iostat -x 1 -h
+
+# Create the 5TiB file
+mkdir -p upload/5TiB-1x/
+dd if=/dev/urandom of=upload/5TiB-1x/1 bs=8M count=655360 oflag=direct conv=fdatasync status=progress

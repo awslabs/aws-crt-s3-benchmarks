@@ -67,3 +67,6 @@ iostat -x 1 -h
 # Create the 5TiB file
 mkdir -p upload/5TiB-1x/
 dd if=/dev/urandom of=upload/5TiB-1x/1 bs=8M count=655360 oflag=direct conv=fdatasync status=progress
+
+# drop cache
+sudo sysctl -w vm.drop_caches=1

@@ -14,27 +14,32 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
     }
 
     public override async Task RunAsync()
-    {
-        // Process each download task individually
-        foreach (var task in Config.Tasks.Where(t => t.Action == "download"))
         {
-            var success = await _client.DownloadAsync(task.S3Key, task.LocalPath);
-            if (!success)
-            {
-                throw new Exception("Download failed");
-            }
+            // Execute ALL downloads in parallel (like Java CRT does)
+            var downloadTasks = Config.Tasks
+                .Where(t => t.Action == "download")
+                .Select(async task => {
+                    var success = await _client.DownloadAsync(task.S3Key, task.LocalPath);
+                    if (!success)
+                    {
+                        throw new Exception($"Download failed for {task.S3Key}");
+                    }
+                });
+
+            var uploadTasks = Config.Tasks
+                .Where(t => t.Action == "upload")
+                .Select(async task => {
+                    var success = await _client.UploadAsync(task.LocalPath, task.S3Key);
+                    if (!success)
+                    {
+                        throw new Exception($"Upload failed for {task.S3Key}");
+                    }
+                });
+
+            // Wait for ALL tasks to complete in parallel
+            await Task.WhenAll(downloadTasks.Concat(uploadTasks));
         }
 
-        // Process each upload task individually
-        foreach (var task in Config.Tasks.Where(t => t.Action == "upload"))
-        {
-            var success = await _client.UploadAsync(task.LocalPath, task.S3Key);
-            if (!success)
-            {
-                throw new Exception("Upload failed");
-            }
-        }
-    }
 
     public void Dispose()
     {

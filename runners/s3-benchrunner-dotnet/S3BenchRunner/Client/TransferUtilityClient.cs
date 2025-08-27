@@ -2,6 +2,7 @@ using Amazon.S3;
 using Amazon.S3.Transfer;
 using S3BenchRunner.Models;
 
+
 namespace S3BenchRunner.Client;
 
 public class TransferUtilityClient : IDisposable
@@ -11,23 +12,39 @@ public class TransferUtilityClient : IDisposable
     private readonly string _bucketName;
     private readonly bool _filesOnDisk;
     private readonly TransferUtilityConfig _transferConfig;
-    private readonly byte[]? _randomData;
-
+    private long  largestUploadSize = 0;
 
     public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks)
     {
         _bucketName = bucketName;
+
+        // var crtOptions = new CrtHttpClientOptions
+        // {
+        //     MaxConnectionsPerServer = 200,      // Optimize for your concurrency
+        //     InitialWindowSize = 16777216 * 4,      // 16MB for large S3 parts  
+        //     ConnectTimeoutMs = 10000,          // 10 second timeout
+        //     EnableHttp2 = true                 // HTTP/2 multiplexing
+        // };
+
         var config = new AmazonS3Config
         {
             RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region),
             // Use path style addressing for compatibility with benchmark infrastructure
-            ForcePathStyle = true
+            ForcePathStyle = true,
+            // HttpClient()
+            // HttpClientFactory = new CrtHttpClientFactory(crtOptions)
+
+            // LogResponse = true,
+            // LogMetrics = true
         };
+
+
         _s3Client = new AmazonS3Client(config);
         // Configure transfer utility with concurrent requests based on number of tasks
         _transferConfig = new TransferUtilityConfig
         {
-            ConcurrentServiceRequests = 500 // TODO possibly update
+            ConcurrentServiceRequests = 100,
+            MaxInMemoryParts = 1024
         };
         _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
@@ -35,12 +52,10 @@ public class TransferUtilityClient : IDisposable
         if (!_filesOnDisk)
         {
             // Find largest upload size from tasks
-            var largestUpload = tasks
+           largestUploadSize = tasks
                 .Where(t => t.Action == "upload")
                 .DefaultIfEmpty(new WorkloadTask { Size = 0 })
                 .Max(t => t.Size);
-            _randomData = new byte[largestUpload];
-            Random.Shared.NextBytes(_randomData);
         }
     }
 
@@ -53,7 +68,7 @@ public class TransferUtilityClient : IDisposable
             
             if (_filesOnDisk)
             {   
-                Console.WriteLine($"Using single file download");
+                Logger.LogVerbose($"Using single file download");
                 // Download the file
                 var downloadRequest = new TransferUtilityDownloadRequest
                 {
@@ -62,12 +77,12 @@ public class TransferUtilityClient : IDisposable
                     FilePath = localPath,
                 };
 
-                Console.WriteLine($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
+                Logger.LogVerbose($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
                 await _transferUtility.DownloadAsync(downloadRequest);
                 
                 // Add file size check
                 var fileInfo = new FileInfo(localPath);
-                Console.WriteLine($"Download complete: Size={fileInfo.Length:N0} bytes");
+                Logger.LogVerbose($"Download complete: Size={fileInfo.Length:N0} bytes");
             }
             else
             {
@@ -80,16 +95,26 @@ public class TransferUtilityClient : IDisposable
 
                 // Open stream from S3 and copy to null stream
                 using var s3Stream = await _transferUtility.OpenStreamAsync(streamRequest);
-                using var nullStream = Stream.Null;
-                await s3Stream.CopyToAsync(nullStream);
+
+                // Pre-allocate single buffer (reused across all reads)
+                var buffer = new byte[32 * 1024 * 1024]; // 32MB buffer
+                int bytesRead;
+
+                while ((bytesRead = await s3Stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    // Data is read into buffer, then immediately "discarded"
+                    // No WriteAsync calls, no copying, minimal overhead
+                    // This measures pure BufferedMultipartStream.ReadAsync() performance
+                }
+
             }
 
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Download failed: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            Logger.LogAlways($"Download failed: {ex.Message}");
+            Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
             return false;
         }
     }
@@ -116,13 +141,13 @@ public class TransferUtilityClient : IDisposable
             }
             else
             {
-                using var stream = new MemoryStream(_randomData, 0, _randomData.Length);
+                using var stream = new RandomDataStream(largestUploadSize);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     InputStream = stream,
                     BucketName = _bucketName,
                     Key = s3Key,
-                    AutoCloseStream = true
+                    AutoCloseStream = true,
                 };
 
                 await _transferUtility.UploadAsync(uploadRequest);
@@ -130,8 +155,10 @@ public class TransferUtilityClient : IDisposable
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Logger.LogAlways($"Upload failed: {ex.Message}");
+            Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
             return false;
         }
     }
@@ -141,4 +168,35 @@ public class TransferUtilityClient : IDisposable
         _transferUtility.Dispose();
         _s3Client.Dispose();
     }
+}
+
+public class RandomDataStream : Stream
+{
+    private readonly long _length;
+    private long _position;
+    private readonly Random _random = new Random();
+
+    public RandomDataStream(long length) => _length = length;
+    
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => _length;
+    public override long Position { get => _position; set => throw new NotSupportedException(); }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        var remaining = (int)Math.Min(count, _length - _position);
+        if (remaining <= 0) return 0;
+        
+        _random.NextBytes(buffer.AsSpan(offset, remaining));
+        _position += remaining;
+        return remaining;
+    }
+
+    // Required overrides
+    public override void Flush() { }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

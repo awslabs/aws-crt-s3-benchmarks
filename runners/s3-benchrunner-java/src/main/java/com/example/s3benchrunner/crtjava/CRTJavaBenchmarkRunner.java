@@ -7,6 +7,7 @@ import software.amazon.awssdk.crt.auth.signing.AwsSigningConfig;
 import software.amazon.awssdk.crt.io.*;
 import software.amazon.awssdk.crt.s3.S3Client;
 import software.amazon.awssdk.crt.s3.S3ClientOptions;
+import software.amazon.awssdk.crt.s3.FileIoOptions;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -66,14 +67,15 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
         if (isS3Express) {
             signingConfig.setAlgorithm(AwsSigningConfig.AwsSigningAlgorithm.SIGV4_S3EXPRESS);
         }
-
+        FileIoOptions fIoOptions = new FileIoOptions(true, 100.0, true);
         var s3ClientOpts = new S3ClientOptions()
                 .withRegion(region)
                 .withThroughputTargetGbps(targetThroughputGbps)
                 .withClientBootstrap(clientBootstrap)
                 .withTlsContext(tlsCtx)
                 .withEnableS3Express(isS3Express)
-                .withSigningConfig(signingConfig);
+                .withSigningConfig(signingConfig)
+                .withFileIoOptions(fIoOptions);
 
         // If writing data to disk, enable backpressure.
         // This prevents us from running out of memory due to downloading

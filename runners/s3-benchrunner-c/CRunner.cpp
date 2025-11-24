@@ -133,6 +133,11 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     alloc = aws_default_allocator();
 
     aws_s3_library_init(alloc);
+    struct aws_s3_file_io_options fioOpts;
+    AWS_ZERO_STRUCT(fioOpts);
+    fioOpts.should_stream = true;
+    fioOpts.disk_throughput_gbps = config.targetThroughputGbps;
+    fioOpts.direct_io = true;
 
     struct aws_logger_standard_options logOpts;
     AWS_ZERO_STRUCT(logOpts);
@@ -141,7 +146,7 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     AWS_FATAL_ASSERT(aws_logger_init_standard(&logger, alloc, &logOpts) == 0);
     aws_logger_set(&logger);
 
-    eventLoopGroup = aws_event_loop_group_new_default(alloc, 32 /*max-threads*/, NULL /*shutdown-options*/);
+    eventLoopGroup = aws_event_loop_group_new_default(alloc, 0 /*max-threads*/, NULL /*shutdown-options*/);
     AWS_FATAL_ASSERT(eventLoopGroup != NULL);
 
     aws_host_resolver_default_options resolverOpts;
@@ -182,8 +187,13 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     s3ClientConfig.client_bootstrap = clientBootstrap;
     s3ClientConfig.tls_connection_options = &tlsConnOpts;
     s3ClientConfig.signing_config = &signingConfig;
-    s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = config.targetThroughputGbps;
+    s3ClientConfig.fio_opts = &fioOpts;
+    s3ClientConfig.memory_limit_in_bytes = bytesFromGiB(250);
+    s3ClientConfig.part_size = bytesFromMiB(8);
+    size_t num_connections = config.targetThroughputGbps * 2.5;
+    // printf("force dynamic size\n");
+    printf("connections number: %zu\n", num_connections);
     if (isS3Express)
     {
         signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
@@ -293,6 +303,7 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
     AWS_ZERO_STRUCT(options);
     options.user_data = this;
     options.finish_callback = Task::onFinished;
+    options.part_size = bytesFromMiB(8);
 
     // TODO: add "sizeHint" to config, if true then set options.object_size_hint.
     // A transfer-manager downloading a directory would know the object size ahead of time.
@@ -308,7 +319,10 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
 
     if (config.action == "upload")
     {
+        // options.type = AWS_S3_META_REQUEST_TYPE_DEFAULT;
+        // options.operation_name = aws_byte_cursor_from_c_str("PutObject");
         options.type = AWS_S3_META_REQUEST_TYPE_PUT_OBJECT;
+        // options.part_size = bytesFromGiB(1);
 
         aws_http_message_set_request_method(request, toCursor("PUT"));
         addHeader(request, "Content-Length", to_string(config.size));
@@ -329,10 +343,44 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
     else if (config.action == "download")
     {
         options.type = AWS_S3_META_REQUEST_TYPE_GET_OBJECT;
+        options.force_dynamic_part_size = true;
+        // options.object_part_number = runner.config.objectPartNumber;
+        // options.object_part_size = runner.config.objectPartSize;
+        // options.part_size = bytesFromMiB(128);
+        /* Totally 250*5 GiB = 1342177280000 bytes  */
+        // uint64_t total_size = bytesFromGiB(1250);
+        // options.part_size = 3670016;
+        // printf(
+        //     "configurable download: part_number=%u, part_size=%lu bytes (%.1fMiB)\n",
+        //     runner.config.objectPartNumber,
+        //     runner.config.objectPartSize,
+        //     bytesToMiB(runner.config.objectPartSize));
 
         aws_http_message_set_request_method(request, toCursor("GET"));
         addHeader(request, "Content-Length", "0");
-
+        // range                                          20005368709120. 20005368709120
+        // addHeader(request, "Range", "bytes=20000000000001-20005368709120");
+        // addHeader(request, "Range", "bytes=1-53687091200");
+        /* Fetch the first 5GiB file */
+        /*
+        [ec2-user@ip-172-31-11-56 files]$ aws s3api head-object --bucket deleteme-after-hagrid --key upload/6TiB-1x/1
+        --part-number 1
+        {
+            "AcceptRanges": "bytes",
+            "LastModified": "2025-09-05T00:02:35+00:00",
+            "ContentLength": 5368709120,
+            "ETag": "\"9817afed836768d9d0d124e5822d9a41-1229\"",
+            "ContentType": "application/octet-stream",
+            "ContentRange": "bytes 0-5368709119/6597069766656",
+            "ServerSideEncryption": "AES256",
+            "Metadata": {},
+            "PartsCount": 1229
+        }
+        */
+        //                                    10737418240
+        // addHeader(request, "Range", "bytes=0-10737418239");
+        // 53687091200
+        // addHeader(request, "Range", "bytes=0-53687091199");
         if (runner.config.filesOnDisk)
         {
             options.recv_filepath = toCursor(config.key);
@@ -353,9 +401,14 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
             checksumConfig.checksum_algorithm = AWS_SCA_SHA1;
         else if (runner.config.checksum == "SHA256")
             checksumConfig.checksum_algorithm = AWS_SCA_SHA256;
+        else if (runner.config.checksum == "CRC64")
+            checksumConfig.checksum_algorithm = AWS_SCA_CRC64NVME;
         else
             fail(string("Unknown checksum: ") + runner.config.checksum);
-        checksumConfig.location = AWS_SCL_HEADER;
+        if (config.action == "upload")
+        {
+            checksumConfig.location = AWS_SCL_TRAILER;
+        }
         checksumConfig.validate_response_checksum = true;
         options.checksum_config = &checksumConfig;
     }
@@ -365,14 +418,12 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
         this->telemetryFile = telemetryFile;
         fprintf(
             telemetryFile,
-            "request_id,requestptr,start_time,end_time,total_duration_ns,"
+            "request_id,start_time,end_time,total_duration_ns,"
             "send_start_time,send_end_time,sending_duration_ns,"
-            "body_read_start_timestamp_ns,body_read_end_timestamp_ns,body_read_duration_ns,body_read_total_ns,body_"
-            "read_total_without_reset_ns,"
             "receive_start_time,receive_end_time,receiving_duration_ns,"
             "response_status,request_path_query,host_address,"
             "ip_address,connection_id,thread_id,stream_id,"
-            "operation_name,start_get_connection_timestamp_ns,finish_get_connection_timestamp_ns\n");
+            "operation_name,range_start,range_end,part_index\n");
     }
     metaRequest = aws_s3_client_make_meta_request(runner.s3Client, &options);
     AWS_FATAL_ASSERT(metaRequest != NULL);
@@ -386,10 +437,6 @@ void Task::onTelemetry(
     void *user_data)
 {
     int error_code = aws_s3_request_metrics_get_error_code(metrics);
-    if (error_code != 0)
-    {
-        return;
-    }
 
     Task *task = static_cast<Task *>(user_data);
 
@@ -397,7 +444,7 @@ void Task::onTelemetry(
     const struct aws_string *request_id = nullptr;
     uint64_t start_time = 0, end_time = 0, total_duration = 0;
     uint64_t send_start_time = 0, send_end_time = 0, sending_duration = 0;
-    uint64_t receive_start_time = 0, receive_end_time = 0, receiving_duration = 0, part_number = 0;
+    uint64_t receive_start_time = 0, receive_end_time = 0, receiving_duration = 0;
     int response_status = 0;
     const struct aws_string *request_path_query = nullptr;
     const struct aws_string *host_address = nullptr;
@@ -407,10 +454,10 @@ void Task::onTelemetry(
     uint32_t stream_id = 0;
     const struct aws_string *operation_name = nullptr;
     enum aws_s3_request_type request_type = AWS_S3_REQUEST_TYPE_DEFAULT;
-    int64_t body_read_total_ns = 0, body_read_duration_ns = 0, body_read_start_timestamp_ns = 0,
-            body_read_end_timestamp_ns = 0, body_read_total_without_reset_ns = 0;
     void *request_ptr = nullptr;
-    int64_t start_get_connection_timestamp_ns = 0, finish_get_connection_timestamp_ns = 0;
+    uint64_t range_start = 0, range_end = 0;
+    uint32_t part_number = 0;
+    uint64_t acquire_duration = 0;
 
     // Retrieve metrics
     aws_s3_request_metrics_get_request_id(metrics, &request_id);
@@ -431,28 +478,21 @@ void Task::onTelemetry(
     aws_s3_request_metrics_get_thread_id(metrics, &thread_id);
     aws_s3_request_metrics_get_request_stream_id(metrics, &stream_id);
     aws_s3_request_metrics_get_operation_name(metrics, &operation_name);
-    aws_s3_request_metrics_get_request_type(metrics, &request_type);
-    aws_s3_request_metrics_get_body_read_start_timestamp_ns(metrics, &body_read_start_timestamp_ns);
-    aws_s3_request_metrics_get_body_read_end_timestamp_ns(metrics, &body_read_end_timestamp_ns);
-    aws_s3_request_metrics_get_body_read_duration_ns(metrics, &body_read_duration_ns);
-    aws_s3_request_metrics_get_body_read_total_ns(metrics, &body_read_total_ns);
-    aws_s3_request_metrics_get_body_read_total_without_reset_ns(metrics, &body_read_total_without_reset_ns);
-    aws_s3_request_metrics_get_request_ptr(metrics, &request_ptr);
-    aws_s3_request_metrics_get_start_get_connection_timestamp_ns(metrics, &start_get_connection_timestamp_ns);
-    aws_s3_request_metrics_get_finish_get_connection_timestamp_ns(metrics, &finish_get_connection_timestamp_ns);
+    aws_s3_request_metrics_get_part_range_start(metrics, (uint64_t *)&range_start);
+    aws_s3_request_metrics_get_part_range_end(metrics, (uint64_t *)&range_end);
+    aws_s3_request_metrics_get_part_number(metrics, &part_number);
+    aws_s3_request_metrics_get_mem_acquire_duration_ns(metrics, &acquire_duration);
 
     // Write the metrics data
     std::stringstream ss;
-    ss << (request_id ? aws_string_c_str(request_id) : "null") << "," << (request_ptr ? request_ptr : "null") << ","
-       << start_time << "," << end_time << "," << total_duration << "," << send_start_time << "," << send_end_time
-       << "," << sending_duration << "," << body_read_start_timestamp_ns << "," << body_read_end_timestamp_ns << ","
-       << body_read_duration_ns << "," << body_read_total_ns << "," << body_read_total_without_reset_ns << ","
+    ss << (request_id ? aws_string_c_str(request_id) : "null") << "," << start_time << "," << end_time << ","
+       << total_duration << "," << send_start_time << "," << send_end_time << "," << sending_duration << ","
        << receive_start_time << "," << receive_end_time << "," << receiving_duration << "," << response_status << ","
        << (request_path_query ? aws_string_c_str(request_path_query) : "null") << ","
        << (host_address ? aws_string_c_str(host_address) : "null") << ","
        << (ip_address ? aws_string_c_str(ip_address) : "null") << "," << connection_id << "," << thread_id << ","
-       << stream_id << "," << (operation_name ? aws_string_c_str(operation_name) : "null") << ","
-       << start_get_connection_timestamp_ns << "," << finish_get_connection_timestamp_ns << std::endl;
+       << stream_id << "," << (operation_name ? aws_string_c_str(operation_name) : "null") << "," << range_start << ","
+       << range_end << "," << part_number << std::endl;
     fprintf(task->telemetryFile, "%s", ss.str().c_str());
     fflush(task->telemetryFile);
 }

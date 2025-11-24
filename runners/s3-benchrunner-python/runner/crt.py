@@ -42,11 +42,14 @@ class CrtBenchmarkRunner(BenchmarkRunner):
             signing_config = signing_config.replace(
                 algorithm=awscrt.s3.AwsSigningAlgorithm.V4_S3EXPRESS)
 
+        fio_options = awscrt.s3.S3FileIoOptions(should_stream=True, disk_throughput_gbps=100.0, direct_io=True)
+
         self._s3_client = awscrt.s3.S3Client(
             bootstrap=bootstrap,
             region=self.config.region,
             signing_config=signing_config,
             enable_s3express=is_s3express,
+            fio_options=fio_options,
             throughput_target_gbps=self.config.target_throughput_Gbps)
 
         # Cap the number of meta-requests we'll work on simultaneously,

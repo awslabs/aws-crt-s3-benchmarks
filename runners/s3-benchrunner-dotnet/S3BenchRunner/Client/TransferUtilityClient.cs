@@ -1,6 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using S3BenchRunner.Models;
+using System.IO;
 
 
 namespace S3BenchRunner.Client;
@@ -18,24 +19,10 @@ public class TransferUtilityClient : IDisposable
     {
         _bucketName = bucketName;
 
-        // var crtOptions = new CrtHttpClientOptions
-        // {
-        //     MaxConnectionsPerServer = 200,      // Optimize for your concurrency
-        //     InitialWindowSize = 16777216 * 4,      // 16MB for large S3 parts  
-        //     ConnectTimeoutMs = 10000,          // 10 second timeout
-        //     EnableHttp2 = true                 // HTTP/2 multiplexing
-        // };
-
         var config = new AmazonS3Config
         {
             RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region),
-            // Use path style addressing for compatibility with benchmark infrastructure
-            ForcePathStyle = true,
-            // HttpClient()
-            // HttpClientFactory = new CrtHttpClientFactory(crtOptions)
-
-            // LogResponse = true,
-            // LogMetrics = true
+            BufferSize = 65536  // 64KB instead of default 8192
         };
 
 
@@ -43,8 +30,7 @@ public class TransferUtilityClient : IDisposable
         // Configure transfer utility with concurrent requests based on number of tasks
         _transferConfig = new TransferUtilityConfig
         {
-            ConcurrentServiceRequests = 100,
-            MaxInMemoryParts = 1024
+            ConcurrentServiceRequests = 100
         };
         _transferUtility = new TransferUtility(_s3Client, _transferConfig);
         _filesOnDisk = filesOnDisk;
@@ -64,11 +50,11 @@ public class TransferUtilityClient : IDisposable
     {
         try
         {
-            Logger.LogVerbose($"Starting download: s3Key={s3Key}, localPath={localPath}");
+            // Logger.LogVerbose($"Starting download: s3Key={s3Key}, localPath={localPath}");
             
             if (_filesOnDisk)
             {   
-                Logger.LogVerbose($"Using single file download");
+                // Logger.LogVerbose($"Using single file download");
                 // Download the file
                 var downloadRequest = new TransferUtilityDownloadRequest
                 {
@@ -77,12 +63,12 @@ public class TransferUtilityClient : IDisposable
                     FilePath = localPath,
                 };
 
-                Logger.LogVerbose($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
-                await _transferUtility.DownloadAsync(downloadRequest);
+                // Logger.LogVerbose($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
+                await _transferUtility.DownloadWithResponseAsync(downloadRequest);
                 
                 // Add file size check
                 var fileInfo = new FileInfo(localPath);
-                Logger.LogVerbose($"Download complete: Size={fileInfo.Length:N0} bytes");
+                // Logger.LogVerbose($"Download complete: Size={fileInfo.Length:N0} bytes");
             }
             else
             {
@@ -93,19 +79,28 @@ public class TransferUtilityClient : IDisposable
                     Key = s3Key
                 };
 
-                // Open stream from S3 and copy to null stream
-                using var s3Stream = await _transferUtility.OpenStreamAsync(streamRequest);
+                // // Open stream from S3 and copy to null stream
+                // using var response = await _transferUtility.OpenStreamAsync(streamRequest);
+                using var response = await _transferUtility.OpenStreamWithResponseAsync(streamRequest);
+
 
                 // Pre-allocate single buffer (reused across all reads)
-                var buffer = new byte[32 * 1024 * 1024]; // 32MB buffer
+                var buffer = new byte[65536]; 
                 int bytesRead;
 
-                while ((bytesRead = await s3Stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+               using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                try 
                 {
-                    // Data is read into buffer, then immediately "discarded"
-                    // No WriteAsync calls, no copying, minimal overhead
-                    // This measures pure BufferedMultipartStream.ReadAsync() performance
+                    while ((bytesRead = await response.ResponseStream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
+                    {
+                        // Console.WriteLine($"Read {bytesRead} bytes");
+                    }
                 }
+                catch (OperationCanceledException)
+                {
+                    // Console.WriteLine("TIMEOUT - stream is stuck!");
+                }
+
 
             }
 
@@ -113,8 +108,8 @@ public class TransferUtilityClient : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogAlways($"Download failed: {ex.Message}");
-            Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"Download failed: {ex.Message}");
+            // Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
             return false;
         }
     }
@@ -130,6 +125,7 @@ public class TransferUtilityClient : IDisposable
                     throw new FileNotFoundException($"Source file not found: {localPath}");
                 }
 
+
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     FilePath = localPath,
@@ -141,7 +137,7 @@ public class TransferUtilityClient : IDisposable
             }
             else
             {
-                using var stream = new RandomDataStream(largestUploadSize);
+                using var stream = new RandomDataStream(largestUploadSize, canSeek: false);
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
                     InputStream = stream,
@@ -157,8 +153,8 @@ public class TransferUtilityClient : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogAlways($"Upload failed: {ex.Message}");
-            Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"Upload failed: {ex.Message}");
+            // Logger.LogVerbose($"Stack trace: {ex.StackTrace}");
             return false;
         }
     }
@@ -175,14 +171,31 @@ public class RandomDataStream : Stream
     private readonly long _length;
     private long _position;
     private readonly Random _random = new Random();
+    private readonly bool _canSeek;
 
-    public RandomDataStream(long length) => _length = length;
+    public RandomDataStream(long length, bool canSeek = false)
+    {
+        _length = length;
+        _canSeek = canSeek;
+    }
     
     public override bool CanRead => true;
-    public override bool CanSeek => false;
+    public override bool CanSeek => _canSeek;
     public override bool CanWrite => false;
     public override long Length => _length;
-    public override long Position { get => _position; set => throw new NotSupportedException(); }
+    
+    public override long Position 
+    { 
+        get => _position; 
+        set 
+        {
+            if (!_canSeek)
+                throw new NotSupportedException("Stream does not support seeking.");
+            if (value < 0 || value > _length)
+                throw new ArgumentOutOfRangeException(nameof(value));
+            _position = value;
+        }
+    }
 
     public override int Read(byte[] buffer, int offset, int count)
     {
@@ -194,9 +207,28 @@ public class RandomDataStream : Stream
         return remaining;
     }
 
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        if (!_canSeek)
+            throw new NotSupportedException("Stream does not support seeking.");
+            
+        long newPosition = origin switch
+        {
+            SeekOrigin.Begin => offset,
+            SeekOrigin.Current => _position + offset,
+            SeekOrigin.End => _length + offset,
+            _ => throw new ArgumentException("Invalid seek origin.", nameof(origin))
+        };
+        
+        if (newPosition < 0 || newPosition > _length)
+            throw new ArgumentOutOfRangeException(nameof(offset), "Seek position is out of range.");
+            
+        _position = newPosition;
+        return _position;
+    }
+
     // Required overrides
     public override void Flush() { }
-    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
     public override void SetLength(long value) => throw new NotSupportedException();
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

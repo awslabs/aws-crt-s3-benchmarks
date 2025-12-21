@@ -14,6 +14,7 @@ public class Program
         // Amazon.AWSConfigs.LoggingConfig.LogMetrics = false;
         // Amazon.AWSConfigs.LoggingConfig.LogResponses = Amazon.ResponseLoggingOption.Never;
         // Amazon.AWSConfigs.LoggingConfig.LogTo = Amazon.LoggingOptions.Console;
+        // Amazon.AWSConfigs.AddTraceListener("Amazon", new System.Diagnostics.ConsoleTraceListener());
 
 
         // Define command line arguments as positional arguments

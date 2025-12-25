@@ -48,14 +48,14 @@ foreach ($Workload in $Workloads) {
     Write-Host "[$CurrentRun/$TotalRuns] Running $Workload with regular APIs..." -ForegroundColor Yellow
     Write-Host "Output: $OutputFile" -ForegroundColor Gray
     
-    "=== Running $Workload with regular APIs ===" | Out-File -FilePath $OutputFile -Encoding UTF8
-    "Start time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
-    "" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
+    "=== Running $Workload with regular APIs ===" | Out-File -FilePath $OutputFile -Encoding utf8
+    "Start time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "" | Out-File -FilePath $OutputFile -Append -Encoding utf8
     
     dotnet run -c Release --project $ProjectPath -- sdk-dotnet-tm "$WorkloadsPath\$Workload" $Bucket $Region $TargetThroughput $false 2>&1 | Tee-Object -FilePath $OutputFile -Append
     
-    "" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
-    "End time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
+    "" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "End time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding utf8
     Write-Host ""
     
     # Run with WithResponse APIs
@@ -64,14 +64,14 @@ foreach ($Workload in $Workloads) {
     Write-Host "[$CurrentRun/$TotalRuns] Running $Workload with WithResponse APIs..." -ForegroundColor Yellow
     Write-Host "Output: $OutputFile" -ForegroundColor Gray
     
-    "=== Running $Workload with WithResponse APIs ===" | Out-File -FilePath $OutputFile -Encoding UTF8
-    "Start time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
-    "" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
+    "=== Running $Workload with WithResponse APIs ===" | Out-File -FilePath $OutputFile -Encoding utf8
+    "Start time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "" | Out-File -FilePath $OutputFile -Append -Encoding utf8
     
     dotnet run -c Release --project $ProjectPath -- sdk-dotnet-tm "$WorkloadsPath\$Workload" $Bucket $Region $TargetThroughput $true 2>&1 | Tee-Object -FilePath $OutputFile -Append
     
-    "" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
-    "End time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding UTF8
+    "" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "End time: $(Get-Date)" | Out-File -FilePath $OutputFile -Append -Encoding utf8
     Write-Host ""
 }
 

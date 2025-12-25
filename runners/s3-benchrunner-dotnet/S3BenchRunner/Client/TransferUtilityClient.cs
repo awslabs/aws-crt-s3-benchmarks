@@ -13,11 +13,13 @@ public class TransferUtilityClient : IDisposable
     private readonly string _bucketName;
     private readonly bool _filesOnDisk;
     private readonly TransferUtilityConfig _transferConfig;
+    private readonly bool _withResponseApis;
     private long  largestUploadSize = 0;
 
-    public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks)
+    public TransferUtilityClient(string bucketName, string region, bool filesOnDisk, IEnumerable<WorkloadTask> tasks, bool withResponseApis)
     {
         _bucketName = bucketName;
+        _withResponseApis = withResponseApis;
 
         var config = new AmazonS3Config
         {
@@ -63,7 +65,14 @@ public class TransferUtilityClient : IDisposable
                 };
 
                 // Logger.LogVerbose($"Download request: bucket={_bucketName}, key={s3Key}, file={localPath}");
-                await _transferUtility.DownloadWithResponseAsync(downloadRequest);
+                if (_withResponseApis)
+                {
+                    await _transferUtility.DownloadWithResponseAsync(downloadRequest);
+                }
+                else
+                {
+                    await _transferUtility.DownloadAsync(downloadRequest);
+                }
                 
                 // Add file size check
                 var fileInfo = new FileInfo(localPath);
@@ -78,28 +87,26 @@ public class TransferUtilityClient : IDisposable
                     Key = s3Key
                 };
 
-                // // Open stream from S3 and copy to null stream
-                // using var response = await _transferUtility.OpenStreamAsync(streamRequest);
-                using var response = await _transferUtility.OpenStreamWithResponseAsync(streamRequest);
-
+                Stream stream;
+                if (_withResponseApis)
+                {
+                    var response = await _transferUtility.OpenStreamWithResponseAsync(streamRequest);
+                    stream = response.ResponseStream;
+                }
+                else
+                {
+                    stream = await _transferUtility.OpenStreamAsync(streamRequest);
+                }
 
                 // Pre-allocate single buffer (reused across all reads)
-                var buffer = new byte[65536]; 
+                var buffer = new byte[8 * 1024 * 1024]; 
                 int bytesRead;
 
                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-                try 
+               while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
                 {
-                    while ((bytesRead = await response.ResponseStream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
-                    {
-                        // Console.WriteLine($"Read {bytesRead} bytes");
-                    }
+                    // Console.WriteLine($"Read {bytesRead} bytes");
                 }
-                catch (OperationCanceledException)
-                {
-                    // Console.WriteLine("TIMEOUT - stream is stuck!");
-                }
-
 
             }
 
@@ -132,7 +139,14 @@ public class TransferUtilityClient : IDisposable
                     Key = s3Key
                 };
 
-                await _transferUtility.UploadWithResponseAsync(uploadRequest);
+                if (_withResponseApis)
+                {
+                    await _transferUtility.UploadWithResponseAsync(uploadRequest);
+                }
+                else
+                {
+                    await _transferUtility.UploadAsync(uploadRequest);
+                }
             }
             else
             {
@@ -145,7 +159,14 @@ public class TransferUtilityClient : IDisposable
                     AutoCloseStream = true,
                 };
 
-                await _transferUtility.UploadWithResponseAsync(uploadRequest);
+                if (_withResponseApis)
+                {
+                    await _transferUtility.UploadWithResponseAsync(uploadRequest);
+                }
+                else
+                {
+                    await _transferUtility.UploadAsync(uploadRequest);
+                }
             }
 
             return true;

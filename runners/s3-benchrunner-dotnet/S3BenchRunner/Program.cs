@@ -38,28 +38,35 @@ public class Program
             name: "target-throughput",
             description: "Target throughput in Gbps");
 
+        var withResponseApisArg = new Argument<bool>(
+            name: "with-response-apis",
+            getDefaultValue: () => false,
+            description: "Use WithResponse API variants (default: false)");
+
         var rootCommand = new RootCommand("S3 benchmark runner for .NET SDK")
         {
             s3ClientArg,
             workloadArg,
             bucketArg,
             regionArg,
-            targetThroughputArg
+            targetThroughputArg,
+            withResponseApisArg
         };
 
         rootCommand.Description = @"S3 benchmark runner for .NET SDK
 
 Usage:
-  dotnet run -c Release -- sdk-dotnet-tm workload.json my-bucket us-west-2 100.0
+  dotnet run -c Release -- sdk-dotnet-tm workload.json my-bucket us-west-2 100.0 false
 
 Arguments:
-  s3-client         S3 client to use (sdk-dotnet-tm)
-  workload          Path to workload .run.json file
-  bucket            S3 bucket name
-  region            AWS region (e.g. us-west-2)
-  target-throughput Target throughput in Gbps";
+  s3-client          S3 client to use (sdk-dotnet-tm)
+  workload           Path to workload .run.json file
+  bucket             S3 bucket name
+  region             AWS region (e.g. us-west-2)
+  target-throughput  Target throughput in Gbps
+  with-response-apis Use WithResponse API variants (default: false)";
 
-        rootCommand.SetHandler(async (s3Client, workload, bucket, region, targetThroughput) =>
+        rootCommand.SetHandler(async (s3Client, workload, bucket, region, targetThroughput, withResponseApis) =>
         {
             try
             {
@@ -79,6 +86,7 @@ Arguments:
                 Console.WriteLine($"- MaxRepeatCount: {workloadConfig.MaxRepeatCount}");
                 Console.WriteLine($"- MaxRepeatSecs: {workloadConfig.MaxRepeatSecs}");
                 Console.WriteLine($"- FilesOnDisk: {workloadConfig.FilesOnDisk}");
+                Console.WriteLine($"- WithResponseApis: {withResponseApis}");
                 Console.WriteLine("\nTasks:");
                 foreach (var task in workloadConfig.Tasks)
                 {
@@ -91,7 +99,7 @@ Arguments:
                 Console.WriteLine($"Total bytes per run: {bytesPerRun:N0}\n");
 
                 // Create benchmark runner
-                var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput);
+                var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput, withResponseApis);
 
                 // Track overall start time for max duration check
                 var appStartTime = DateTimeOffset.UtcNow;
@@ -156,7 +164,7 @@ Arguments:
                 Environment.ExitCode = 1;
             }
         },
-        s3ClientArg, workloadArg, bucketArg, regionArg, targetThroughputArg);
+        s3ClientArg, workloadArg, bucketArg, regionArg, targetThroughputArg, withResponseApisArg);
 
         return await rootCommand.InvokeAsync(args);
     }

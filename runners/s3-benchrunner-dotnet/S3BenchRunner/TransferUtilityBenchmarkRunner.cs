@@ -7,10 +7,10 @@ public class TransferUtilityBenchmarkRunner : BenchmarkRunner
 {
     private readonly TransferUtilityClient _client;
 
-    public TransferUtilityBenchmarkRunner(WorkloadConfig config, string bucket, string region, double targetThroughputGbps)
+    public TransferUtilityBenchmarkRunner(WorkloadConfig config, string bucket, string region, double targetThroughputGbps, bool withResponseApis)
         : base(config, bucket, region)
     {
-        _client = new TransferUtilityClient(bucket, region, config.FilesOnDisk, config.Tasks);
+        _client = new TransferUtilityClient(bucket, region, config.FilesOnDisk, config.Tasks, withResponseApis);
     }
 
     public override async Task RunAsync()

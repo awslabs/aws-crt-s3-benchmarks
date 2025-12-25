@@ -21,7 +21,7 @@ dotnet build -c Release
 The runner expects to be executed from the directory containing the files to upload/download. It follows the standard command line interface used by all benchmark runners:
 
 ```bash
-dotnet run -c Release -- sdk-dotnet-tm WORKLOAD BUCKET REGION TARGET_THROUGHPUT
+dotnet run -c Release -- sdk-dotnet-tm WORKLOAD BUCKET REGION TARGET_THROUGHPUT WITH_RESPONSE_APIS
 ```
 
 Arguments:
@@ -30,10 +30,15 @@ Arguments:
 - `BUCKET`: S3 bucket name
 - `REGION`: AWS region (e.g., us-west-2)
 - `TARGET_THROUGHPUT`: Target throughput in Gbps (floating point). This parameter not used for now.
+- `WITH_RESPONSE_APIS`: Boolean flag (true/false) to use WithResponse API variants (default: false)
 
-Example:
+Examples:
 ```bash
-dotnet run -c Release -- sdk-dotnet-tm workloads/download-1MB-1.run.json my-test-bucket us-west-2 100.0
+# Using regular APIs (default behavior)
+dotnet run -c Release -- sdk-dotnet-tm workloads/download-1MB-1.run.json my-test-bucket us-west-2 100.0 false
+
+# Using WithResponse APIs
+dotnet run -c Release -- sdk-dotnet-tm workloads/download-1MB-1.run.json my-test-bucket us-west-2 100.0 true
 ```
 
 ## Output
@@ -63,6 +68,13 @@ File Handling:
   * Downloads write to /dev/null
   * Uploads use random data from memory
   * No files are created on disk
+
+API Variants:
+- When WITH_RESPONSE_APIS is false (default):
+  * Uses `DownloadAsync`, `UploadAsync`, and `OpenStreamAsync` methods
+- When WITH_RESPONSE_APIS is true:
+  * Uses `DownloadWithResponseAsync`, `UploadWithResponseAsync`, and `OpenStreamWithResponseAsync` methods
+  * These variants return response objects with additional metadata
 
 Example output:
 ```

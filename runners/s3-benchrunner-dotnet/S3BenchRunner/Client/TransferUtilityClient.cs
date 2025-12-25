@@ -21,8 +21,7 @@ public class TransferUtilityClient : IDisposable
 
         var config = new AmazonS3Config
         {
-            RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region),
-            BufferSize = 65536  // 64KB instead of default 8192
+            RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region)
         };
 
 
@@ -88,7 +87,7 @@ public class TransferUtilityClient : IDisposable
                 var buffer = new byte[65536]; 
                 int bytesRead;
 
-               using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+               using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
                 try 
                 {
                     while ((bytesRead = await response.ResponseStream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
@@ -133,7 +132,7 @@ public class TransferUtilityClient : IDisposable
                     Key = s3Key
                 };
 
-                await _transferUtility.UploadAsync(uploadRequest);
+                await _transferUtility.UploadWithResponseAsync(uploadRequest);
             }
             else
             {
@@ -146,7 +145,7 @@ public class TransferUtilityClient : IDisposable
                     AutoCloseStream = true,
                 };
 
-                await _transferUtility.UploadAsync(uploadRequest);
+                await _transferUtility.UploadWithResponseAsync(uploadRequest);
             }
 
             return true;

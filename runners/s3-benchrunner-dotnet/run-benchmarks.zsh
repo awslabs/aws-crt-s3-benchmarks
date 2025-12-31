@@ -28,6 +28,10 @@ echo ""
 
 # Array of workloads to test
 WORKLOADS=(
+    "download-100MiB-1x.run.json"
+    "download-100MiB-1x-ram.run.json"
+    "download-1GiB-1x.run.json"
+    "download-1GiB-1x-ram.run.json"
     "download-5GiB-1x.run.json"
     "download-5GiB-1x-ram.run.json"
     "download-30GiB-1x.run.json"

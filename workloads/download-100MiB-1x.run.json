@@ -4,12 +4,12 @@
     "filesOnDisk": true,
     "checksum": null,
     "maxRepeatCount": 10,
-    "maxRepeatSecs": 100000,
+    "maxRepeatSecs": 600,
     "tasks": [
         {
             "action": "download",
-            "key": "download/30GiB-1x/1",
-            "size": 32212254720
+            "key": "download/100MiB-1x/1",
+            "size": 104857600
         }
     ]
 }

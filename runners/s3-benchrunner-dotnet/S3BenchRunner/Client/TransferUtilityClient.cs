@@ -102,11 +102,14 @@ public class TransferUtilityClient : IDisposable
                 var buffer = new byte[8 * 1024 * 1024]; 
                 int bytesRead;
 
-               using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-               while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
-                {
-                    // Console.WriteLine($"Read {bytesRead} bytes");
-                }
+            using (stream)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
+                            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
+                                {
+                                    // Console.WriteLine($"Read {bytesRead} bytes");
+                                }
+            }
 
             }
 

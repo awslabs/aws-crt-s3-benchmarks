@@ -3,7 +3,7 @@ using S3BenchRunner.Models;
 
 namespace S3BenchRunner;
 
-public class TransferUtilityBenchmarkRunner : BenchmarkRunner
+public class TransferUtilityBenchmarkRunner : BenchmarkRunner, IDisposable
 {
     private readonly TransferUtilityClient _client;
 

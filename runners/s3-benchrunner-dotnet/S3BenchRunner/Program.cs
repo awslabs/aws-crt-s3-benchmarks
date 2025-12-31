@@ -99,7 +99,9 @@ Arguments:
                 Console.WriteLine($"Total bytes per run: {bytesPerRun:N0}\n");
 
                 // Create benchmark runner
-                var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput, withResponseApis);
+                using (var benchmarkRunner = new TransferUtilityBenchmarkRunner(workloadConfig, bucket, region, targetThroughput, withResponseApis))
+                {
+
 
                 // Track overall start time for max duration check
                 var appStartTime = DateTimeOffset.UtcNow;
@@ -154,6 +156,7 @@ Arguments:
 
                     // Write console format to stdout for user display
                     Console.WriteLine(runResult.ToConsoleString());
+                }
                 }
             }
             catch (Exception ex)

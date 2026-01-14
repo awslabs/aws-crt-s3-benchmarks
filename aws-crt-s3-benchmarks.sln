@@ -1,0 +1,32 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "runners", "runners", "{E6522D2C-A0D2-0AFB-6208-EAE0F209FD8A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "s3-benchrunner-dotnet", "s3-benchrunner-dotnet", "{FAB3396C-FDED-B50E-2D20-EB9DA31CC016}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3BenchRunner", "runners\s3-benchrunner-dotnet\S3BenchRunner\S3BenchRunner.csproj", "{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FAB3396C-FDED-B50E-2D20-EB9DA31CC016} = {E6522D2C-A0D2-0AFB-6208-EAE0F209FD8A}
+		{93E9F6E2-DEE8-12C6-B301-E3BD3EA41962} = {FAB3396C-FDED-B50E-2D20-EB9DA31CC016}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D6695669-2DAE-4CA2-93EE-A0A02345AC63}
+	EndGlobalSection
+EndGlobal

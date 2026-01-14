@@ -233,6 +233,22 @@ def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [str(runner_src/'target/release/s3-benchrunner-rust')]
 
 
+def _build_dotnet(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build s3-benchrunner-dotnet"""
+    runner_src = RUNNERS['dotnet'].dir
+    project_path = runner_src/'S3BenchRunner'
+    os.chdir(project_path)
+
+    if branch:
+        print("WARNING: dotnet runner doesn't currently support --branch")
+
+    # Build runner
+    run(['dotnet', 'build', '-c', 'Release'])
+
+    # return runner cmd with full project path
+    return ['dotnet', 'run', '-c', 'Release', '--project', str(project_path), '--']
+
+
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
     """
     Build s3-benchrunner-<lang> and its dependencies.
@@ -253,6 +269,7 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'python': _build_python,
         'java': _build_java,
         'rust': _build_rust,
+        'dotnet': _build_dotnet,
     }
     build_fn = build_functions[lang]
 

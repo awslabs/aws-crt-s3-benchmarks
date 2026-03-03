@@ -233,6 +233,10 @@ def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [str(runner_src/'target/release/s3-benchrunner-rust')]
 
 
+def _build_s5cmd(work_dir: Path, branch: Optional[str]) -> list[str]:
+    raise NotImplementedError
+
+
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
     """
     Build s3-benchrunner-<lang> and its dependencies.
@@ -253,6 +257,7 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'python': _build_python,
         'java': _build_java,
         'rust': _build_rust,
+        's5cmd': _build_s5cmd,
     }
     build_fn = build_functions[lang]
 

@@ -31,6 +31,10 @@ PARSER.add_argument(
     help='Path to specific workload.run.json file. ' +
     'If not specified, everything in workloads/ is prepared ' +
     '(uploading 100+ GiB to S3 and creating 100+ GiB on disk).')
+PARSER.add_argument(
+    '--sparse', action='store_true',
+    help='Create sparse files on disk (fast, uses fallocate). ' +
+    'Default is to create real files with random data (slow, but actually allocates space).')
 
 
 @dataclass
@@ -257,7 +261,7 @@ def get_existing_s3_objects(s3, bucket: str) -> dict[str, ExistingS3Object]:
     return existing_objects
 
 
-def prep_file_on_disk(filepath: Path, size: int):
+def prep_file_on_disk(filepath: Path, size: int, use_sparse: bool = False):
     """Create file on disk, if it doesn't already exist"""
     def _print_status(msg):
         print(f'file://{str(filepath)}: {msg}')
@@ -277,11 +281,18 @@ def prep_file_on_disk(filepath: Path, size: int):
 
     # create file
     # using shell commands for speed, and to avoid allocating enormous buffers in python
-    _print_status(f'creating file...')
-    cmd = ['head', '-c', str(size), '/dev/urandom', '>', str(filepath)]
-    cmd_str = subprocess.list2cmdline(cmd)
-    if os.system(cmd_str) != 0:
-        raise Exception(f'Failed running: {cmd_str}')
+    if use_sparse:
+        _print_status(f'creating sparse file...')
+        cmd = ['fallocate', '-l', str(size), str(filepath)]
+        cmd_str = subprocess.list2cmdline(cmd)
+        if os.system(cmd_str) != 0:
+            raise Exception(f'Failed running: {cmd_str}')
+    else:
+        _print_status(f'creating file with random data...')
+        cmd = ['head', '-c', str(size), '/dev/urandom']
+        cmd_str = subprocess.list2cmdline(cmd) + ' > ' + str(filepath)
+        if os.system(cmd_str) != 0:
+            raise Exception(f'Failed running: {cmd_str}')
 
 
 class RandomFileStream(io.RawIOBase):
@@ -387,14 +398,15 @@ def prep_file_in_s3(task: Task, s3, bucket: str, existing_s3_objects: dict[str, 
     )
 
 
-def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects: dict[str, ExistingS3Object]):
+def prep_task(task: Task, files_dir: Path, s3, bucket: str, existing_s3_objects: dict[str, ExistingS3Object], use_sparse: bool = False):
     """
     Prepare task (e.g. upload file, or create it on disk).
     """
     if task.action == 'upload':
         if task.on_disk:
             # create file on disk, so runner can upload it
-            prep_file_on_disk(files_dir.joinpath(task.key), task.size)
+            prep_file_on_disk(files_dir.joinpath(
+                task.key), task.size, use_sparse)
 
     elif task.action == 'download':
         # create file in S3, so runner can download it
@@ -440,7 +452,7 @@ if __name__ == '__main__':
         future_to_task = {}
         for key, task in all_tasks.items():
             future = executor.submit(
-                prep_task, task, files_dir, s3, args.bucket, existing_s3_objects)
+                prep_task, task, files_dir, s3, args.bucket, existing_s3_objects, args.sparse)
             future_to_task[future] = task
 
         # wait for each prep to complete, and ensure it was successful

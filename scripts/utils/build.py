@@ -234,7 +234,32 @@ def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
 
 
 def _build_s5cmd(work_dir: Path, branch: Optional[str]) -> list[str]:
-    raise NotImplementedError
+    """build s5cmd"""
+
+    if branch:
+        print("WARNING: s5cmd runner doesn't currently support --branch")
+
+    # Set GOBIN to install s5cmd in work_dir
+    gobin = work_dir / 'bin'
+    gobin.mkdir(parents=True, exist_ok=True)
+
+    # Temporarily set GOBIN environment variable
+    gobin_prev = os.environ.get('GOBIN')
+    os.environ['GOBIN'] = str(gobin)
+
+    try:
+        # Install s5cmd using go install
+        run(['go', 'install', 'github.com/peak/s5cmd/v2@v2.3.0'])
+    finally:
+        # Restore previous GOBIN value
+        if gobin_prev is not None:
+            os.environ['GOBIN'] = gobin_prev
+        elif 'GOBIN' in os.environ:
+            del os.environ['GOBIN']
+
+    # return runner cmd
+    s5cmd_path = gobin / 's5cmd'
+    return [str(s5cmd_path)]
 
 
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:

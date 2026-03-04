@@ -22,9 +22,19 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
     def __init__(self, config: BenchmarkConfig):
         super().__init__(config)
 
-        # Check if s5cmd is available
-        if not shutil.which('s5cmd'):
-            exit_with_error('s5cmd not found in PATH. Please install s5cmd first.')
+        # Resolve the s5cmd path - check PATH first, then default Go install location
+        s5cmd_in_path = shutil.which('s5cmd')
+        if s5cmd_in_path:
+            self._s5cmd_path = s5cmd_in_path
+        else:
+            # Try default Go install path, expanding $HOME to actual home directory
+            default_go_path = os.path.expanduser("~/go/bin/s5cmd")
+            if os.path.isfile(default_go_path):
+                self._s5cmd_path = default_go_path
+            else:
+                exit_with_error(
+                    f's5cmd not found in PATH or at default Go install location ({default_go_path}). '
+                    'Please install s5cmd first.')
 
         self._s5cmd_cmd, self._stdin_for_s5cmd = self._derive_s5cmd_cmd()
 
@@ -38,39 +48,24 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
         num_tasks = len(self.config.tasks)
         first_task = self.config.tasks[0]
 
-        cmd = ['s5cmd']
+        cmd = [self._s5cmd_path]
         stdin: Optional[bytes] = None
 
         # Add common configuration flags
         cmd += ['--retry-count', '3']
 
-        # The s5cmd benchmark used all default configures.
-        # # Configure concurrency based on target throughput
-        # # s5cmd default is 256 workers, but we can tune this
-        # if self.config.target_throughput_Gbps >= 10.0:
-        #     cmd += ['--numworkers', '512']
-        # elif self.config.target_throughput_Gbps >= 5.0:
-        #     cmd += ['--numworkers', '256']
-        # elif self.config.target_throughput_Gbps >= 1.0:
-        #     cmd += ['--numworkers', '128']
-        # else:
-        #     cmd += ['--numworkers', '64']
-
-        # # Configure part size for multipart uploads based on target throughput
-        # # Higher throughput = larger parts for better performance
-        # if self.config.target_throughput_Gbps >= 10.0:
-        #     cmd += ['--part-size', '100MB']
-        # elif self.config.target_throughput_Gbps >= 5.0:
-        #     cmd += ['--part-size', '50MB']
-        # else:
-        #     cmd += ['--part-size', '25MB']
+        # Calculate concurrency based on target throughput
+        # Formula: target_throughput (Gbps) / 0.4
+        # Example: 100 Gbps / 0.4 = 250 concurrency
+        concurrency = int(self.config.target_throughput_Gbps / 0.4)
 
         if self.config.verbose:
-            version_cmd = ['s5cmd', 'version']
+            version_cmd = [self._s5cmd_path, 'version']
             print(f'> {subprocess.list2cmdline(version_cmd)}', flush=True)
             subprocess.run(version_cmd, check=True)
 
         cmd.append('cp')
+        cmd += ['--concurrency', str(concurrency)]
 
         if num_tasks == 1:
             # Single file operation
@@ -120,7 +115,8 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
                     "s5cmd cannot run workload with multiple files unless they're on disk")
 
             # Assert that root dir contains ONLY the files from the workload
-            self._assert_using_all_files_in_dir(first_task.action, str(root_dir))
+            self._assert_using_all_files_in_dir(
+                first_task.action, str(root_dir))
 
             # Add src and dst
             if first_task.action == 'download':

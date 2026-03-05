@@ -1,11 +1,15 @@
-# s3-benchrunner-s5cmd
+# s3-benchrunner-3p
+
+Third-party S3 client benchmark runner. This runner supports various third-party S3 clients for benchmarking.
 
 ```
-usage: main.py [-h] [--verbose] WORKLOAD BUCKET REGION TARGET_THROUGHPUT
+usage: main.py [-h] [--verbose] EXECUTABLE_PATH {s5cmd} WORKLOAD BUCKET REGION TARGET_THROUGHPUT
 
-s5cmd benchmark runner. Uses s5cmd for S3 operations.
+Third-party S3 client benchmark runner. Supports various third-party S3 clients.
 
 positional arguments:
+  EXECUTABLE_PATH       Path to the S3 client executable
+  {s5cmd}               S3 client to use
   WORKLOAD
   BUCKET
   REGION
@@ -16,7 +20,11 @@ optional arguments:
   --verbose
 ```
 
-This is the runner for [s5cmd](https://github.com/peak/s5cmd), a fast S3 client written in Go. s5cmd is designed for high-performance S3 operations and supports:
+## Supported Clients
+
+### s5cmd
+
+[s5cmd](https://github.com/peak/s5cmd) is a fast S3 client written in Go. s5cmd is designed for high-performance S3 operations and supports:
 * Parallel uploads/downloads
 * Wildcard support
 * Pipes for streaming data

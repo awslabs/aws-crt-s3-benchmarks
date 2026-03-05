@@ -233,11 +233,11 @@ def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [str(runner_src/'target/release/s3-benchrunner-rust')]
 
 
-def _build_s5cmd(work_dir: Path, branch: Optional[str]) -> list[str]:
-    """build s5cmd"""
+def _build_3p(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build third-party S3 clients (currently s5cmd)"""
 
     if branch:
-        print("WARNING: s5cmd runner doesn't currently support --branch")
+        print("WARNING: third-party runner doesn't currently support --branch")
 
     # Set GOBIN to install s5cmd in work_dir
     gobin = work_dir / 'bin'
@@ -257,9 +257,11 @@ def _build_s5cmd(work_dir: Path, branch: Optional[str]) -> list[str]:
         elif 'GOBIN' in os.environ:
             del os.environ['GOBIN']
 
-    # return runner cmd
+    # return runner cmd, pointing to main.py with the executable path
+    # Similar to Python runner: [interpreter, script, executable_path]
     s5cmd_path = gobin / 's5cmd'
-    return [str(s5cmd_path)]
+    main_path = RUNNERS['3p'].dir / 'main.py'
+    return [sys.executable, str(main_path), str(s5cmd_path)]
 
 
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
@@ -282,7 +284,7 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'python': _build_python,
         'java': _build_java,
         'rust': _build_rust,
-        's5cmd': _build_s5cmd,
+        '3p': _build_3p,
     }
     build_fn = build_functions[lang]
 

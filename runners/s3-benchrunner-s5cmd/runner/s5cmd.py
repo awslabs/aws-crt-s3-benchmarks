@@ -19,22 +19,14 @@ from runner import (
 class S5cmdBenchmarkRunner(BenchmarkRunner):
     """Benchmark runner using s5cmd"""
 
-    def __init__(self, config: BenchmarkConfig):
+    def __init__(self, config: BenchmarkConfig, s5cmd_path: str):
         super().__init__(config)
 
-        # Resolve the s5cmd path - check PATH first, then default Go install location
-        s5cmd_in_path = shutil.which('s5cmd')
-        if s5cmd_in_path:
-            self._s5cmd_path = s5cmd_in_path
-        else:
-            # Try default Go install path, expanding $HOME to actual home directory
-            default_go_path = os.path.expanduser("~/go/bin/s5cmd")
-            if os.path.isfile(default_go_path):
-                self._s5cmd_path = default_go_path
-            else:
-                exit_with_error(
-                    f's5cmd not found in PATH or at default Go install location ({default_go_path}). '
-                    'Please install s5cmd first.')
+        # Use the provided s5cmd executable path
+        if not os.path.isfile(s5cmd_path):
+            exit_with_error(
+                f's5cmd executable not found at: {s5cmd_path}')
+        self._s5cmd_path = s5cmd_path
 
         self._s5cmd_cmd, self._stdin_for_s5cmd = self._derive_s5cmd_cmd()
 

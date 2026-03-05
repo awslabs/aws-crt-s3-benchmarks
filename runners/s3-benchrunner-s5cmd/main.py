@@ -13,7 +13,9 @@ from runner import (
 )
 
 PARSER = argparse.ArgumentParser(
-    description='s5cmd benchmark runner. Uses s5cmd for S3 operations.')
+    description='Third-party S3 client benchmark runner. Supports various third-party S3 clients.')
+PARSER.add_argument('EXECUTABLE_PATH', help='Path to the S3 client executable')
+PARSER.add_argument('S3_CLIENT', choices=('s5cmd',), help='S3 client to use')
 PARSER.add_argument('WORKLOAD')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
@@ -21,10 +23,13 @@ PARSER.add_argument('TARGET_THROUGHPUT', type=float)
 PARSER.add_argument('--verbose', action='store_true')
 
 
-def create_runner(config: BenchmarkConfig) -> BenchmarkRunner:
-    """Factory function. Create s5cmd benchmark runner."""
-    from runner.s5cmd import S5cmdBenchmarkRunner
-    return S5cmdBenchmarkRunner(config)
+def create_runner(config: BenchmarkConfig, s3_client: str, executable_path: str) -> BenchmarkRunner:
+    """Factory function. Create appropriate third-party benchmark runner."""
+    if s3_client == 's5cmd':
+        from runner.s5cmd import S5cmdBenchmarkRunner
+        return S5cmdBenchmarkRunner(config, executable_path)
+    else:
+        raise ValueError(f'Unknown S3 client: {s3_client}')
 
 
 if __name__ == '__main__':
@@ -32,8 +37,8 @@ if __name__ == '__main__':
     config = BenchmarkConfig(args.WORKLOAD, args.BUCKET, args.REGION,
                              args.TARGET_THROUGHPUT, args.verbose)
 
-    # create s5cmd benchmark runner
-    runner = create_runner(config)
+    # create appropriate third-party benchmark runner
+    runner = create_runner(config, args.S3_CLIENT, args.EXECUTABLE_PATH)
 
     bytes_per_run = config.bytes_per_run()
 

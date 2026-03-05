@@ -22,6 +22,11 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
     def __init__(self, config: BenchmarkConfig, s5cmd_path: str):
         super().__init__(config)
 
+        # Check if bucket is S3 Express - s5cmd doesn't support it
+        if self._is_s3express_bucket(config.bucket):
+            exit_with_skip_code(
+                f's5cmd does not support S3 Express buckets (bucket: {config.bucket})')
+
         # Use the provided s5cmd executable path
         if not os.path.isfile(s5cmd_path):
             exit_with_error(
@@ -29,6 +34,10 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
         self._s5cmd_path = s5cmd_path
 
         self._s5cmd_cmd, self._stdin_for_s5cmd = self._derive_s5cmd_cmd()
+
+    def _is_s3express_bucket(self, bucket: str) -> bool:
+        """Check if bucket is an S3 Express bucket (which s5cmd doesn't support)"""
+        return bucket.endswith('--x-s3')
 
     def _derive_s5cmd_cmd(self) -> Tuple[list[str], Optional[bytes]]:
         """

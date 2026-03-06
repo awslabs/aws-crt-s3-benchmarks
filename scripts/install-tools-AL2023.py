@@ -27,7 +27,7 @@ run(['sudo', 'dnf', 'install', '-y',
      'maven',  # for building s3-benchrunner-java
      'java-17-amazon-corretto-devel',  # for building s3-benchrunner-java
      'python3-devel',  # for building aws-crt-python
-     'go', # for building s5cmd
+     'go',  # for building s5cmd
      ])
 
 if not shutil.which('cargo'):

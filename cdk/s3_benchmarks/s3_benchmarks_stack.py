@@ -41,14 +41,14 @@ DEFAULT_INSTANCE_TYPES = [
 # since each one adds significantly to execution time.
 DEFAULT_S3_CLIENTS = {
     'crt-c': S3ClientProps(color=cloudwatch.Color.RED),
-    # 'sdk-rust-tm': S3ClientProps(color=cloudwatch.Color.ORANGE),
-    # 'crt-java': S3ClientProps(color=cloudwatch.Color.GREEN),
-    # 'sdk-java-client-crt': S3ClientProps(color=cloudwatch.Color.BROWN),
-    # 'sdk-java-tm-classic': S3ClientProps(color='#ffd43b'),  # yellow
-    # 'sdk-java-tm-crt': S3ClientProps(color=cloudwatch.Color.GREY),
-    # 'crt-python': S3ClientProps(color=cloudwatch.Color.BLUE),
-    # 'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
-    # 'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
+    'sdk-rust-tm': S3ClientProps(color=cloudwatch.Color.ORANGE),
+    'crt-java': S3ClientProps(color=cloudwatch.Color.GREEN),
+    'sdk-java-client-crt': S3ClientProps(color=cloudwatch.Color.BROWN),
+    'sdk-java-tm-classic': S3ClientProps(color='#ffd43b'),  # yellow
+    'sdk-java-tm-crt': S3ClientProps(color=cloudwatch.Color.GREY),
+    'crt-python': S3ClientProps(color=cloudwatch.Color.BLUE),
+    'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
+    'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
     's5cmd': S3ClientProps(color='#00CED1'),  # cyan
 }
 

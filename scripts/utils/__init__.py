@@ -42,7 +42,8 @@ _add_runner(Runner('java',
 _add_runner(Runner('python',
                    s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))
 _add_runner(Runner('rust', s3_clients=['sdk-rust-tm']))
-_add_runner(Runner('3p', s3_clients=['s5cmd']))
+_add_runner(Runner('s5cmd', s3_clients=['s5cmd']))
+_add_runner(Runner('rclone', s3_clients=['rclone']))
 
 for runner in RUNNERS.values():
     for s3_client in runner.s3_clients:

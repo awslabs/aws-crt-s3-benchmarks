@@ -15,7 +15,8 @@ from runner import (
 PARSER = argparse.ArgumentParser(
     description='Third-party S3 client benchmark runner. Supports various third-party S3 clients.')
 PARSER.add_argument('EXECUTABLE_PATH', help='Path to the S3 client executable')
-PARSER.add_argument('S3_CLIENT', choices=('s5cmd',), help='S3 client to use')
+PARSER.add_argument('S3_CLIENT', choices=(
+    's5cmd', 'rclone'), help='S3 client to use')
 PARSER.add_argument('WORKLOAD')
 PARSER.add_argument('BUCKET')
 PARSER.add_argument('REGION')
@@ -28,6 +29,9 @@ def create_runner(config: BenchmarkConfig, s3_client: str, executable_path: str)
     if s3_client == 's5cmd':
         from runner.s5cmd import S5cmdBenchmarkRunner
         return S5cmdBenchmarkRunner(config, executable_path)
+    elif s3_client == 'rclone':
+        from runner.rclone import RcloneBenchmarkRunner
+        return RcloneBenchmarkRunner(config, executable_path)
     else:
         raise ValueError(f'Unknown S3 client: {s3_client}')
 

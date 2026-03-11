@@ -90,7 +90,6 @@ if __name__ == '__main__':
                 '--throughput', str(args.throughput),
                 '--files-dir', str(files_dir),
                 '--workloads', *[str(x) for x in workloads],
-                '--verbose',
             ]
             if args.report_metrics:
                 run_cmd += ['--report-metrics']

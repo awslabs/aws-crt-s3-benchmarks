@@ -131,16 +131,20 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
             cmd.append('copy')
 
         # Add common configuration flags
-        # For uploads: S3-specific multipart upload concurrency
+        # Number of file transfers to run in parallel (important for multiple small files)
+        # https://rclone.org/docs/#transfers-int
+        cmd += ['--transfers', str(concurrency)]
+
+        # For uploads: S3-specific multipart upload concurrency (for large files)
         # https://rclone.org/s3/#s3-upload-concurrency
         cmd += ['--s3-upload-concurrency', str(concurrency)]
 
-        # For downloads: Use multi-thread streams for parallel downloads
+        # For downloads: Use multi-thread streams for parallel downloads (for large files)
         # https://rclone.org/docs/#multi-thread-streams-int
         cmd += ['--multi-thread-streams', str(concurrency)]
 
         # Always transfer files, don't skip based on timestamps
-        # https://rclone.org/docs/#i-ignore-times
+        # https://rclone.org/docs/#ignore-times
         cmd += ['--ignore-times']
 
         # Disable checksum when not specified

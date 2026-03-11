@@ -181,35 +181,43 @@ The region is set in the config file from the REGION command-line argument, ensu
 
 The runner automatically configures these rclone flags based on the workload:
 
-1. **Upload Concurrency** ([docs](https://rclone.org/s3/#s3-upload-concurrency)):
+1. **Parallel File Transfers** ([docs](https://rclone.org/docs/#transfers-n)):
+   - `--transfers <n>`
+
+   - Number of file transfers to run in parallel (important for multiple small files)
+   - Formula: `concurrency = target_throughput_Gbps / 0.4`
+
+   - Example: 100 Gbps → 250 parallel transfers
+
+2. **Upload Concurrency** ([docs](https://rclone.org/s3/#s3-upload-concurrency)):
    - `--s3-upload-concurrency <n>`
 
-   - Controls concurrent chunks for multipart uploads
+   - Controls concurrent chunks for multipart uploads (for large files)
    - Formula: `concurrency = target_throughput_Gbps / 0.4`
 
    - Example: 100 Gbps → 250 concurrent operations
 
-2. **Download Parallelism** ([docs](https://rclone.org/docs/#multi-thread-streams-int)):
+3. **Download Parallelism** ([docs](https://rclone.org/docs/#multi-thread-streams-int)):
    - `--multi-thread-streams <n>`
 
-   - Controls parallel streams for downloads
+   - Controls parallel streams for downloads (for large files)
    - Formula: `concurrency = target_throughput_Gbps / 0.4`
 
    - Example: 100 Gbps → 250 parallel streams
 
-3. **Always Transfer Files** ([docs](https://rclone.org/docs/#ignore-times)):
+4. **Always Transfer Files** ([docs](https://rclone.org/docs/#ignore-times)):
    - `--ignore-times`
 
    - Forces rclone to always transfer files, don't skip based on timestamps
    - Essential for benchmarking to ensure consistent measurements across runs
 
-4. **Checksum Control** ([docs](https://rclone.org/s3/#s3-disable-checksum)):
+5. **Checksum Control** ([docs](https://rclone.org/s3/#s3-disable-checksum)):
    - `--s3-disable-checksum`
 
    - Automatically used when no checksum is specified in workload
    - Workloads requiring specific checksums will skip (rclone only supports MD5)
 
-5. **S3 Express Support**:
+6. **S3 Express Support**:
    - Automatically detects S3 Express buckets (ending with `--x-s3` )
    - Adds `directory_bucket = true` to config file
    - See [S3 Directory Bucket documentation](https://rclone.org/s3/#s3-directory-bucket)

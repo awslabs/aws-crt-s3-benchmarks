@@ -169,7 +169,13 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
                 cmd.append(f'{s3_remote}{self.config.bucket}/{first_task.key}')
                 # dst - only for copy command, not for cat
                 if self.config.files_on_disk:
-                    cmd.append(first_task.key)
+                    # Use parent directory as destination so rclone doesn't create an extra subdirectory
+                    # e.g., for key "download/5GiB-1x/1", use "download/5GiB-1x/" as destination
+                    dst_dir = str(Path(first_task.key).parent)
+                    if dst_dir.name == '':
+                        # If file is in root, use current directory
+                        dst_dir = '.'
+                    cmd.append(dst_dir)
                 # For cat command, no dst needed - outputs to stdout which we redirect
 
             else:  # upload

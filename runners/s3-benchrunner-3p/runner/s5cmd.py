@@ -65,7 +65,25 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
             print(f'> {subprocess.list2cmdline(version_cmd)}', flush=True)
             subprocess.run(version_cmd, check=True)
 
-        cmd.append('cp')
+        # Determine the s5cmd command based on workload type
+        # For RAM-based uploads (stdin), use pipe which is optimized for streaming
+        # For RAM-based downloads, use cat which outputs to stdout (we'll redirect to /dev/null)
+        # For everything else, use cp
+        use_pipe = (num_tasks == 1 and
+                    first_task.action == 'upload' and
+                    not self.config.files_on_disk)
+
+        use_cat = (num_tasks == 1 and
+                   first_task.action == 'download' and
+                   not self.config.files_on_disk)
+
+        if use_pipe:
+            cmd.append('pipe')
+        elif use_cat:
+            cmd.append('cat')
+        else:
+            cmd.append('cp')
+
         cmd += ['--concurrency', str(concurrency)]
 
         if num_tasks == 1:
@@ -73,22 +91,22 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
             if first_task.action == 'download':
                 # src
                 cmd.append(f's3://{self.config.bucket}/{first_task.key}')
-                # dst
+                # dst - only for cp command, not for cat
                 if self.config.files_on_disk:
                     cmd.append(first_task.key)
-                else:
-                    cmd.append('-')  # output to stdout
+                # For cat command, no dst needed - outputs to stdout which we redirect
 
             else:  # upload
-                # src
                 if self.config.files_on_disk:
+                    # For cp command with files on disk
                     cmd.append(first_task.key)
+                    # dst
+                    cmd.append(f's3://{self.config.bucket}/{first_task.key}')
                 else:
-                    cmd.append('-')  # read from stdin
+                    # For pipe command, stdin is implicit - only specify destination
                     stdin = self._random_data_for_upload[:first_task.size]
-
-                # dst
-                cmd.append(f's3://{self.config.bucket}/{first_task.key}')
+                    # dst only (pipe reads from stdin automatically)
+                    cmd.append(f's3://{self.config.bucket}/{first_task.key}')
 
         else:
             # Multiple files - need to use patterns or directory operations
@@ -208,20 +226,36 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
         run_kwargs = {'args': self._s5cmd_cmd,
                       'input': self._stdin_for_s5cmd}
 
+        # For 'cat' command, redirect stdout to /dev/null
+        devnull = None
+        if 'cat' in self._s5cmd_cmd:
+            devnull = open('/dev/null', 'w')
+            run_kwargs['stdout'] = devnull
+
         if self.config.verbose:
             # show live output, and immediately raise exception if process fails
-            print(f'> {subprocess.list2cmdline(self._s5cmd_cmd)}', flush=True)
+            print(f'> {subprocess.list2cmdline(self._s5cmd_cmd)} > /dev/null' if devnull else f'> {subprocess.list2cmdline(self._s5cmd_cmd)}', flush=True)
             run_kwargs['check'] = True
+            # For verbose mode with cat, still capture stderr
+            if devnull:
+                run_kwargs['stderr'] = subprocess.PIPE
         else:
             # capture output, and only print if there's an error
-            run_kwargs['capture_output'] = True
+            if not devnull:
+                run_kwargs['capture_output'] = True
+            else:
+                run_kwargs['stderr'] = subprocess.PIPE
 
-        result = subprocess.run(**run_kwargs)
-        if result.returncode != 0:
-            # show command that failed, and stderr if any
-            errmsg = f'{subprocess.list2cmdline(self._s5cmd_cmd)}'
-            if hasattr(result, 'stderr') and result.stderr:
-                stderr = result.stderr.decode().strip()
-                if stderr:
-                    errmsg += f'\n{stderr}'
-            exit_with_error(errmsg)
+        try:
+            result = subprocess.run(**run_kwargs)
+            if result.returncode != 0:
+                # show command that failed, and stderr if any
+                errmsg = f'{subprocess.list2cmdline(self._s5cmd_cmd)}'
+                if hasattr(result, 'stderr') and result.stderr:
+                    stderr = result.stderr.decode().strip()
+                    if stderr:
+                        errmsg += f'\n{stderr}'
+                exit_with_error(errmsg)
+        finally:
+            if devnull:
+                devnull.close()

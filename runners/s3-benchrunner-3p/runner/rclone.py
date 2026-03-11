@@ -55,6 +55,15 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
                  'provider = AWS',
                  'env_auth = true']
 
+        # Add region to config file
+        # https://rclone.org/s3/#region
+        if self.config.region:
+            lines.append(f'region = {self.config.region}')
+
+        # Don't check if bucket exists or try to create it
+        # https://rclone.org/s3/#no-check-bucket
+        lines.append('no_check_bucket = true')
+
         # Skip workloads that require checksums since rclone doesn't provide
         # config file options for checksum control
         if self.config.checksum:
@@ -104,7 +113,24 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
         if self.config.region:
             os.environ['AWS_REGION'] = self.config.region
 
-        cmd.append('copy')
+        # Determine the rclone command based on workload type
+        # For RAM-based uploads (stdin), use rcat which is optimized for streaming
+        # For RAM-based downloads, use cat which outputs to stdout (we'll redirect to /dev/null)
+        # For everything else, use copy
+        use_rcat = (num_tasks == 1 and
+                    first_task.action == 'upload' and
+                    not self.config.files_on_disk)
+
+        use_cat = (num_tasks == 1 and
+                   first_task.action == 'download' and
+                   not self.config.files_on_disk)
+
+        if use_rcat:
+            cmd.append('rcat')
+        elif use_cat:
+            cmd.append('cat')
+        else:
+            cmd.append('copy')
 
         # Add common configuration flags
         # For uploads: S3-specific multipart upload concurrency
@@ -114,6 +140,10 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
         # For downloads: Use multi-thread streams for parallel downloads
         # https://rclone.org/docs/#multi-thread-streams-int
         cmd += ['--multi-thread-streams', str(concurrency)]
+
+        # Always transfer files, don't skip based on timestamps
+        # https://rclone.org/docs/#i-ignore-times
+        cmd += ['--ignore-times']
 
         # Disable checksum when not specified
         # https://rclone.org/s3/#s3-disable-checksum
@@ -135,22 +165,24 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
             if first_task.action == 'download':
                 # src
                 cmd.append(f'{s3_remote}{self.config.bucket}/{first_task.key}')
-                # dst
+                # dst - only for copy command, not for cat
                 if self.config.files_on_disk:
                     cmd.append(first_task.key)
-                else:
-                    cmd.append('-')  # output to stdout
+                # For cat command, no dst needed - outputs to stdout which we redirect
 
             else:  # upload
-                # src
                 if self.config.files_on_disk:
+                    # For copy command with files on disk
                     cmd.append(first_task.key)
+                    # dst
+                    cmd.append(
+                        f'{s3_remote}{self.config.bucket}/{first_task.key}')
                 else:
-                    cmd.append('-')  # read from stdin
+                    # For rcat command, stdin is implicit - only specify destination
                     stdin = self._random_data_for_upload[:first_task.size]
-
-                # dst
-                cmd.append(f'{s3_remote}{self.config.bucket}/{first_task.key}')
+                    # dst only (rcat reads from stdin automatically)
+                    cmd.append(
+                        f'{s3_remote}{self.config.bucket}/{first_task.key}')
 
         else:
             # Multiple files - need to use directory operations
@@ -257,20 +289,36 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
         run_kwargs = {'args': self._rclone_cmd,
                       'input': self._stdin_for_rclone}
 
+        # For 'cat' command, redirect stdout to /dev/null
+        devnull = None
+        if 'cat' in self._rclone_cmd:
+            devnull = open('/dev/null', 'w')
+            run_kwargs['stdout'] = devnull
+
         if self.config.verbose:
             # show live output, and immediately raise exception if process fails
-            print(f'> {subprocess.list2cmdline(self._rclone_cmd)}', flush=True)
+            print(f'> {subprocess.list2cmdline(self._rclone_cmd)} > /dev/null' if devnull else f'> {subprocess.list2cmdline(self._rclone_cmd)}', flush=True)
             run_kwargs['check'] = True
+            # For verbose mode with cat, still capture stderr
+            if devnull:
+                run_kwargs['stderr'] = subprocess.PIPE
         else:
             # capture output, and only print if there's an error
-            run_kwargs['capture_output'] = True
+            if not devnull:
+                run_kwargs['capture_output'] = True
+            else:
+                run_kwargs['stderr'] = subprocess.PIPE
 
-        result = subprocess.run(**run_kwargs)
-        if result.returncode != 0:
-            # show command that failed, and stderr if any
-            errmsg = f'{subprocess.list2cmdline(self._rclone_cmd)}'
-            if hasattr(result, 'stderr') and result.stderr:
-                stderr = result.stderr.decode().strip()
-                if stderr:
-                    errmsg += f'\n{stderr}'
-            exit_with_error(errmsg)
+        try:
+            result = subprocess.run(**run_kwargs)
+            if result.returncode != 0:
+                # show command that failed, and stderr if any
+                errmsg = f'{subprocess.list2cmdline(self._rclone_cmd)}'
+                if hasattr(result, 'stderr') and result.stderr:
+                    stderr = result.stderr.decode().strip()
+                    if stderr:
+                        errmsg += f'\n{stderr}'
+                exit_with_error(errmsg)
+        finally:
+            if devnull:
+                devnull.close()

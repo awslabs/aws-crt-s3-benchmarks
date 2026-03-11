@@ -281,7 +281,6 @@ def _build_rclone(work_dir: Path, branch: Optional[str]) -> list[str]:
         print("rclone not found in PATH, installing using official installer...")
 
         # Install rclone using the official installation script
-        run(['sudo', '-v'])  # Update sudo timestamp
         run(['bash', '-c', 'curl https://rclone.org/install.sh | sudo bash'])
 
         # Check if installation succeeded

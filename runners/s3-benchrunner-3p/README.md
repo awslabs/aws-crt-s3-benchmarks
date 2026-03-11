@@ -170,8 +170,12 @@ The runner creates a config file with the following settings (documented at http
 type = s3                    # S3 backend type
 provider = AWS               # Use AWS S3
 env_auth = true             # Get credentials from environment
+region = us-west-2          # AWS region (from REGION command-line argument)
+no_check_bucket = true      # Don't check if bucket exists or try to create it
 directory_bucket = true     # Enable S3 Express (automatically added for S3 Express buckets)
 ```
+
+The region is set in the config file from the REGION command-line argument, ensuring rclone operates in the correct AWS region.
 
 #### Command-Line Options
 
@@ -193,13 +197,19 @@ The runner automatically configures these rclone flags based on the workload:
 
    - Example: 100 Gbps → 250 parallel streams
 
-3. **Checksum Control** ([docs](https://rclone.org/s3/#s3-disable-checksum)):
+3. **Always Transfer Files** ([docs](https://rclone.org/docs/#ignore-times)):
+   - `--ignore-times`
+
+   - Forces rclone to always transfer files, don't skip based on timestamps
+   - Essential for benchmarking to ensure consistent measurements across runs
+
+4. **Checksum Control** ([docs](https://rclone.org/s3/#s3-disable-checksum)):
    - `--s3-disable-checksum`
 
    - Automatically used when no checksum is specified in workload
    - Workloads requiring specific checksums will skip (rclone only supports MD5)
 
-4. **S3 Express Support**:
+5. **S3 Express Support**:
    - Automatically detects S3 Express buckets (ending with `--x-s3` )
    - Adds `directory_bucket = true` to config file
    - See [S3 Directory Bucket documentation](https://rclone.org/s3/#s3-directory-bucket)

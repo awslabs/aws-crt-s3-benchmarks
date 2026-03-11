@@ -65,7 +65,23 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
             print(f'> {subprocess.list2cmdline(version_cmd)}', flush=True)
             subprocess.run(version_cmd, check=True)
 
-        cmd.append('cp')
+        # Determine the s5cmd command based on workload type
+        # For RAM-based uploads (stdin), use pipe which is optimized for streaming
+        # For RAM-based downloads: skip these workloads as cat command is too slow
+        # For everything else, use cp
+        if num_tasks == 1 and first_task.action == 'download' and not self.config.files_on_disk:
+            exit_with_skip_code(
+                's5cmd cat command is too slow for RAM-based download benchmarks')
+
+        use_pipe = (num_tasks == 1 and
+                    first_task.action == 'upload' and
+                    not self.config.files_on_disk)
+
+        if use_pipe:
+            cmd.append('pipe')
+        else:
+            cmd.append('cp')
+
         cmd += ['--concurrency', str(concurrency)]
 
         if num_tasks == 1:
@@ -73,22 +89,22 @@ class S5cmdBenchmarkRunner(BenchmarkRunner):
             if first_task.action == 'download':
                 # src
                 cmd.append(f's3://{self.config.bucket}/{first_task.key}')
-                # dst
+                # dst - only for cp command, not for cat
                 if self.config.files_on_disk:
                     cmd.append(first_task.key)
-                else:
-                    cmd.append('-')  # output to stdout
+                # For cat command, no dst needed - outputs to stdout which we redirect
 
             else:  # upload
-                # src
                 if self.config.files_on_disk:
+                    # For cp command with files on disk
                     cmd.append(first_task.key)
+                    # dst
+                    cmd.append(f's3://{self.config.bucket}/{first_task.key}')
                 else:
-                    cmd.append('-')  # read from stdin
+                    # For pipe command, stdin is implicit - only specify destination
                     stdin = self._random_data_for_upload[:first_task.size]
-
-                # dst
-                cmd.append(f's3://{self.config.bucket}/{first_task.key}')
+                    # dst only (pipe reads from stdin automatically)
+                    cmd.append(f's3://{self.config.bucket}/{first_task.key}')
 
         else:
             # Multiple files - need to use patterns or directory operations

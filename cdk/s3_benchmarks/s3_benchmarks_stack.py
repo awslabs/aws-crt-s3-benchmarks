@@ -50,6 +50,7 @@ DEFAULT_S3_CLIENTS = {
     'cli-crt': S3ClientProps(color=cloudwatch.Color.PURPLE),
     'boto3-crt': S3ClientProps(color=cloudwatch.Color.PINK),
     's5cmd': S3ClientProps(color='#00CED1'),  # cyan
+    'rclone': S3ClientProps(color='#20B2AA'),  # light sea green
 }
 
 # The "default" set of workloads to benchmark.

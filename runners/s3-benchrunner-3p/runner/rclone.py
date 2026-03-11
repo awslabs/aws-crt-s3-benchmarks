@@ -182,9 +182,14 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
                 if self.config.files_on_disk:
                     # For copy command with files on disk
                     cmd.append(first_task.key)
-                    # dst
+                    # dst - use parent directory so rclone doesn't create an extra subdirectory
+                    # e.g., for key "upload/30GiB-1x/1", use "remote:bucket/upload/30GiB-1x/" as destination
+                    dst_dir = str(Path(first_task.key).parent)
+                    if dst_dir == '.':
+                        # If file is in root, use bucket root
+                        dst_dir = ''
                     cmd.append(
-                        f'{s3_remote}{self.config.bucket}/{first_task.key}')
+                        f'{s3_remote}{self.config.bucket}/{dst_dir}')
                 else:
                     # For rcat command, stdin is implicit - only specify destination
                     stdin = self._random_data_for_upload[:first_task.size]

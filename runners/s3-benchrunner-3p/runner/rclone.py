@@ -115,20 +115,18 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
 
         # Determine the rclone command based on workload type
         # For RAM-based uploads (stdin), use rcat which is optimized for streaming
-        # For RAM-based downloads, use cat which outputs to stdout (we'll redirect to /dev/null)
+        # For RAM-based downloads: skip these workloads as cat command is too slow
         # For everything else, use copy
+        if num_tasks == 1 and first_task.action == 'download' and not self.config.files_on_disk:
+            exit_with_skip_code(
+                'rclone cat command is too slow for RAM-based download benchmarks')
+
         use_rcat = (num_tasks == 1 and
                     first_task.action == 'upload' and
                     not self.config.files_on_disk)
 
-        use_cat = (num_tasks == 1 and
-                   first_task.action == 'download' and
-                   not self.config.files_on_disk)
-
         if use_rcat:
             cmd.append('rcat')
-        elif use_cat:
-            cmd.append('cat')
         else:
             cmd.append('copy')
 
@@ -289,36 +287,20 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
         run_kwargs = {'args': self._rclone_cmd,
                       'input': self._stdin_for_rclone}
 
-        # For 'cat' command, redirect stdout to /dev/null
-        devnull = None
-        if 'cat' in self._rclone_cmd:
-            devnull = open('/dev/null', 'w')
-            run_kwargs['stdout'] = devnull
-
         if self.config.verbose:
             # show live output, and immediately raise exception if process fails
-            print(f'> {subprocess.list2cmdline(self._rclone_cmd)} > /dev/null' if devnull else f'> {subprocess.list2cmdline(self._rclone_cmd)}', flush=True)
+            print(f'> {subprocess.list2cmdline(self._rclone_cmd)}', flush=True)
             run_kwargs['check'] = True
-            # For verbose mode with cat, still capture stderr
-            if devnull:
-                run_kwargs['stderr'] = subprocess.PIPE
         else:
             # capture output, and only print if there's an error
-            if not devnull:
-                run_kwargs['capture_output'] = True
-            else:
-                run_kwargs['stderr'] = subprocess.PIPE
+            run_kwargs['capture_output'] = True
 
-        try:
-            result = subprocess.run(**run_kwargs)
-            if result.returncode != 0:
-                # show command that failed, and stderr if any
-                errmsg = f'{subprocess.list2cmdline(self._rclone_cmd)}'
-                if hasattr(result, 'stderr') and result.stderr:
-                    stderr = result.stderr.decode().strip()
-                    if stderr:
-                        errmsg += f'\n{stderr}'
-                exit_with_error(errmsg)
-        finally:
-            if devnull:
-                devnull.close()
+        result = subprocess.run(**run_kwargs)
+        if result.returncode != 0:
+            # show command that failed, and stderr if any
+            errmsg = f'{subprocess.list2cmdline(self._rclone_cmd)}'
+            if hasattr(result, 'stderr') and result.stderr:
+                stderr = result.stderr.decode().strip()
+                if stderr:
+                    errmsg += f'\n{stderr}'
+            exit_with_error(errmsg)

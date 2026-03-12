@@ -171,11 +171,11 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
                 if self.config.files_on_disk:
                     # Use parent directory as destination so rclone doesn't create an extra subdirectory
                     # e.g., for key "download/5GiB-1x/1", use "download/5GiB-1x/" as destination
-                    dst_dir = str(Path(first_task.key).parent)
+                    dst_dir = Path(first_task.key).parent
                     if dst_dir.name == '':
                         # If file is in root, use current directory
-                        dst_dir = '.'
-                    cmd.append(dst_dir)
+                        dst_dir = Path('.')
+                    cmd.append(str(dst_dir))
                 # For cat command, no dst needed - outputs to stdout which we redirect
 
             else:  # upload
@@ -184,12 +184,14 @@ class RcloneBenchmarkRunner(BenchmarkRunner):
                     cmd.append(first_task.key)
                     # dst - use parent directory so rclone doesn't create an extra subdirectory
                     # e.g., for key "upload/30GiB-1x/1", use "remote:bucket/upload/30GiB-1x/" as destination
-                    dst_dir = str(Path(first_task.key).parent)
-                    if dst_dir == '.':
+                    dst_dir = Path(first_task.key).parent
+                    if str(dst_dir) == '':
                         # If file is in root, use bucket root
-                        dst_dir = ''
+                        dst_dir_str = ''
+                    else:
+                        dst_dir_str = str(dst_dir)
                     cmd.append(
-                        f'{s3_remote}{self.config.bucket}/{dst_dir}')
+                        f'{s3_remote}{self.config.bucket}/{dst_dir_str}')
                 else:
                     # For rcat command, stdin is implicit - only specify destination
                     stdin = self._random_data_for_upload[:first_task.size]

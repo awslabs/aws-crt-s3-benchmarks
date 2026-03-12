@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from typing import Optional
 
-from utils import fetch_git_repo, run, RUNNERS
+from utils import fetch_git_repo, run, RUNNERS, RUNNERS_DIR
 
 
 def _build_cmake_proj(src_dir: Path, build_dir: Path, install_dir: Path, config_extra: list[str] = []):
@@ -233,6 +233,73 @@ def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [str(runner_src/'target/release/s3-benchrunner-rust')]
 
 
+def _build_s5cmd(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build s5cmd third-party S3 client"""
+
+    if branch:
+        print("WARNING: s5cmd runner doesn't currently support --branch")
+
+    # Set GOBIN to install s5cmd in work_dir
+    gobin = work_dir / 'bin'
+    gobin.mkdir(parents=True, exist_ok=True)
+
+    # Temporarily set GOBIN environment variable
+    gobin_prev = os.environ.get('GOBIN')
+    os.environ['GOBIN'] = str(gobin)
+
+    try:
+        # Install s5cmd using go install
+        run(['go', 'install', 'github.com/peak/s5cmd/v2@v2.3.0'])
+    finally:
+        # Restore previous GOBIN value
+        if gobin_prev is not None:
+            os.environ['GOBIN'] = gobin_prev
+        elif 'GOBIN' in os.environ:
+            del os.environ['GOBIN']
+
+    # Get path to s5cmd executable and main.py
+    s5cmd_path = gobin / 's5cmd'
+    # Both s5cmd and rclone use the same 3p runner directory
+    main_path = RUNNERS_DIR / 's3-benchrunner-3p' / 'main.py'
+
+    # Return runner command: python main.py <executable_path> <s3_client> ...
+    return [sys.executable, str(main_path), str(s5cmd_path)]
+
+
+def _build_rclone(work_dir: Path, branch: Optional[str]) -> list[str]:
+    """build rclone third-party S3 client"""
+
+    if branch:
+        print("WARNING: rclone runner doesn't currently support --branch")
+
+    # Check if rclone is already in PATH
+    import shutil
+
+    rclone_path = shutil.which('rclone')
+
+    if not rclone_path:
+        print("rclone not found in PATH, installing using official installer...")
+
+        # Install rclone using the official installation script
+        run(['bash', '-c', 'curl https://rclone.org/install.sh | sudo bash'])
+
+        # Check if installation succeeded
+        rclone_path = shutil.which('rclone')
+        if not rclone_path:
+            raise Exception("Failed to install rclone")
+
+        print(f"Installed rclone to: {rclone_path}")
+    else:
+        print(f"Using existing rclone: {rclone_path}")
+
+    # Both s5cmd and rclone use the same 3p runner directory
+    main_path = RUNNERS_DIR / 's3-benchrunner-3p' / 'main.py'
+
+    # Return runner command: python main.py <executable_path> <s3_client> ...
+    # Note: rclone config is now created internally by the rclone runner
+    return [sys.executable, str(main_path), str(rclone_path)]
+
+
 def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list[str]:
     """
     Build s3-benchrunner-<lang> and its dependencies.
@@ -253,6 +320,8 @@ def build_runner(lang: str, build_root_dir: Path, branch: Optional[str]) -> list
         'python': _build_python,
         'java': _build_java,
         'rust': _build_rust,
+        's5cmd': _build_s5cmd,
+        'rclone': _build_rclone,
     }
     build_fn = build_functions[lang]
 

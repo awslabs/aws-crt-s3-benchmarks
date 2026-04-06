@@ -138,12 +138,29 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                 checksum_config = awscrt.s3.S3ChecksumConfig(
                     validate_response=True)
 
+        # Only for RAM downloads
+        total_bytes_received = 0
+
+        def on_body_mem_view(chunk: memoryview, offset: int, **kwargs):
+            nonlocal total_bytes_received
+            # chunk is memoryview - valid ONLY during this callback, do NOT store it
+            # len() on memoryview is zero-copy
+            # However, converts memoryview to bytes will copy the data.
+            total_bytes_received += len(bytes(chunk))
+
+        on_body_mem_view_cb = on_body_mem_view
+
+        def on_body(chunk: bytes, offset: int, **kwargs):
+            nonlocal total_bytes_received
+            total_bytes_received += len(chunk)
+
         # completion callback sets the future as complete,
         # or exits the program on error
         def on_done(error: Optional[BaseException],
                     error_headers: Optional[list[Tuple[str, str]]],
                     error_body: Optional[bytes],
                     **kwargs):
+            print(total_bytes_received)
             if error:
                 self._failed_event.set()
 
@@ -166,5 +183,7 @@ class CrtBenchmarkRunner(BenchmarkRunner):
                 method, path, headers, send_stream),
             recv_filepath=recv_filepath,
             send_filepath=send_filepath,
+            # on_body = on_body,
+            on_body_mem_view=on_body_mem_view_cb,
             checksum_config=checksum_config,
             on_done=on_done)

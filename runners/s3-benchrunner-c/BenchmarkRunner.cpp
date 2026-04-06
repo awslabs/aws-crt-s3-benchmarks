@@ -182,6 +182,31 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
 BenchmarkRunner::~BenchmarkRunner() = default;
 
+void BenchmarkRunner::prepareRun(size_t runNumber)
+{
+    printf("preparing run...\n");
+    for (auto &&task : config.tasks)
+    {
+        if (task.action == "download")
+        {
+            filesystem::path taskPath(task.key);
+            if (filesystem::exists(taskPath))
+            {
+                // Before downloading, clean up any pre-existing files.
+                // The rename at the end of a download is way slower if it's replacing an existing file.
+                filesystem::remove(taskPath);
+            }
+            else if (!taskPath.parent_path().empty() && !filesystem::exists(taskPath.parent_path()))
+            {
+                error_code ec;
+                filesystem::create_directories(taskPath.parent_path(), ec);
+                if (ec)
+                    fail(string("Failed to create directory: ") + ec.message());
+            }
+        }
+    }
+}
+
 // If telemetry is enabled, output stats for each run to ./telemetry/<workload_name>/<current_date_time>/stats.txt
 FILE *statsFile = NULL;
 
@@ -362,6 +387,8 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     auto appStart = high_resolution_clock::now();
     for (int runNumber = 1; runNumber <= config.maxRepeatCount; ++runNumber)
     {
+        benchmark->prepareRun(runNumber);
+
         auto runStart = high_resolution_clock::now();
 
         benchmark->run(runNumber);

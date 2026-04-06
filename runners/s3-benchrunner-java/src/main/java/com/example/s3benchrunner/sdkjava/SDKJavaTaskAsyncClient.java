@@ -4,6 +4,8 @@ import com.example.s3benchrunner.TaskConfig;
 import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.utils.async.SimplePublisher;
 
 import java.nio.ByteBuffer;
@@ -19,9 +21,18 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
         doneFuture = new CompletableFuture<Void>();
 
         if (config.action.equals("upload")) {
+            ChecksumAlgorithm checksumAlgorithm = runner.config.checksum != null
+                    ? ChecksumAlgorithm.fromValue(runner.config.checksum.replace("CRC32C", "CRC32-C"))
+                    : null;
+
             if (runner.config.filesOnDisk) {
                 runner.s3AsyncClient
-                        .putObject(req -> req.bucket(runner.bucket).key(config.key), Path.of(config.key))
+                        .putObject(req -> {
+                            req.bucket(runner.bucket).key(config.key);
+                            if (checksumAlgorithm != null) {
+                                req.checksumAlgorithm(checksumAlgorithm);
+                            }
+                        }, Path.of(config.key))
                         .whenComplete((result, failure) -> {
                             completeHelper(runner, failure);
                         });
@@ -42,35 +53,49 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
                 });
 
                 runner.s3AsyncClient
-                        .putObject(req -> req.bucket(runner.bucket).key(config.key).contentLength(config.size),
-                                AsyncRequestBody.fromPublisher(publisher))
+                        .putObject(req -> {
+                            req.bucket(runner.bucket).key(config.key).contentLength(config.size);
+                            if (checksumAlgorithm != null) {
+                                req.checksumAlgorithm(checksumAlgorithm);
+                            }
+                        }, AsyncRequestBody.fromPublisher(publisher))
                         .whenComplete((result, failure) -> {
                             completeHelper(runner, failure);
                         });
                 uploadThread.start();
             }
         } else if (config.action.equals("download")) {
+            boolean validateChecksum = runner.config.checksum != null;
+
             if (runner.config.filesOnDisk) {
-                runner.s3AsyncClient.getObject(req -> req.bucket(runner.bucket)
-                        .key(config.key),
+                runner.s3AsyncClient.getObject(req -> {
+                    req.bucket(runner.bucket).key(config.key);
+                    if (validateChecksum) {
+                        req.checksumMode(ChecksumMode.ENABLED);
+                    }
+                },
                         AsyncResponseTransformer.toFile(Path.of(config.key),
                                 FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
                         .whenComplete((result, failure) -> {
                             completeHelper(runner, failure);
                         });
             } else {
-                runner.s3AsyncClient.getObject(req -> req.bucket(runner.bucket)
-                        .key(config.key), AsyncResponseTransformer.toPublisher()).whenComplete((result, failure) -> {
-                            if (failure != null) {
-                                completeHelper(runner, failure);
-                            } else {
-                                result.subscribe((bufferResult) -> {
-                                    /* Throw the result away */
-                                }).whenComplete((subResult, subFailure) -> {
-                                    completeHelper(runner, subFailure);
-                                });
-                            }
+                runner.s3AsyncClient.getObject(req -> {
+                    req.bucket(runner.bucket).key(config.key);
+                    if (validateChecksum) {
+                        req.checksumMode(ChecksumMode.ENABLED);
+                    }
+                }, AsyncResponseTransformer.toPublisher()).whenComplete((result, failure) -> {
+                    if (failure != null) {
+                        completeHelper(runner, failure);
+                    } else {
+                        result.subscribe((bufferResult) -> {
+                            /* Throw the result away */
+                        }).whenComplete((subResult, subFailure) -> {
+                            completeHelper(runner, subFailure);
                         });
+                    }
+                });
             }
         } else {
             throw new RuntimeException("Unknown task action: " + config.action);

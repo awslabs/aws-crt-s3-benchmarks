@@ -79,6 +79,9 @@ class BenchmarkRunner
     BenchmarkRunner(const BenchmarkRunner &) = delete;
     BenchmarkRunner &operator=(const BenchmarkRunner &) = delete;
 
+    // Do preparation work between runs, before the timer starts.
+    virtual void prepareRun(size_t runNumber);
+
     // A benchmark can be run repeatedly
     virtual void run(size_t runNumber) = 0;
 };

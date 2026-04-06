@@ -154,10 +154,13 @@ class CliBenchmarkRunner(BenchmarkRunner):
             # Progress callbacks may have performance impact
             cmd += ['--quiet']
 
-        # As of Sept 2023, can't pick checksum for: aws s3 cp
         if self.config.checksum:
-            exit_with_skip_code(
-                "CLI cannot run workload with specific checksum algorithm")
+            if first_task.action == 'upload':
+                # aws s3 cp supports --checksum-algorithm for uploads
+                cmd += ['--checksum-algorithm', self.config.checksum]
+            else:
+                # aws s3 cp supports --checksum-mode for download checksum validation
+                cmd += ['--checksum-mode', 'enabled']
 
         return cmd, stdin
 

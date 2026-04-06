@@ -7,6 +7,7 @@ import software.amazon.awssdk.crt.http.HttpHeader;
 import software.amazon.awssdk.crt.http.HttpRequest;
 import software.amazon.awssdk.crt.http.HttpRequestBodyStream;
 import software.amazon.awssdk.crt.s3.*;
+import software.amazon.awssdk.crt.s3.ChecksumAlgorithm;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +53,12 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
                 requestUploadStream = new UploadFromRamStream(runner.randomDataForUpload, config.size);
             }
 
+            if (runner.config.checksum != null) {
+                options.withChecksumConfig(new ChecksumConfig()
+                        .withChecksumAlgorithm(ChecksumAlgorithm.valueOf(runner.config.checksum))
+                        .withChecksumLocation(ChecksumConfig.ChecksumLocation.TRAILING_HEADER));
+            }
+
         } else if (config.action.equals("download")) {
             options.withMetaRequestType(S3MetaRequestOptions.MetaRequestType.GET_OBJECT);
             httpMethod = "GET";
@@ -61,15 +68,13 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
             if (runner.config.filesOnDisk) {
                 options.withResponseFilePath(Path.of(config.key));
             }
+
+            if (runner.config.checksum != null) {
+                options.withChecksumConfig(new ChecksumConfig()
+                        .withValidateChecksum(true));
+            }
         } else {
             throw new RuntimeException("Unknown task action: " + config.action);
-        }
-
-        if (runner.config.checksum != null) {
-            options.withChecksumConfig(new ChecksumConfig()
-                    .withChecksumAlgorithm(runner.config.checksum)
-                    .withChecksumLocation(ChecksumConfig.ChecksumLocation.HEADER)
-                    .withValidateChecksum(true));
         }
 
         HttpHeader[] headersArray = headers.toArray(new HttpHeader[0]);

@@ -1,5 +1,7 @@
 package com.example.s3benchrunner.sdkjava;
 
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.transfer.s3.config.DownloadFilter;
 import software.amazon.awssdk.transfer.s3.model.*;
@@ -11,11 +13,21 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
     SDKJavaTaskTransferManager(SDKJavaBenchmarkRunner runner) {
         super(runner);
 
+        ChecksumAlgorithm checksumAlgorithm = runner.config.checksum != null
+                ? ChecksumAlgorithm.fromValue(runner.config.checksum.replace("CRC32C", "CRC32-C"))
+                : null;
+        boolean validateChecksum = runner.config.checksum != null;
+
         if (runner.transferKey != null) {
             /* Transfer a single file */
             if (runner.transferAction.equals("upload")) {
                 UploadFileRequest uploadFileRequest = UploadFileRequest.builder()
-                        .putObjectRequest(req -> req.bucket(runner.bucket).key(runner.transferKey))
+                        .putObjectRequest(req -> {
+                            req.bucket(runner.bucket).key(runner.transferKey);
+                            if (checksumAlgorithm != null) {
+                                req.checksumAlgorithm(checksumAlgorithm);
+                            }
+                        })
                         .source(runner.transferPath)
                         .build();
                 FileUpload transfer = runner.transferManager.uploadFile(uploadFileRequest);
@@ -25,7 +37,12 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
                         });
             } else if (runner.transferAction.equals("download")) {
                 DownloadFileRequest downloadFileRequest = DownloadFileRequest.builder()
-                        .getObjectRequest(req -> req.bucket(runner.bucket).key(runner.transferKey))
+                        .getObjectRequest(req -> {
+                            req.bucket(runner.bucket).key(runner.transferKey);
+                            if (validateChecksum) {
+                                req.checksumMode(ChecksumMode.ENABLED);
+                            }
+                        })
                         .destination(runner.transferPath)
                         .build();
                 FileDownload transfer = runner.transferManager.downloadFile(downloadFileRequest);
@@ -43,6 +60,11 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
                         .uploadDirectory(UploadDirectoryRequest.builder()
                                 .source(runner.transferPath)
                                 .bucket(runner.bucket)
+                                .uploadFileRequestTransformer(req -> {
+                                    if (checksumAlgorithm != null) {
+                                        req.putObjectRequest(po -> po.checksumAlgorithm(checksumAlgorithm));
+                                    }
+                                })
                                 .build());
 
                 directoryUpload.completionFuture().whenComplete(
@@ -66,6 +88,11 @@ public class SDKJavaTaskTransferManager extends SDKJavaTask {
                                     @Override
                                     public boolean test(S3Object s3Object) {
                                         return s3Object.key().startsWith(runner.transferPath.toString());
+                                    }
+                                })
+                                .getObjectRequestTransformer(req -> {
+                                    if (validateChecksum) {
+                                        req.checksumMode(ChecksumMode.ENABLED);
                                     }
                                 })
                                 .build());

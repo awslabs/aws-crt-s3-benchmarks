@@ -1,7 +1,6 @@
 package com.example.s3benchrunner;
 
 import com.google.gson.Gson;
-import software.amazon.awssdk.crt.s3.ChecksumAlgorithm;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,7 +11,7 @@ import java.util.ArrayList;
 public class BenchmarkConfig {
     public int version;
     public boolean filesOnDisk;
-    public ChecksumAlgorithm checksum;
+    public String checksum;
     public int maxRepeatCount;
     public int maxRepeatSecs;
     public ArrayList<TaskConfig> tasks;

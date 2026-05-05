@@ -1,6 +1,7 @@
 #include "BenchmarkRunner.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -182,6 +183,22 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
 BenchmarkRunner::~BenchmarkRunner() = default;
 
+void BenchmarkRunner::prepareRun()
+{
+    // Delete downloaded files before each run, so the next run starts fresh.
+    for (auto &&task : config.tasks)
+    {
+        if (task.action == "download" && config.filesOnDisk)
+        {
+            filesystem::path filePath(task.key);
+            if (filesystem::exists(filePath))
+            {
+                filesystem::remove(filePath);
+            }
+        }
+    }
+}
+
 // If telemetry is enabled, output stats for each run to ./telemetry/<workload_name>/<current_date_time>/stats.txt
 FILE *statsFile = NULL;
 
@@ -362,6 +379,8 @@ int benchmarkRunnerMain(int argc, char *argv[], const CreateRunnerFromNameFn &cr
     auto appStart = high_resolution_clock::now();
     for (int runNumber = 1; runNumber <= config.maxRepeatCount; ++runNumber)
     {
+        benchmark->prepareRun();
+
         auto runStart = high_resolution_clock::now();
 
         benchmark->run(runNumber);

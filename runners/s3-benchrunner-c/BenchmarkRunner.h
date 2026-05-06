@@ -79,6 +79,9 @@ class BenchmarkRunner
     BenchmarkRunner(const BenchmarkRunner &) = delete;
     BenchmarkRunner &operator=(const BenchmarkRunner &) = delete;
 
+    // Preparation work between runs (e.g. delete downloaded files so next run starts fresh)
+    virtual void prepareRun();
+
     // A benchmark can be run repeatedly
     virtual void run(size_t runNumber) = 0;
 };

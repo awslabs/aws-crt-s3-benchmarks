@@ -291,7 +291,6 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
 // equal to the full upload size, we reuse a small cache-friendly buffer repeatedly.
 struct LoopingUploadStream
 {
-    aws_input_stream base; // must be first member
     const uint8_t *data;
     size_t dataLen;
     uint64_t totalSize;
@@ -300,7 +299,7 @@ struct LoopingUploadStream
 
 static int s_looping_stream_seek(aws_input_stream *stream, int64_t offset, enum aws_stream_seek_basis basis)
 {
-    auto *s = reinterpret_cast<LoopingUploadStream *>(stream);
+    auto *s = reinterpret_cast<LoopingUploadStream *>(stream->impl);
     if (basis == AWS_SSB_BEGIN)
         s->bytesWritten = (uint64_t)offset;
     else if (basis == AWS_SSB_END)
@@ -310,7 +309,7 @@ static int s_looping_stream_seek(aws_input_stream *stream, int64_t offset, enum 
 
 static int s_looping_stream_read(aws_input_stream *stream, aws_byte_buf *dest)
 {
-    auto *s = reinterpret_cast<LoopingUploadStream *>(stream);
+    auto *s = reinterpret_cast<LoopingUploadStream *>(stream->impl);
     while (s->bytesWritten < s->totalSize && dest->len < dest->capacity)
     {
         uint64_t remaining = s->totalSize - s->bytesWritten;
@@ -326,7 +325,7 @@ static int s_looping_stream_read(aws_input_stream *stream, aws_byte_buf *dest)
 
 static int s_looping_stream_get_status(aws_input_stream *stream, aws_stream_status *status)
 {
-    auto *s = reinterpret_cast<LoopingUploadStream *>(stream);
+    auto *s = reinterpret_cast<LoopingUploadStream *>(stream->impl);
     status->is_end_of_stream = (s->bytesWritten >= s->totalSize);
     status->is_valid = true;
     return AWS_OP_SUCCESS;
@@ -334,15 +333,9 @@ static int s_looping_stream_get_status(aws_input_stream *stream, aws_stream_stat
 
 static int s_looping_stream_get_length(aws_input_stream *stream, int64_t *out_length)
 {
-    auto *s = reinterpret_cast<LoopingUploadStream *>(stream);
+    auto *s = reinterpret_cast<LoopingUploadStream *>(stream->impl);
     *out_length = (int64_t)s->totalSize;
     return AWS_OP_SUCCESS;
-}
-
-static void s_looping_stream_destroy(aws_input_stream *stream)
-{
-    auto *s = reinterpret_cast<LoopingUploadStream *>(stream);
-    aws_mem_release(aws_default_allocator(), s);
 }
 
 static aws_input_stream_vtable s_looping_stream_vtable = {
@@ -350,7 +343,6 @@ static aws_input_stream_vtable s_looping_stream_vtable = {
     .read = s_looping_stream_read,
     .get_status = s_looping_stream_get_status,
     .get_length = s_looping_stream_get_length,
-    .destroy = s_looping_stream_destroy,
 };
 
 static aws_input_stream *aws_input_stream_new_looping(
@@ -359,17 +351,24 @@ static aws_input_stream *aws_input_stream_new_looping(
     size_t dataLen,
     uint64_t totalSize)
 {
-    auto *s = reinterpret_cast<LoopingUploadStream *>(aws_mem_calloc(alloc, 1, sizeof(LoopingUploadStream)));
-    s->base.vtable = &s_looping_stream_vtable;
+    auto *stream = reinterpret_cast<aws_input_stream *>(aws_mem_calloc(alloc, 1, sizeof(aws_input_stream)));
+    auto *impl = reinterpret_cast<LoopingUploadStream *>(aws_mem_calloc(alloc, 1, sizeof(LoopingUploadStream)));
+    impl->data = data;
+    impl->dataLen = dataLen;
+    impl->totalSize = totalSize;
+    impl->bytesWritten = 0;
+    stream->impl = impl;
+    stream->vtable = &s_looping_stream_vtable;
     aws_ref_count_init(
-        &s->base.ref_count,
-        s,
-        [](void *user_data) { s_looping_stream_destroy(reinterpret_cast<aws_input_stream *>(user_data)); });
-    s->data = data;
-    s->dataLen = dataLen;
-    s->totalSize = totalSize;
-    s->bytesWritten = 0;
-    return &s->base;
+        &stream->ref_count,
+        stream,
+        [](void *user_data)
+        {
+            auto *st = reinterpret_cast<aws_input_stream *>(user_data);
+            aws_mem_release(aws_default_allocator(), st->impl);
+            aws_mem_release(aws_default_allocator(), st);
+        });
+    return stream;
 }
 
 Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)

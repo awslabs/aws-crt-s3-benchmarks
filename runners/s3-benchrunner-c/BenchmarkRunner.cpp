@@ -144,8 +144,8 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 {
     // If we're uploading, and not using files on disk,
     // then generate an in-memory buffer of random data to upload.
-    // We use a small buffer (~30 MiB) that the upload stream loops over repeatedly,
-    // rather than allocating a buffer sized to the full upload file.
+    // We use a small 8 MiB buffer (matching the Java runner) that the upload stream
+    // loops over repeatedly, rather than allocating a buffer sized to the full upload file.
     // This keeps the working set small and cache-friendly, even for large uploads.
     if (!config.filesOnDisk)
     {
@@ -159,9 +159,8 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 
         if (hasUpload)
         {
-            // We don't want any parts to be identical.
-            // Use a size that won't fall on a part boundary as we loop it.
-            const size_t randomBlockSize = 31415926; // approx 30 MiB, digits of pi
+            // Use 8 MiB to match the Java runner's buffer size (Util.generateRandomData()).
+            const size_t randomBlockSize = bytesFromMiB(8);
             randomDataForUpload.resize(randomBlockSize);
             independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
             generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);

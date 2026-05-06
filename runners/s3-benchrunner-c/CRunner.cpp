@@ -291,6 +291,7 @@ void addHeader(aws_http_message *request, string_view name, string_view value)
 // equal to the full upload size, we reuse a small cache-friendly buffer repeatedly.
 struct LoopingUploadStream
 {
+    aws_allocator *alloc;
     const uint8_t *data;
     size_t dataLen;
     uint64_t totalSize;
@@ -353,6 +354,7 @@ static aws_input_stream *aws_input_stream_new_looping(
 {
     auto *stream = reinterpret_cast<aws_input_stream *>(aws_mem_calloc(alloc, 1, sizeof(aws_input_stream)));
     auto *impl = reinterpret_cast<LoopingUploadStream *>(aws_mem_calloc(alloc, 1, sizeof(LoopingUploadStream)));
+    impl->alloc = alloc; // store allocator so the destructor can use the same one
     impl->data = data;
     impl->dataLen = dataLen;
     impl->totalSize = totalSize;
@@ -365,8 +367,10 @@ static aws_input_stream *aws_input_stream_new_looping(
         [](void *user_data)
         {
             auto *st = reinterpret_cast<aws_input_stream *>(user_data);
-            aws_mem_release(aws_default_allocator(), st->impl);
-            aws_mem_release(aws_default_allocator(), st);
+            auto *impl = reinterpret_cast<LoopingUploadStream *>(st->impl);
+            aws_allocator *alloc = impl->alloc; // retrieve the allocator before freeing impl
+            aws_mem_release(alloc, impl);
+            aws_mem_release(alloc, st);
         });
     return stream;
 }

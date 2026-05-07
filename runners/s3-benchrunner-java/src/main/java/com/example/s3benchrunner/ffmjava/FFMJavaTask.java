@@ -8,7 +8,9 @@ import software.amazon.awssdk.crt.http.HttpRequest;
 import software.amazon.awssdk.crt.http.HttpRequestBodyStream;
 import software.amazon.awssdk.crt.s3.*;
 
-import java.nio.ByteBuffer;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,13 +19,18 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * A single transfer task (upload or download) executed via the FFM-backed
- * aws-crt-java S3Client. The logic is identical to CRTJavaTask; the FFM
- * internals are transparent at this level since aws-crt-java exposes the same
- * public API regardless of whether JNI or FFM is used under the hood.
- *
- * If the FFM branch of aws-crt-java changes the HttpRequestBodyStream
- * sendRequestBody() signature (e.g. ByteBuffer -> MemorySegment), update
- * UploadFromRamStream below accordingly.
+ * aws-crt-java S3Client.
+ * <p>
+ * This task uses {@link S3MetaRequestOptions#withUseFFM(boolean) useFFM=true}
+ * so that:
+ * <ul>
+ *   <li><b>Downloads:</b> response body chunks are delivered as
+ *       {@link MemorySegment} views of native memory (zero-copy, no
+ *       {@code byte[]} allocation).</li>
+ *   <li><b>Uploads:</b> the upload stream writes directly into the native
+ *       buffer via {@link MemorySegment} (no {@code DirectByteBuffer} wrapper
+ *       object allocation).</li>
+ * </ul>
  */
 class FFMJavaTask implements S3MetaRequestResponseHandler {
 
@@ -42,6 +49,9 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
         var options = new S3MetaRequestOptions();
 
         options.withResponseHandler(this);
+
+        // Enable FFM mode: zero-copy downloads, direct-write uploads
+        options.withUseFFM(true);
 
         String httpMethod;
         String httpPath = "/" + config.key;
@@ -100,11 +110,21 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
         }
     }
 
+    /**
+     * FFM download path: body chunk delivered as a zero-copy {@link MemorySegment}
+     * view of native memory. The benchmark discards the data, so we just return 0.
+     */
+    @Override
+    public int onResponseBody(MemorySegment bodyBytesIn, long objectRangeStart, long objectRangeEnd) {
+        // Benchmark discards downloaded data — no backpressure increment needed.
+        return 0;
+    }
+
     @Override
     public void onFinished(S3FinishedResponseContext context) {
         if (context.getErrorCode() != 0) {
             // FFMJavaTask failed. Report error and kill program...
-            System.err.printf("FFMJavaTask[%d] failed. actions:%s key:%s error_code:%s/n",
+            System.err.printf("FFMJavaTask[%d] failed. action:%s key:%s error_code:%s%n",
                     taskI, config.action, config.key, CRT.awsErrorName(context.getErrorCode()));
 
             if (context.getResponseStatus() != 0) {
@@ -128,6 +148,14 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
         }
     }
 
+    /**
+     * FFM upload stream: writes random data directly into the native buffer via
+     * {@link MemorySegment}, avoiding the {@code DirectByteBuffer} wrapper object
+     * that the JNI path allocates on every call.
+     * <p>
+     * Returns the number of bytes written. Returning {@code 0} signals
+     * end-of-stream to the native layer.
+     */
     static class UploadFromRamStream implements HttpRequestBodyStream {
         final long size;
         long bytesWritten;
@@ -138,21 +166,45 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
             this.size = size;
         }
 
+        /**
+         * FFM path: write directly into the native buffer at {@code address}.
+         * Returns bytes written; 0 signals end-of-stream.
+         */
         @Override
-        public boolean sendRequestBody(ByteBuffer dstBuf) {
-            /*
-             * `randomData` is just a buffer of random data whose length may not equal
-             * `size`. We'll send its contents repeatedly until size bytes have been
-             * uploaded. We do this, so we can upload huge objects without actually
-             * allocating a huge buffer.
-             */
-            while (bytesWritten < size && dstBuf.remaining() > 0) {
-                int amtToTransfer = (int) Math.min(size - bytesWritten, dstBuf.remaining());
-                amtToTransfer = Math.min(amtToTransfer, randomData.length);
-                dstBuf.put(randomData, 0, amtToTransfer);
-                bytesWritten += amtToTransfer;
+        public int sendRequestBody(long address, long length) {
+            long remaining = size - bytesWritten;
+            if (remaining <= 0) {
+                return 0; // end-of-stream
             }
-            return bytesWritten == size;
+
+            long toWrite = Math.min(remaining, length);
+
+            // Wrap the native destination buffer as a MemorySegment (zero-copy).
+            MemorySegment dest = MemorySegment.ofAddress(address)
+                    .reinterpret(toWrite, Arena.ofAuto(), null);
+
+            // Copy from randomData (looping) into the native segment.
+            long written = 0;
+            while (written < toWrite) {
+                int chunk = (int) Math.min(toWrite - written, randomData.length);
+                MemorySegment.copy(MemorySegment.ofArray(randomData), ValueLayout.JAVA_BYTE, 0,
+                        dest, ValueLayout.JAVA_BYTE, written, chunk);
+                written += chunk;
+            }
+
+            bytesWritten += written;
+            return (int) written;
+        }
+
+        @Override
+        public boolean resetPosition() {
+            bytesWritten = 0;
+            return true;
+        }
+
+        @Override
+        public long getLength() {
+            return size;
         }
     }
 }

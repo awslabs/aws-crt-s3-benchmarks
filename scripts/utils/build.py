@@ -213,9 +213,11 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
          '-Dawscrt.version=1.0.0-SNAPSHOT',
          ])
 
-    # return command for running the jar
+    # return command for running the jar.
+    # --enable-native-access=ALL-UNNAMED is required for Java 22+ FFM API
+    # (MemorySegment.ofAddress() on arbitrary native pointers).
     jar_path = runner_src/'target/s3-benchrunner-java-1.0-SNAPSHOT.jar'
-    return ['java', '-jar', str(jar_path)]
+    return ['java', '--enable-native-access=ALL-UNNAMED', '-jar', str(jar_path)]
 
 
 def _build_rust(work_dir: Path, branch: Optional[str]) -> list[str]:

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.s3benchrunner.crtjava.CRTJavaBenchmarkRunner;
+import com.example.s3benchrunner.ffmjava.FFMJavaBenchmarkRunner;
 import com.example.s3benchrunner.sdkjava.SDKJavaBenchmarkRunner;
 
 public class Main {
@@ -53,6 +54,7 @@ public class Main {
         BenchmarkConfig config = BenchmarkConfig.fromJson(configJsonFilepath);
         BenchmarkRunner runner = switch (s3ClientId) {
             case "crt-java" -> new CRTJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            case "ffm-java" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
             case "sdk-java-client-crt" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, true);
             case "sdk-java-tm-crt" ->
@@ -62,7 +64,7 @@ public class Main {
             case "sdk-java-tm-classic" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, false);
             default -> throw new RuntimeException(
-                    "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
+                    "Unsupported S3_CLIENT. Options are: crt-java, ffm-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
         };
 
         long bytesPerRun = config.bytesPerRun();

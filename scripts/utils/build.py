@@ -210,6 +210,10 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
          '--also-make',
          # use locally installed version of aws-crt-java
          '-Dawscrt.version=1.0.0-SNAPSHOT',
+         # skip test compilation: the SDK's S3 test code references
+         # java.lang.foreign.MemorySegment which is not available at
+         # the SDK's Java 8 compiler release level.
+         '-Dmaven.test.skip=true',
          ])
 
     # Build runner

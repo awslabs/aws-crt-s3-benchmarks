@@ -20,23 +20,39 @@ public class Main {
 
     private static void printStats(long bytesPerRun, List<Double> durations) {
         double n = durations.size();
+
+        // Compute per-run throughput values (Gb/s)
+        double[] gbpsValues = new double[durations.size()];
+        for (int i = 0; i < durations.size(); i++) {
+            gbpsValues[i] = Util.bytesToGigabit(bytesPerRun) / durations.get(i);
+        }
+
+        // Mean throughput
+        double gbpsMean = 0;
+        for (double g : gbpsValues) {
+            gbpsMean += g / n;
+        }
+
+        // Variance of throughput
+        double gbpsVariance = 0;
+        for (double g : gbpsValues) {
+            gbpsVariance += (g - gbpsMean) * (g - gbpsMean) / n;
+        }
+
+        // Mean and variance of duration
         double durationMean = 0;
         for (Double duration : durations) {
             durationMean += duration / n;
         }
-
         double durationVariance = 0;
         for (Double duration : durations) {
             durationVariance += (duration - durationMean) * (duration - durationMean) / n;
         }
 
-        double gbsMean = Util.bytesToGigabit(bytesPerRun) / durationMean;
-        double gbsVariance = Util.bytesToGigabit(bytesPerRun) / durationVariance;
-
         System.out.printf(
                 "Overall stats; Throughput Mean:%.3f Gb/s Throughput Variance:%.3f Gb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
-                gbsMean,
-                gbsVariance,
+                gbpsMean,
+                gbpsVariance,
                 durationMean,
                 durationVariance);
     }

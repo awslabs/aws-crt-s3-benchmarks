@@ -179,6 +179,16 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
 
+    # Ensure Java 22 is used when available.
+    # The FFM (Foreign Function & Memory) API requires Java 22+.
+    # On Amazon Linux 2023, java-22-amazon-corretto-devel installs to this path
+    # but may not be the default JAVA_HOME (the system default is often Java 17).
+    java22_home = Path('/usr/lib/jvm/java-22-amazon-corretto')
+    if java22_home.exists():
+        print(f"Using Java 22 from {java22_home}")
+        os.environ['JAVA_HOME'] = str(java22_home)
+        os.environ['PATH'] = str(java22_home / 'bin') + ':' + os.environ.get('PATH', '')
+
     # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
     awscrt_src = work_dir/'aws-crt-java'
     fetch_git_repo(url='https://github.com/awslabs/aws-crt-java.git',

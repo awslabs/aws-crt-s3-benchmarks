@@ -67,9 +67,14 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
         this.copyMode = copyMode;
         doneFuture = new CompletableFuture<Void>();
 
-        // Pre-allocate off-heap buffer if needed
+        // Pre-allocate off-heap buffer if needed.
+        // Cap at OFFHEAP_BUFFER_SIZE (8 MiB = typical CRT part size) but don't
+        // allocate more than the task's total file size. This prevents OOM when
+        // many small-file tasks run concurrently (e.g. 10,000 × 256 KiB tasks
+        // would otherwise allocate 10,000 × 8 MiB = 80 GiB of off-heap memory).
         if (copyMode == FFMJavaBenchmarkRunner.CopyMode.OFFHEAP_COPY) {
-            offheapCopyBuffer = Arena.ofAuto().allocate(OFFHEAP_BUFFER_SIZE);
+            long bufferSize = Math.min(config.size, OFFHEAP_BUFFER_SIZE);
+            offheapCopyBuffer = Arena.ofAuto().allocate(bufferSize);
         } else {
             offheapCopyBuffer = null;
         }

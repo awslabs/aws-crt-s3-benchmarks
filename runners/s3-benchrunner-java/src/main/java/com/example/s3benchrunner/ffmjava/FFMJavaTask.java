@@ -32,38 +32,25 @@ import java.util.concurrent.ExecutionException;
  *       object allocation).</li>
  * </ul>
  * <p>
- * The {@link CopyMode} controls what happens with downloaded data in the
- * response body callback:
+ * The {@link FFMJavaBenchmarkRunner.CopyMode} controls what happens with
+ * downloaded data in the response body callback:
  * <ul>
- *   <li>{@link CopyMode#NONE} — data is discarded (zero-copy, benchmark
- *       measures pure download throughput with no data processing)</li>
- *   <li>{@link CopyMode#HEAP_COPY} — data is copied into a GC-managed
- *       {@code byte[]} (simulates an application that needs a Java-owned copy)</li>
- *   <li>{@link CopyMode#OFFHEAP_COPY} — data is copied into a pre-allocated
- *       off-heap {@link MemorySegment} (simulates an application that needs an
- *       owned copy but wants to avoid GC pressure)</li>
+ *   <li>{@link FFMJavaBenchmarkRunner.CopyMode#NONE} — data is discarded
+ *       (zero-copy, benchmark measures pure download throughput)</li>
+ *   <li>{@link FFMJavaBenchmarkRunner.CopyMode#HEAP_COPY} — data is copied
+ *       into a GC-managed {@code byte[]}</li>
+ *   <li>{@link FFMJavaBenchmarkRunner.CopyMode#OFFHEAP_COPY} — data is copied
+ *       into a pre-allocated off-heap {@link MemorySegment}</li>
  * </ul>
  */
 class FFMJavaTask implements S3MetaRequestResponseHandler {
-
-    /**
-     * Controls what happens with downloaded data in the response body callback.
-     */
-    enum CopyMode {
-        /** Discard data immediately — zero-copy, no allocation. */
-        NONE,
-        /** Copy into a GC-managed {@code byte[]} on every callback. */
-        HEAP_COPY,
-        /** Copy into a pre-allocated off-heap {@link MemorySegment}. */
-        OFFHEAP_COPY,
-    }
 
     FFMJavaBenchmarkRunner runner;
     int taskI;
     TaskConfig config;
     S3MetaRequest metaRequest;
     CompletableFuture<Void> doneFuture;
-    final CopyMode copyMode;
+    final FFMJavaBenchmarkRunner.CopyMode copyMode;
 
     /**
      * Pre-allocated off-heap buffer for {@link CopyMode#OFFHEAP_COPY}.
@@ -73,7 +60,7 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
     private final MemorySegment offheapCopyBuffer;
     private static final long OFFHEAP_BUFFER_SIZE = 8L * 1024 * 1024; // 8 MiB
 
-    FFMJavaTask(FFMJavaBenchmarkRunner runner, int taskI, CopyMode copyMode) {
+    FFMJavaTask(FFMJavaBenchmarkRunner runner, int taskI, FFMJavaBenchmarkRunner.CopyMode copyMode) {
         this.runner = runner;
         this.taskI = taskI;
         this.config = runner.config.tasks.get(taskI);
@@ -81,7 +68,7 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
         doneFuture = new CompletableFuture<Void>();
 
         // Pre-allocate off-heap buffer if needed
-        if (copyMode == CopyMode.OFFHEAP_COPY) {
+        if (copyMode == FFMJavaBenchmarkRunner.CopyMode.OFFHEAP_COPY) {
             offheapCopyBuffer = Arena.ofAuto().allocate(OFFHEAP_BUFFER_SIZE);
         } else {
             offheapCopyBuffer = null;

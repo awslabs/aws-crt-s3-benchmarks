@@ -31,6 +31,21 @@ import com.example.s3benchrunner.Util;
  */
 public class FFMJavaBenchmarkRunner extends BenchmarkRunner {
 
+    /**
+     * Controls what happens with downloaded data in the FFM response body callback.
+     * Exposed as a public nested enum so that {@code Main.java} (in a different
+     * package) can reference it without needing access to the package-private
+     * {@code FFMJavaTask} class.
+     */
+    public enum CopyMode {
+        /** Discard data immediately — zero-copy, no allocation. */
+        NONE,
+        /** Copy into a GC-managed {@code byte[]} on every callback. */
+        HEAP_COPY,
+        /** Copy into a pre-allocated off-heap {@link java.lang.foreign.MemorySegment}. */
+        OFFHEAP_COPY,
+    }
+
     // CRT boilerplate
     EventLoopGroup eventLoopGroup;
     HostResolver hostResolver;
@@ -43,14 +58,14 @@ public class FFMJavaBenchmarkRunner extends BenchmarkRunner {
     String endpoint;
 
     // Controls what happens with downloaded data in the response body callback
-    FFMJavaTask.CopyMode copyMode;
+    CopyMode copyMode;
 
     public FFMJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
-        this(config, bucket, region, targetThroughputGbps, FFMJavaTask.CopyMode.NONE);
+        this(config, bucket, region, targetThroughputGbps, CopyMode.NONE);
     }
 
     public FFMJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
-            FFMJavaTask.CopyMode copyMode) {
+            CopyMode copyMode) {
 
         super(config, bucket, region);
 

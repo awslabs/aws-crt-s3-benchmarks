@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.example.s3benchrunner.crtjava.CRTJavaBenchmarkRunner;
 import com.example.s3benchrunner.ffmjava.FFMJavaBenchmarkRunner;
-import com.example.s3benchrunner.ffmjava.FFMJavaTask;
 import com.example.s3benchrunner.sdkjava.SDKJavaBenchmarkRunner;
 
 public class Main {
@@ -75,11 +74,11 @@ public class Main {
             // FFM with explicit copy to GC-managed byte[] — simulates an app that needs
             // a Java-owned copy of downloaded data (same destination as JNI, but via FFM)
             case "ffm-java-copy-heap" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps,
-                    FFMJavaTask.CopyMode.HEAP_COPY);
+                    FFMJavaBenchmarkRunner.CopyMode.HEAP_COPY);
             // FFM with explicit copy to pre-allocated off-heap MemorySegment — simulates
             // an app that needs an owned copy but wants to avoid GC pressure entirely
             case "ffm-java-copy-offheap" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps,
-                    FFMJavaTask.CopyMode.OFFHEAP_COPY);
+                    FFMJavaBenchmarkRunner.CopyMode.OFFHEAP_COPY);
             case "sdk-java-client-crt" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, true);
             case "sdk-java-tm-crt" ->

@@ -21,6 +21,13 @@ import com.example.s3benchrunner.Util;
  * of aws-crt-java (requires Java 22+). The public API is identical to the JNI
  * backed CRTJavaBenchmarkRunner; the difference is that this runner is built
  * against an aws-crt-java branch that uses FFM instead of JNI under the hood.
+ * <p>
+ * The {@link FFMJavaTask.CopyMode} controls what happens with downloaded data:
+ * <ul>
+ *   <li>{@link FFMJavaTask.CopyMode#NONE} — zero-copy, data discarded</li>
+ *   <li>{@link FFMJavaTask.CopyMode#HEAP_COPY} — copy to GC-managed byte[]</li>
+ *   <li>{@link FFMJavaTask.CopyMode#OFFHEAP_COPY} — copy to pre-allocated off-heap buffer</li>
+ * </ul>
  */
 public class FFMJavaBenchmarkRunner extends BenchmarkRunner {
 
@@ -35,9 +42,19 @@ public class FFMJavaBenchmarkRunner extends BenchmarkRunner {
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     String endpoint;
 
+    // Controls what happens with downloaded data in the response body callback
+    FFMJavaTask.CopyMode copyMode;
+
     public FFMJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps) {
+        this(config, bucket, region, targetThroughputGbps, FFMJavaTask.CopyMode.NONE);
+    }
+
+    public FFMJavaBenchmarkRunner(BenchmarkConfig config, String bucket, String region, double targetThroughputGbps,
+            FFMJavaTask.CopyMode copyMode) {
 
         super(config, bucket, region);
+
+        this.copyMode = copyMode;
 
         // S3 Express buckets look like "mybucket--usw2-az3--x-s3"
         Matcher s3ExpressMatcher = Pattern.compile("--(.*)--x-s3$").matcher(bucket);
@@ -97,7 +114,7 @@ public class FFMJavaBenchmarkRunner extends BenchmarkRunner {
         // kick off all tasks
         var runningTasks = new ArrayList<FFMJavaTask>(config.tasks.size());
         for (int i = 0; i < config.tasks.size(); ++i) {
-            runningTasks.add(new FFMJavaTask(this, i));
+            runningTasks.add(new FFMJavaTask(this, i, copyMode));
         }
 
         // wait until all tasks are done

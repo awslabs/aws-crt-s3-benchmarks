@@ -38,7 +38,11 @@ _add_runner(Runner('c', s3_clients=['crt-c']))
 _add_runner(Runner('cpp', s3_clients=[
             'sdk-cpp-client-crt', 'sdk-cpp-client-classic', 'sdk-cpp-tm-classic']))
 _add_runner(Runner('java',
-                   s3_clients=['crt-java', 'ffm-java', 'sdk-java-client-crt', 'sdk-java-tm-crt', 'sdk-java-client-classic', 'sdk-java-tm-classic']))
+                   s3_clients=['crt-java', 'ffm-java',
+                               'ffm-java-copy-heap',    # FFM + copy to GC-managed byte[]
+                               'ffm-java-copy-offheap', # FFM + copy to pre-allocated off-heap MemorySegment
+                               'sdk-java-client-crt', 'sdk-java-tm-crt',
+                               'sdk-java-client-classic', 'sdk-java-tm-classic']))
 _add_runner(Runner('python',
                    s3_clients=['crt-python', 'cli-crt', 'cli-classic', 'boto3-crt', 'boto3-classic']))
 _add_runner(Runner('rust', s3_clients=['sdk-rust-tm']))

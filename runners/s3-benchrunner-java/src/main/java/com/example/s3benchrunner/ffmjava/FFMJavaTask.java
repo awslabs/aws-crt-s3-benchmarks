@@ -31,20 +31,61 @@ import java.util.concurrent.ExecutionException;
  *       buffer via {@link MemorySegment} (no {@code DirectByteBuffer} wrapper
  *       object allocation).</li>
  * </ul>
+ * <p>
+ * The {@link CopyMode} controls what happens with downloaded data in the
+ * response body callback:
+ * <ul>
+ *   <li>{@link CopyMode#NONE} — data is discarded (zero-copy, benchmark
+ *       measures pure download throughput with no data processing)</li>
+ *   <li>{@link CopyMode#HEAP_COPY} — data is copied into a GC-managed
+ *       {@code byte[]} (simulates an application that needs a Java-owned copy)</li>
+ *   <li>{@link CopyMode#OFFHEAP_COPY} — data is copied into a pre-allocated
+ *       off-heap {@link MemorySegment} (simulates an application that needs an
+ *       owned copy but wants to avoid GC pressure)</li>
+ * </ul>
  */
 class FFMJavaTask implements S3MetaRequestResponseHandler {
+
+    /**
+     * Controls what happens with downloaded data in the response body callback.
+     */
+    enum CopyMode {
+        /** Discard data immediately — zero-copy, no allocation. */
+        NONE,
+        /** Copy into a GC-managed {@code byte[]} on every callback. */
+        HEAP_COPY,
+        /** Copy into a pre-allocated off-heap {@link MemorySegment}. */
+        OFFHEAP_COPY,
+    }
 
     FFMJavaBenchmarkRunner runner;
     int taskI;
     TaskConfig config;
     S3MetaRequest metaRequest;
     CompletableFuture<Void> doneFuture;
+    final CopyMode copyMode;
 
-    FFMJavaTask(FFMJavaBenchmarkRunner runner, int taskI) {
+    /**
+     * Pre-allocated off-heap buffer for {@link CopyMode#OFFHEAP_COPY}.
+     * Sized to the maximum expected chunk size (8 MiB = typical CRT part size).
+     * Reused across all callbacks for this task to avoid repeated allocation.
+     */
+    private final MemorySegment offheapCopyBuffer;
+    private static final long OFFHEAP_BUFFER_SIZE = 8L * 1024 * 1024; // 8 MiB
+
+    FFMJavaTask(FFMJavaBenchmarkRunner runner, int taskI, CopyMode copyMode) {
         this.runner = runner;
         this.taskI = taskI;
         this.config = runner.config.tasks.get(taskI);
+        this.copyMode = copyMode;
         doneFuture = new CompletableFuture<Void>();
+
+        // Pre-allocate off-heap buffer if needed
+        if (copyMode == CopyMode.OFFHEAP_COPY) {
+            offheapCopyBuffer = Arena.ofAuto().allocate(OFFHEAP_BUFFER_SIZE);
+        } else {
+            offheapCopyBuffer = null;
+        }
 
         var options = new S3MetaRequestOptions();
 
@@ -112,11 +153,41 @@ class FFMJavaTask implements S3MetaRequestResponseHandler {
 
     /**
      * FFM download path: body chunk delivered as a zero-copy {@link MemorySegment}
-     * view of native memory. The benchmark discards the data, so we just return 0.
+     * view of native memory.
+     * <p>
+     * Behaviour depends on {@link #copyMode}:
+     * <ul>
+     *   <li>{@link CopyMode#NONE} — data is discarded immediately (zero-copy)</li>
+     *   <li>{@link CopyMode#HEAP_COPY} — data is copied into a new {@code byte[]}
+     *       on the Java GC heap</li>
+     *   <li>{@link CopyMode#OFFHEAP_COPY} — data is copied into a pre-allocated
+     *       off-heap {@link MemorySegment} (no GC pressure)</li>
+     * </ul>
      */
     @Override
     public int onResponseBody(MemorySegment bodyBytesIn, long objectRangeStart, long objectRangeEnd) {
-        // Benchmark discards downloaded data — no backpressure increment needed.
+        switch (copyMode) {
+            case NONE:
+                // Zero-copy: discard data, no allocation.
+                break;
+
+            case HEAP_COPY:
+                // Copy into a GC-managed byte[]. This simulates an application
+                // that needs a Java-owned copy of the data. The byte[] is
+                // immediately eligible for GC after this callback returns.
+                @SuppressWarnings("unused")
+                byte[] heapCopy = bodyBytesIn.toArray(ValueLayout.JAVA_BYTE);
+                break;
+
+            case OFFHEAP_COPY:
+                // Copy into the pre-allocated off-heap buffer. This simulates
+                // an application that needs an owned copy but wants to avoid
+                // GC pressure. The buffer is reused across callbacks.
+                long chunkSize = bodyBytesIn.byteSize();
+                MemorySegment dest = offheapCopyBuffer.asSlice(0, chunkSize);
+                MemorySegment.copy(bodyBytesIn, 0, dest, 0, chunkSize);
+                break;
+        }
         return 0;
     }
 

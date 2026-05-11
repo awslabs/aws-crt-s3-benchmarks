@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.s3benchrunner.crtjava.CRTJavaBenchmarkRunner;
 import com.example.s3benchrunner.ffmjava.FFMJavaBenchmarkRunner;
+import com.example.s3benchrunner.ffmjava.FFMJavaTask;
 import com.example.s3benchrunner.sdkjava.SDKJavaBenchmarkRunner;
 
 public class Main {
@@ -71,6 +72,14 @@ public class Main {
         BenchmarkRunner runner = switch (s3ClientId) {
             case "crt-java" -> new CRTJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
             case "ffm-java" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps);
+            // FFM with explicit copy to GC-managed byte[] — simulates an app that needs
+            // a Java-owned copy of downloaded data (same destination as JNI, but via FFM)
+            case "ffm-java-copy-heap" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps,
+                    FFMJavaTask.CopyMode.HEAP_COPY);
+            // FFM with explicit copy to pre-allocated off-heap MemorySegment — simulates
+            // an app that needs an owned copy but wants to avoid GC pressure entirely
+            case "ffm-java-copy-offheap" -> new FFMJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps,
+                    FFMJavaTask.CopyMode.OFFHEAP_COPY);
             case "sdk-java-client-crt" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, false, true);
             case "sdk-java-tm-crt" ->
@@ -80,7 +89,8 @@ public class Main {
             case "sdk-java-tm-classic" ->
                 new SDKJavaBenchmarkRunner(config, bucket, region, targetThroughputGbps, true, false);
             default -> throw new RuntimeException(
-                    "Unsupported S3_CLIENT. Options are: crt-java, ffm-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
+                    "Unsupported S3_CLIENT. Options are: crt-java, ffm-java, ffm-java-copy-heap, ffm-java-copy-offheap, "
+                            + "sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
         };
 
         long bytesPerRun = config.bytesPerRun();

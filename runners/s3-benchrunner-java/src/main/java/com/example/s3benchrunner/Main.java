@@ -58,12 +58,24 @@ public class Main {
             durationVariance += (duration - durationMean) * (duration - durationMean) / n;
         }
 
+        // Median duration
+        double[] sortedDurations = durations.stream().mapToDouble(Double::doubleValue).sorted().toArray();
+        int dlen = sortedDurations.length;
+        double durationMedian = (dlen % 2 == 1)
+                ? sortedDurations[dlen / 2]
+                : (sortedDurations[dlen / 2 - 1] + sortedDurations[dlen / 2]) / 2.0;
+
         System.out.printf(
-                "Overall stats; Throughput Mean:%.3f Gb/s Throughput Median:%.3f Gb/s Throughput Variance:%.3f Gb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
+                "Overall stats (mean);   Throughput:%.3f Gb/s Duration:%.3f s%n",
                 gbpsMean,
+                durationMean);
+        System.out.printf(
+                "Overall stats (median); Throughput:%.3f Gb/s Duration:%.3f s%n",
                 gbpsMedian,
+                durationMedian);
+        System.out.printf(
+                "Overall stats (variance); Throughput:%.3f Gb/s Duration:%.3f s%n",
                 gbpsVariance,
-                durationMean,
                 durationVariance);
     }
 

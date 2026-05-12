@@ -25,7 +25,7 @@ run(['sudo', 'dnf', 'install', '-y',
      'libcurl-devel',  # for building aws-sdk-cpp
      'zlib-devel',  # for building aws-sdk-cpp
      'maven',  # for building s3-benchrunner-java
-     'java-17-amazon-corretto-devel',  # for building s3-benchrunner-java
+     'java-22-amazon-corretto-devel',  # for building s3-benchrunner-java
      'python3-devel',  # for building aws-crt-python
      'go',  # for building s5cmd
      ])

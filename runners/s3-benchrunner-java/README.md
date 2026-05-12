@@ -2,6 +2,14 @@
 
 s3-benchrunner for [aws-crt-java](https://github.com/awslabs/aws-crt-java).
 
+Supported `S3_CLIENT` values:
+- `crt-java` — uses aws-crt-java directly via JNI
+- `ffm-java` — uses aws-crt-java via FFM (Foreign Function & Memory API, requires Java 22+)
+- `sdk-java-client-crt` — AWS SDK v2 async S3 client backed by CRT
+- `sdk-java-tm-crt` — AWS SDK v2 Transfer Manager backed by CRT
+- `sdk-java-client-classic` — AWS SDK v2 async S3 client (classic/Netty)
+- `sdk-java-tm-classic` — AWS SDK v2 Transfer Manager (classic/Netty)
+
 ## Building
 
 ```sh
@@ -10,6 +18,8 @@ mvn package
 ```
 
 This produces the uber-jar: `target/s3-benchrunner-java-1.0-SNAPSHOT.jar` .
+
+> **Note:** Java 22 or newer is required to compile and run this runner.
 
 ### Using a local build of aws-crt-java and aws-sdk-java-v2
 
@@ -37,6 +47,50 @@ Finally, build the runner:
 cd /path/to/s3-benchrunner-java
 mvn clean package -Dawscrt.version=1.0.0-SNAPSHOT
 ```
+
+### Using the FFM branch of aws-crt-java (for `ffm-java` benchmarks)
+
+The `ffm-java` s3-client uses an aws-crt-java branch that replaces JNI with the
+Java 22 Foreign Function & Memory (FFM) API. Use the `--branch` flag when
+building via the scripts to check out the FFM branch automatically:
+
+```sh
+# Build and run ffm-java benchmarks using the FFM branch of aws-crt-java
+python3 scripts/prep-build-run-benchmarks.py \
+  --buckets <YOUR_BUCKET> \
+  --region <YOUR_REGION> \
+  --throughput <YOUR_THROUGHPUT_GBPS> \
+  --build-dir /tmp/build \
+  --files-dir /tmp/files \
+  --s3-clients ffm-java \
+  --branch <FFM_BRANCH_NAME>
+```
+
+Or build only:
+```sh
+python3 scripts/build-runner.py \
+  --lang java \
+  --build-dir /tmp/build \
+  --branch <FFM_BRANCH_NAME>
+```
+
+To benchmark JNI vs FFM side-by-side, run both clients in the same invocation:
+```sh
+python3 scripts/prep-build-run-benchmarks.py \
+  --buckets <YOUR_BUCKET> \
+  --region <YOUR_REGION> \
+  --throughput <YOUR_THROUGHPUT_GBPS> \
+  --build-dir /tmp/build \
+  --files-dir /tmp/files \
+  --s3-clients crt-java ffm-java \
+  --branch <FFM_BRANCH_NAME>
+```
+
+> **Note:** When both `crt-java` and `ffm-java` are requested in the same run,
+> both use the same built jar (the FFM branch). The `crt-java` client will
+> therefore also use the FFM-backed library. To compare a JNI build against an
+> FFM build, run them in separate invocations with different `--branch` values
+> and different `--build-dir` paths.
 
 ### Working in IntelliJ
 

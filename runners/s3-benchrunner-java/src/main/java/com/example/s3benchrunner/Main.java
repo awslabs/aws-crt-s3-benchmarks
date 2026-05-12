@@ -42,11 +42,12 @@ public class Main {
                 ? sortedGbps[len / 2]
                 : (sortedGbps[len / 2 - 1] + sortedGbps[len / 2]) / 2.0;
 
-        // Variance of throughput
+        // Standard deviation of throughput
         double gbpsVariance = 0;
         for (double g : gbpsValues) {
             gbpsVariance += (g - gbpsMean) * (g - gbpsMean) / n;
         }
+        double gbpsStdDev = Math.sqrt(gbpsVariance);
 
         // Mean and variance of duration
         double durationMean = 0;
@@ -57,6 +58,7 @@ public class Main {
         for (Double duration : durations) {
             durationVariance += (duration - durationMean) * (duration - durationMean) / n;
         }
+        double durationStdDev = Math.sqrt(durationVariance);
 
         // Median duration
         double[] sortedDurations = durations.stream().mapToDouble(Double::doubleValue).sorted().toArray();
@@ -74,9 +76,9 @@ public class Main {
                 gbpsMedian,
                 durationMedian);
         System.out.printf(
-                "Overall stats (variance); Throughput:%.3f Gb/s Duration:%.3f s%n",
-                gbpsVariance,
-                durationVariance);
+                "Overall stats (stddev);   Throughput:%.3f Gb/s Duration:%.3f s%n",
+                gbpsStdDev,
+                durationStdDev);
     }
 
     public static void main(String[] args) throws Exception {

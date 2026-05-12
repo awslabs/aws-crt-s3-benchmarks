@@ -1,6 +1,7 @@
 package com.example.s3benchrunner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.example.s3benchrunner.crtjava.CRTJavaBenchmarkRunner;
@@ -33,6 +34,14 @@ public class Main {
             gbpsMean += g / n;
         }
 
+        // Median throughput
+        double[] sortedGbps = gbpsValues.clone();
+        Arrays.sort(sortedGbps);
+        int len = sortedGbps.length;
+        double gbpsMedian = (len % 2 == 1)
+                ? sortedGbps[len / 2]
+                : (sortedGbps[len / 2 - 1] + sortedGbps[len / 2]) / 2.0;
+
         // Variance of throughput
         double gbpsVariance = 0;
         for (double g : gbpsValues) {
@@ -50,8 +59,9 @@ public class Main {
         }
 
         System.out.printf(
-                "Overall stats; Throughput Mean:%.3f Gb/s Throughput Variance:%.3f Gb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
+                "Overall stats; Throughput Mean:%.3f Gb/s Throughput Median:%.3f Gb/s Throughput Variance:%.3f Gb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
                 gbpsMean,
+                gbpsMedian,
                 gbpsVariance,
                 durationMean,
                 durationVariance);

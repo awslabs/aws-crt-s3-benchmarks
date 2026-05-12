@@ -33,33 +33,80 @@ class DownloadToRamNullBuf : public streambuf
     }
 };
 
-// streambuf used in upload-from-ram tests
-// it reads from a pre-existing vector of bytes
+// streambuf used in upload-from-ram tests.
+// Loops a small buffer to produce totalSize bytes total.
 class UploadFromRamBuf : public streambuf
 {
+    char *bufBegin;
+    char *bufEnd;
+    uint64_t totalSize;
+    uint64_t bytesRead;
+
   public:
-    UploadFromRamBuf(vector<uint8_t> &src) : streambuf()
+    UploadFromRamBuf(vector<uint8_t> &src, uint64_t totalSize) : streambuf(), totalSize(totalSize), bytesRead(0)
     {
-        char *begin = reinterpret_cast<char *>(src.data());
-        char *end = begin + src.size();
-        setg(begin, begin /*next*/, end);
+        bufBegin = reinterpret_cast<char *>(src.data());
+        bufEnd = bufBegin + src.size();
+        setg(bufBegin, bufBegin, bufEnd);
     }
 
   protected:
+    // Called when the get-area is exhausted. Loop back to the start of the buffer
+    // if we haven't yet produced totalSize bytes.
+    int_type underflow() override
+    {
+        if (bytesRead >= totalSize)
+            return traits_type::eof();
+
+        // Reset get-area to start of buffer
+        setg(bufBegin, bufBegin, bufEnd);
+        return traits_type::to_int_type(*bufBegin);
+    }
+
+    // Called for bulk reads. Loop the buffer and respect totalSize.
+    streamsize xsgetn(char *dest, streamsize count) override
+    {
+        streamsize totalRead = 0;
+        while (totalRead < count && bytesRead < totalSize)
+        {
+            // If get-area is exhausted, loop back
+            if (gptr() == egptr())
+                setg(bufBegin, bufBegin, bufEnd);
+
+            uint64_t remaining = totalSize - bytesRead;
+            streamsize available = egptr() - gptr();
+            streamsize toRead = (streamsize)std::min({(uint64_t)(count - totalRead), remaining, (uint64_t)available});
+            memcpy(dest + totalRead, gptr(), toRead);
+            gbump((int)toRead);
+            bytesRead += toRead;
+            totalRead += toRead;
+        }
+        return totalRead;
+    }
+
+    // Called for seeks (e.g. part retries). Reset bytesRead to match the new position.
     streampos seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which) override
     {
         // Only handle input mode
         if (which != ios_base::in)
-            return pos_type(off_type(-1)); // Seeking not supported for output mode
+            return pos_type(off_type(-1));
 
+        uint64_t newPos = 0;
         if (way == ios_base::beg)
-            setg(eback(), eback() + off, egptr());
+            newPos = (uint64_t)off;
         else if (way == ios_base::cur)
-            setg(eback(), gptr() + off, egptr());
+            newPos = bytesRead + (uint64_t)off;
         else if (way == ios_base::end)
-            setg(eback(), egptr() + off, egptr());
+            newPos = totalSize + (uint64_t)off;
 
-        return gptr() - eback(); // Return the new position
+        bytesRead = newPos;
+
+        // Position the get-area at the correct offset within the looping buffer
+        size_t bufSize = bufEnd - bufBegin;
+        size_t offsetInBuf = (size_t)(newPos % bufSize);
+        setg(bufBegin, bufBegin + offsetInBuf, bufEnd);
+
+        return streampos(newPos);
     }
 
     streampos seekpos(streampos sp, ios_base::openmode which) override
@@ -181,9 +228,13 @@ class SdkClientRunner : public BenchmarkRunner
                 }
                 else
                 {
-                    this->uploadFromRamBuf = make_unique<UploadFromRamBuf>(runner.randomDataForUpload);
+                    // Loop the small random buffer to produce exactly taskConfig.size bytes.
+                    // SetContentLength tells the SDK the true upload size so it can make
+                    // correct multipart decisions, independent of the buffer size.
+                    this->uploadFromRamBuf = make_unique<UploadFromRamBuf>(runner.randomDataForUpload, taskConfig.size);
                     auto streamForUpload = make_shared<Aws::IOStream>(this->uploadFromRamBuf.get());
                     request.SetBody(streamForUpload);
+                    request.SetContentLength((long long)taskConfig.size);
                 }
 
                 auto onPutObjectFinished = [this](

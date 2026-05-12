@@ -144,39 +144,26 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 {
     // If we're uploading, and not using files on disk,
     // then generate an in-memory buffer of random data to upload.
-    // All uploads will use this same buffer, so make it big enough for the largest file.
+    // We use a small 8 MiB buffer (matching the Java runner) that the upload stream
+    // loops over repeatedly, rather than allocating a buffer sized to the full upload file.
+    // This keeps the working set small and cache-friendly, even for large uploads.
     if (!config.filesOnDisk)
     {
-        size_t maxUploadSize = 0;
+        bool hasUpload = false;
         for (auto &&task : config.tasks)
             if (task.action == "upload")
-                maxUploadSize = std::max(maxUploadSize, (size_t)task.size);
+            {
+                hasUpload = true;
+                break;
+            }
 
-        // Generating randomness is slower then copying memory. Therefore, only fill SOME
-        // of the buffer with randomness, and fill the rest with copies of that randomness.
-
-        // We don't want any parts to be identical.
-        // Use something that won't fall on a part boundary as we copy it.
-        const size_t randomBlockSize = std::min((size_t)31415926, maxUploadSize); // approx 30MiB, digits of pi
-        std::vector<uint8_t> randomBlock(randomBlockSize);
-        independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-        generate(randomBlock.begin(), randomBlock.end(), randEngine);
-
-        // Resize the buffer to the maximum upload size
-        randomDataForUpload.resize(maxUploadSize);
-
-        // Fill the buffer by repeating the random block
-        size_t bytesWritten = 0;
-        while (bytesWritten < maxUploadSize)
+        if (hasUpload)
         {
-            // Calculate how many bytes to copy in this iteration
-            size_t bytesToCopy = std::min(randomBlockSize, maxUploadSize - bytesWritten);
-
-            // Copy the bytes from the random block to the target buffer
-            std::copy(
-                randomBlock.begin(), randomBlock.begin() + bytesToCopy, randomDataForUpload.begin() + bytesWritten);
-
-            bytesWritten += bytesToCopy;
+            // Use 8 MiB to match the Java runner's buffer size (Util.generateRandomData()).
+            const size_t randomBlockSize = bytesFromMiB(8);
+            randomDataForUpload.resize(randomBlockSize);
+            independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
+            generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);
         }
     }
 }

@@ -249,15 +249,56 @@ void printValueStats(const char *label, vector<double> values)
         stdDev);
 }
 
+// Compute mean of a vector
+static double computeMean(const vector<double> &values)
+{
+    return std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+}
+
+// Compute median of a sorted vector
+static double computeMedian(const vector<double> &sorted)
+{
+    size_t n = sorted.size();
+    if (n == 0)
+        return 0.0;
+    if (n % 2 == 1)
+        return sorted[n / 2];
+    return (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0;
+}
+
+// Compute population standard deviation
+static double computeStdDev(const vector<double> &values, double mean)
+{
+    double n = values.size();
+    double variance = std::accumulate(
+        values.begin(),
+        values.end(),
+        0.0,
+        [mean, n](double acc, double val) { return acc + (val - mean) * (val - mean) / n; });
+    return std::sqrt(variance);
+}
+
 void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 {
     vector<double> throughputsGbps;
     for (double duration : durations)
         throughputsGbps.push_back(bytesToGigabit(bytesPerRun) / duration);
 
-    printValueStats("Throughput (Gb/s)", throughputsGbps);
+    vector<double> sortedGbps = throughputsGbps;
+    std::sort(sortedGbps.begin(), sortedGbps.end());
+    double gbpsMean = computeMean(throughputsGbps);
+    double gbpsMedian = computeMedian(sortedGbps);
+    double gbpsStdDev = computeStdDev(throughputsGbps, gbpsMean);
 
-    printValueStats("Duration (Secs)", durations);
+    vector<double> sortedDurations = durations;
+    std::sort(sortedDurations.begin(), sortedDurations.end());
+    double durationMean = computeMean(durations);
+    double durationMedian = computeMedian(sortedDurations);
+    double durationStdDev = computeStdDev(durations, durationMean);
+
+    StatsPrintf("Overall stats (mean);   Throughput:%.3f Gb/s Duration:%.3f s\n", gbpsMean, durationMean);
+    StatsPrintf("Overall stats (median); Throughput:%.3f Gb/s Duration:%.3f s\n", gbpsMedian, durationMedian);
+    StatsPrintf("Overall stats (stddev);   Throughput:%.3f Gb/s Duration:%.3f s\n", gbpsStdDev, durationStdDev);
 
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);

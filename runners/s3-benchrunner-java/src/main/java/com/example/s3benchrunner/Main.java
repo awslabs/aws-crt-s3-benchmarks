@@ -1,6 +1,7 @@
 package com.example.s3benchrunner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.example.s3benchrunner.crtjava.CRTJavaBenchmarkRunner;
@@ -19,25 +20,64 @@ public class Main {
 
     private static void printStats(long bytesPerRun, List<Double> durations) {
         double n = durations.size();
+
+        // Compute per-run throughput values (Gb/s)
+        double[] gbpsValues = new double[durations.size()];
+        for (int i = 0; i < durations.size(); i++) {
+            gbpsValues[i] = Util.bytesToGigabit(bytesPerRun) / durations.get(i);
+        }
+
+        // Mean throughput
+        double gbpsMean = 0;
+        for (double g : gbpsValues) {
+            gbpsMean += g / n;
+        }
+
+        // Median throughput
+        double[] sortedGbps = gbpsValues.clone();
+        Arrays.sort(sortedGbps);
+        int len = sortedGbps.length;
+        double gbpsMedian = (len % 2 == 1)
+                ? sortedGbps[len / 2]
+                : (sortedGbps[len / 2 - 1] + sortedGbps[len / 2]) / 2.0;
+
+        // Standard deviation of throughput
+        double gbpsVariance = 0;
+        for (double g : gbpsValues) {
+            gbpsVariance += (g - gbpsMean) * (g - gbpsMean) / n;
+        }
+        double gbpsStdDev = Math.sqrt(gbpsVariance);
+
+        // Mean and variance of duration
         double durationMean = 0;
         for (Double duration : durations) {
             durationMean += duration / n;
         }
-
         double durationVariance = 0;
         for (Double duration : durations) {
             durationVariance += (duration - durationMean) * (duration - durationMean) / n;
         }
+        double durationStdDev = Math.sqrt(durationVariance);
 
-        double mbsMean = Util.bytesToMegabit(bytesPerRun) / durationMean;
-        double mbsVariance = Util.bytesToMegabit(bytesPerRun) / durationVariance;
+        // Median duration
+        double[] sortedDurations = durations.stream().mapToDouble(Double::doubleValue).sorted().toArray();
+        int dlen = sortedDurations.length;
+        double durationMedian = (dlen % 2 == 1)
+                ? sortedDurations[dlen / 2]
+                : (sortedDurations[dlen / 2 - 1] + sortedDurations[dlen / 2]) / 2.0;
 
         System.out.printf(
-                "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
-                mbsMean,
-                mbsVariance,
-                durationMean,
-                durationVariance);
+                "Overall stats (mean);   Throughput:%.3f Gb/s Duration:%.3f s%n",
+                gbpsMean,
+                durationMean);
+        System.out.printf(
+                "Overall stats (median); Throughput:%.3f Gb/s Duration:%.3f s%n",
+                gbpsMedian,
+                durationMedian);
+        System.out.printf(
+                "Overall stats (stddev);   Throughput:%.3f Gb/s Duration:%.3f s%n",
+                gbpsStdDev,
+                durationStdDev);
     }
 
     public static void main(String[] args) throws Exception {

@@ -176,8 +176,90 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [venv_python, str(main_path)]
 
 
+def _setup_maven_codeartifact():
+    """Configure Maven to use CodeArtifact as a caching proxy for Maven Central.
+
+    Maven Central rate-limits/blocks AWS EC2 IP ranges with HTTP 403,
+    causing intermittent Java build failures in Batch jobs. Since each Batch job
+    runs in a fresh container with no .m2 cache, every run must download all
+    plugins and dependencies from scratch.
+
+    CodeArtifact acts as a transparent caching proxy. The first request
+    for any artifact is fetched from Maven Central and cached. All subsequent
+    requests (from any job, any day) are served from the cache. Since this is
+    AWS-to-AWS traffic within the same account, there's no rate limiting.
+
+    If anything fails Maven will fall back to hitting Central directly.
+    """
+    import subprocess as sp
+
+    domain = 's3-benchmarks'
+    repo = 'maven-cache'
+    region = 'us-west-2'
+
+    try:
+        # Discover the AWS account ID from the Batch job's IAM role.
+        # This avoids hardcoding the account ID in a public repo.
+        owner = sp.check_output([
+            'aws', 'sts', 'get-caller-identity',
+            '--query', 'Account', '--output', 'text'
+        ]).decode().strip()
+        # Get a 12-hour auth token for CodeArtifact.
+        # This uses the Batch job's IAM role (no explicit credentials needed).
+        token = sp.check_output([
+            'aws', 'codeartifact', 'get-authorization-token',
+            '--domain', domain, '--domain-owner', owner,
+            '--query', 'authorizationToken', '--output', 'text',
+            '--region', region
+        ]).decode().strip()
+
+        # Get the HTTPS endpoint URL for the maven-cache repository.
+        # This is what Maven will use instead of https://repo.maven.apache.org/maven2
+        endpoint = sp.check_output([
+            'aws', 'codeartifact', 'get-repository-endpoint',
+            '--domain', domain, '--domain-owner', owner,
+            '--repository', repo, '--format', 'maven',
+            '--query', 'repositoryEndpoint', '--output', 'text',
+            '--region', region
+        ]).decode().strip()
+    except (sp.CalledProcessError, FileNotFoundError):
+        # CalledProcessError: AWS CLI failed (missing permissions, no CodeArtifact)
+        # FileNotFoundError: AWS CLI not installed (local dev without AWS CLI)
+        print("WARNING: Could not configure CodeArtifact mirror, "
+              "falling back to Maven Central directly")
+        return
+
+    # Write Maven settings.xml that redirects all "central" repo requests
+    # to our CodeArtifact endpoint. The <mirrorOf>central</mirrorOf> directive
+    # intercepts any request that would go to Maven Central.
+    m2_dir = Path.home() / '.m2'
+    m2_dir.mkdir(exist_ok=True)
+    (m2_dir / 'settings.xml').write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<settings>\n'
+        '  <servers>\n'
+        '    <server>\n'
+        '      <id>codeartifact</id>\n'
+        '      <username>aws</username>\n'
+        f'      <password>{token}</password>\n'
+        '    </server>\n'
+        '  </servers>\n'
+        '  <mirrors>\n'
+        '    <mirror>\n'
+        '      <id>codeartifact</id>\n'
+        '      <name>CodeArtifact Maven Central Cache</name>\n'
+        f'      <url>{endpoint}</url>\n'
+        '      <mirrorOf>central</mirrorOf>\n'
+        '    </mirror>\n'
+        '  </mirrors>\n'
+        '</settings>\n')
+    print(f"Configured Maven to use CodeArtifact mirror: {endpoint}")
+
+
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
+
+    _setup_maven_codeartifact()
 
     # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
     awscrt_src = work_dir/'aws-crt-java'

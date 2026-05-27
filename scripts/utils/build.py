@@ -295,23 +295,23 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
     _run_mvn_with_retry(['mvn', 'clean', 'install',
-         '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
-         '--activate-profiles', 'quick',
-         '--also-make',
-         # use locally installed version of aws-crt-java
-         '-Dawscrt.version=1.0.0-SNAPSHOT',
-         ])
+                         '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
+                         '--activate-profiles', 'quick',
+                         '--also-make',
+                         # use locally installed version of aws-crt-java
+                         '-Dawscrt.version=1.0.0-SNAPSHOT',
+                         ])
 
     # Build runner
     runner_src = RUNNERS['java'].dir
     os.chdir(str(runner_src))
     _run_mvn_with_retry(['mvn',
-         'clean',
-         # package along with dependencies in executable uber-java
-         'package',
-         # use locally installed version of aws-crt-java
-         '-Dawscrt.version=1.0.0-SNAPSHOT',
-         ])
+                         'clean',
+                         # package along with dependencies in executable uber-java
+                         'package',
+                         # use locally installed version of aws-crt-java
+                         '-Dawscrt.version=1.0.0-SNAPSHOT',
+                         ])
 
     # return command for running the jar
     jar_path = runner_src/'target/s3-benchrunner-java-1.0-SNAPSHOT.jar'

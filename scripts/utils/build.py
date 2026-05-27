@@ -4,6 +4,7 @@ But scripts/build-runner.py is the main one you'd call from the terminal.
 """
 import os
 from pathlib import Path
+import subprocess
 import sys
 from typing import Optional
 
@@ -256,6 +257,24 @@ def _setup_maven_codeartifact():
     print(f"Configured Maven to use CodeArtifact mirror: {endpoint}")
 
 
+def _run_mvn_with_retry(mvn_cmd, max_attempts=3, wait_secs=60):
+    """Run a Maven command with retry logic for transient failures (e.g. 403 from Maven Central).
+    If CodeArtifact is configured, retries are unlikely to be needed. But if we fall back
+    to Maven Central directly, this provides resilience against rate limiting."""
+    import time
+    for attempt in range(1, max_attempts + 1):
+        try:
+            run(mvn_cmd)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == max_attempts:
+                raise
+            print(f"\n*** Maven failed (attempt {attempt}/{max_attempts}), "
+                  f"retrying in {wait_secs}s...")
+            time.sleep(wait_secs)
+            time.sleep(wait_secs)
+
+
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
 
@@ -267,7 +286,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    dir=awscrt_src,
                    preferred_branch=branch)
     os.chdir(str(awscrt_src))
-    run(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
+    _run_mvn_with_retry(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
 
     # fetch latest aws-sdk-java-v2 and install latest SNAPSHOT version
     sdk_src = work_dir/'aws-sdk-java-v2'
@@ -276,7 +295,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    main_branch='master',
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
-    run(['mvn', 'clean', 'install',
+    _run_mvn_with_retry(['mvn', 'clean', 'install',
          '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
          '--activate-profiles', 'quick',
          '--also-make',
@@ -287,7 +306,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     # Build runner
     runner_src = RUNNERS['java'].dir
     os.chdir(str(runner_src))
-    run(['mvn',
+    _run_mvn_with_retry(['mvn',
          'clean',
          # package along with dependencies in executable uber-java
          'package',

@@ -272,7 +272,6 @@ def _run_mvn_with_retry(mvn_cmd, max_attempts=3, wait_secs=60):
             print(f"\n*** Maven failed (attempt {attempt}/{max_attempts}), "
                   f"retrying in {wait_secs}s...")
             time.sleep(wait_secs)
-            time.sleep(wait_secs)
 
 
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:

@@ -4,7 +4,7 @@ But scripts/build-runner.py is the main one you'd call from the terminal.
 """
 import os
 from pathlib import Path
-import subprocess
+import shutil
 import sys
 from typing import Optional
 
@@ -125,10 +125,12 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
 
     # create virtual environment (if necessary) awscli from Github
     # doesn't interfere with system installation of awscli
+    # Use Python 3.11+ for the venv if available (boto3 dropped 3.9 support)
+    venv_python_bin = shutil.which('python3.11') or sys.executable
     venv_dir = work_dir.joinpath('venv')
     venv_python = str(venv_dir.joinpath('bin/python3'))
     if not venv_dir.exists():
-        run([sys.executable, '-m', 'venv', str(venv_dir)])
+        run([venv_python_bin, '-m', 'venv', str(venv_dir)])
 
         # upgrade pip to avoid warnings
         # and install wheel so we can build aws-crt-python
@@ -190,47 +192,35 @@ def _setup_maven_codeartifact():
     requests (from any job, any day) are served from the cache. Since this is
     AWS-to-AWS traffic within the same account, there's no rate limiting.
 
-    If anything fails Maven will fall back to hitting Central directly.
+    Uses boto3 (already installed via requirements.txt) rather than aws CLI
+    (not available in the container). If anything fails, Maven will fall back
+    to hitting Central directly.
     """
-
     domain = 's3-benchmarks'
     repo = 'maven-cache'
     region = 'us-west-2'
 
     try:
+        import boto3
+
         # Discover the AWS account ID from the Batch job's IAM role.
-        # This avoids hardcoding the account ID in a public repo.
-        owner = subprocess.check_output([
-            'aws', 'sts', 'get-caller-identity',
-            '--query', 'Account', '--output', 'text'
-        ], stderr=subprocess.PIPE).decode().strip()
+        sts = boto3.client('sts', region_name=region)
+        owner = sts.get_caller_identity()['Account']
+
         # Get a 12-hour auth token for CodeArtifact.
-        # This uses the Batch job's IAM role (no explicit credentials needed).
-        token = subprocess.check_output([
-            'aws', 'codeartifact', 'get-authorization-token',
-            '--domain', domain, '--domain-owner', owner,
-            '--query', 'authorizationToken', '--output', 'text',
-            '--region', region
-        ], stderr=subprocess.PIPE).decode().strip()
+        ca = boto3.client('codeartifact', region_name=region)
+        token = ca.get_authorization_token(
+            domain=domain, domainOwner=owner
+        )['authorizationToken']
 
         # Get the HTTPS endpoint URL for the maven-cache repository.
-        # This is what Maven will use instead of https://repo.maven.apache.org/maven2
-        endpoint = subprocess.check_output([
-            'aws', 'codeartifact', 'get-repository-endpoint',
-            '--domain', domain, '--domain-owner', owner,
-            '--repository', repo, '--format', 'maven',
-            '--query', 'repositoryEndpoint', '--output', 'text',
-            '--region', region
-        ], stderr=subprocess.PIPE).decode().strip()
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        # CalledProcessError: AWS CLI failed (missing permissions, no CodeArtifact)
-        # FileNotFoundError: AWS CLI not installed (local dev without AWS CLI)
+        endpoint = ca.get_repository_endpoint(
+            domain=domain, domainOwner=owner,
+            repository=repo, format='maven'
+        )['repositoryEndpoint']
+    except Exception as e:
         print(f"WARNING: Could not configure CodeArtifact mirror ({e}), "
               "falling back to Maven Central directly")
-        if hasattr(e, 'stderr') and e.stderr:
-            print(f"  stderr: {e.stderr.decode().strip()}")
-        if hasattr(e, 'stdout') and e.stdout:
-            print(f"  stdout: {e.stdout.decode().strip()}")
         return
 
     # Write Maven settings.xml that redirects all "central" repo requests
@@ -376,8 +366,6 @@ def _build_rclone(work_dir: Path, branch: Optional[str]) -> list[str]:
         print("WARNING: rclone runner doesn't currently support --branch")
 
     # Check if rclone is already in PATH
-    import shutil
-
     rclone_path = shutil.which('rclone')
 
     if not rclone_path:

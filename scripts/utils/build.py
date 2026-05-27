@@ -201,7 +201,7 @@ def _setup_maven_codeartifact():
     region = 'us-west-2'
 
     try:
-        import boto3
+        import boto3  # type: ignore[import-untyped]
 
         # Discover the AWS account ID from the Batch job's IAM role.
         sts = boto3.client('sts', region_name=region)

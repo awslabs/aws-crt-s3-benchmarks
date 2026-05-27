@@ -192,7 +192,6 @@ def _setup_maven_codeartifact():
 
     If anything fails Maven will fall back to hitting Central directly.
     """
-    import subprocess as sp
 
     domain = 's3-benchmarks'
     repo = 'maven-cache'
@@ -201,33 +200,37 @@ def _setup_maven_codeartifact():
     try:
         # Discover the AWS account ID from the Batch job's IAM role.
         # This avoids hardcoding the account ID in a public repo.
-        owner = sp.check_output([
+        owner = subprocess.check_output([
             'aws', 'sts', 'get-caller-identity',
             '--query', 'Account', '--output', 'text'
-        ]).decode().strip()
+        ], stderr=subprocess.PIPE).decode().strip()
         # Get a 12-hour auth token for CodeArtifact.
         # This uses the Batch job's IAM role (no explicit credentials needed).
-        token = sp.check_output([
+        token = subprocess.check_output([
             'aws', 'codeartifact', 'get-authorization-token',
             '--domain', domain, '--domain-owner', owner,
             '--query', 'authorizationToken', '--output', 'text',
             '--region', region
-        ]).decode().strip()
+        ], stderr=subprocess.PIPE).decode().strip()
 
         # Get the HTTPS endpoint URL for the maven-cache repository.
         # This is what Maven will use instead of https://repo.maven.apache.org/maven2
-        endpoint = sp.check_output([
+        endpoint = subprocess.check_output([
             'aws', 'codeartifact', 'get-repository-endpoint',
             '--domain', domain, '--domain-owner', owner,
             '--repository', repo, '--format', 'maven',
             '--query', 'repositoryEndpoint', '--output', 'text',
             '--region', region
-        ]).decode().strip()
-    except (sp.CalledProcessError, FileNotFoundError):
+        ], stderr=subprocess.PIPE).decode().strip()
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
         # CalledProcessError: AWS CLI failed (missing permissions, no CodeArtifact)
         # FileNotFoundError: AWS CLI not installed (local dev without AWS CLI)
-        print("WARNING: Could not configure CodeArtifact mirror, "
+        print(f"WARNING: Could not configure CodeArtifact mirror ({e}), "
               "falling back to Maven Central directly")
+        if hasattr(e, 'stderr') and e.stderr:
+            print(f"  stderr: {e.stderr.decode().strip()}")
+        if hasattr(e, 'stdout') and e.stdout:
+            print(f"  stdout: {e.stdout.decode().strip()}")
         return
 
     # Write Maven settings.xml that redirects all "central" repo requests
@@ -266,7 +269,7 @@ def _run_mvn_with_retry(mvn_cmd, max_attempts=3, wait_secs=60):
         try:
             run(mvn_cmd)
             return
-        except subprocess.CalledProcessError:
+        except Exception:
             if attempt == max_attempts:
                 raise
             print(f"\n*** Maven failed (attempt {attempt}/{max_attempts}), "

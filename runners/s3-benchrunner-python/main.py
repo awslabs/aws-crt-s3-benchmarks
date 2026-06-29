@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import json
+import resource
+import statistics
 import time
 
 from runner import (
@@ -41,6 +44,20 @@ def create_runner_given_s3_client_id(id: str, config: BenchmarkConfig) -> Benchm
         raise ValueError(f'Unknown S3 client: {id}')
 
 
+def _calc_stats(values: list[float]) -> dict:
+    """Compute median, mean, min, max, stddev for a list of values."""
+    sorted_v = sorted(values)
+    n = len(sorted_v)
+    mean = statistics.mean(sorted_v)
+    return {
+        "median": round(statistics.median(sorted_v), 6),
+        "mean": round(mean, 6),
+        "min": round(sorted_v[0], 6),
+        "max": round(sorted_v[-1], 6),
+        "stddev": round(statistics.pstdev(sorted_v), 6),
+    }
+
+
 if __name__ == '__main__':
     args = PARSER.parse_args()
     config = BenchmarkConfig(args.WORKLOAD, args.BUCKET, args.REGION,
@@ -52,6 +69,7 @@ if __name__ == '__main__':
     bytes_per_run = config.bytes_per_run()
 
     # Repeat benchmark until we exceed max_repeat_count or max_repeat_secs
+    durations = []
     app_start_ns = time.perf_counter_ns()
     for run_i in range(config.max_repeat_count):
         runner.prepare_run()
@@ -61,6 +79,7 @@ if __name__ == '__main__':
         runner.run()
 
         run_secs = ns_to_secs(time.perf_counter_ns() - run_start_ns)
+        durations.append(run_secs)
         print(f'Run:{run_i+1} ' +
               f'Secs:{run_secs:f} ' +
               f'Gb/s:{bytes_to_gigabit(bytes_per_run) / run_secs:f}',
@@ -70,3 +89,22 @@ if __name__ == '__main__':
         app_secs = ns_to_secs(time.perf_counter_ns() - app_start_ns)
         if app_secs >= config.max_repeat_secs:
             break
+
+    # Print standardized STATS JSON
+    if durations:
+        throughputs = [bytes_to_gigabit(bytes_per_run) / s for s in durations]
+        peak_rss_kib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # On macOS ru_maxrss is bytes, on Linux it's KiB
+        import sys
+        if sys.platform == 'darwin':
+            peak_rss_mib = peak_rss_kib / (1024 * 1024)
+        else:
+            peak_rss_mib = peak_rss_kib / 1024
+        stats = {
+            "runs": len(durations),
+            "bytes_per_run": bytes_per_run,
+            "peak_rss_mib": round(peak_rss_mib, 1),
+            "duration": _calc_stats(durations),
+            "throughput_gbps": _calc_stats(throughputs),
+        }
+        print(f"STATS:{json.dumps(stats)}", flush=True)

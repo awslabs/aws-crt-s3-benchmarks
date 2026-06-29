@@ -3,8 +3,8 @@
 Usage: python3 plot.py metrics_*.csv [--output chart.png]
 """
 import sys
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas as pd  # type: ignore[import-untyped]
+import matplotlib.pyplot as plt  # type: ignore[import-not-found]
 
 csv_path = sys.argv[1]
 output = sys.argv[3] if len(

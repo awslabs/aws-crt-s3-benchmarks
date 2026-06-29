@@ -259,15 +259,22 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
 
     // Standardized JSON stats line, parsed by the benchmark harness
     StatsPrintf(
-        "STATS:{\"runs\":%zu,\"bytes_per_run\":%" PRIu64
-        ",\"peak_rss_mib\":%.1f"
+        "STATS:{\"runs\":%zu,\"bytes_per_run\":%" PRIu64 ",\"peak_rss_mib\":%.1f"
         ",\"duration\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}"
         ",\"throughput_gbps\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}}\n",
         durations.size(),
         bytesPerRun,
         peakRssMiB,
-        dStats.median, dStats.mean, dStats.min, dStats.max, dStats.stddev,
-        tStats.median, tStats.mean, tStats.min, tStats.max, tStats.stddev);
+        dStats.median,
+        dStats.mean,
+        dStats.min,
+        dStats.max,
+        dStats.stddev,
+        tStats.median,
+        tStats.mean,
+        tStats.min,
+        tStats.max,
+        tStats.stddev);
 }
 
 /**

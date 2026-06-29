@@ -1,6 +1,7 @@
 #include "BenchmarkRunner.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -144,39 +145,26 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig &config) : config(config)
 {
     // If we're uploading, and not using files on disk,
     // then generate an in-memory buffer of random data to upload.
-    // All uploads will use this same buffer, so make it big enough for the largest file.
+    // We use a small 8 MiB buffer (matching the Java runner) that the upload stream
+    // loops over repeatedly, rather than allocating a buffer sized to the full upload file.
+    // This keeps the working set small and cache-friendly, even for large uploads.
     if (!config.filesOnDisk)
     {
-        size_t maxUploadSize = 0;
+        bool hasUpload = false;
         for (auto &&task : config.tasks)
             if (task.action == "upload")
-                maxUploadSize = std::max(maxUploadSize, (size_t)task.size);
+            {
+                hasUpload = true;
+                break;
+            }
 
-        // Generating randomness is slower then copying memory. Therefore, only fill SOME
-        // of the buffer with randomness, and fill the rest with copies of that randomness.
-
-        // We don't want any parts to be identical.
-        // Use something that won't fall on a part boundary as we copy it.
-        const size_t randomBlockSize = std::min((size_t)31415926, maxUploadSize); // approx 30MiB, digits of pi
-        std::vector<uint8_t> randomBlock(randomBlockSize);
-        independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
-        generate(randomBlock.begin(), randomBlock.end(), randEngine);
-
-        // Resize the buffer to the maximum upload size
-        randomDataForUpload.resize(maxUploadSize);
-
-        // Fill the buffer by repeating the random block
-        size_t bytesWritten = 0;
-        while (bytesWritten < maxUploadSize)
+        if (hasUpload)
         {
-            // Calculate how many bytes to copy in this iteration
-            size_t bytesToCopy = std::min(randomBlockSize, maxUploadSize - bytesWritten);
-
-            // Copy the bytes from the random block to the target buffer
-            std::copy(
-                randomBlock.begin(), randomBlock.begin() + bytesToCopy, randomDataForUpload.begin() + bytesWritten);
-
-            bytesWritten += bytesToCopy;
+            // Use 8 MiB to match the Java runner's buffer size (Util.generateRandomData()).
+            const size_t randomBlockSize = bytesFromMiB(8);
+            randomDataForUpload.resize(randomBlockSize);
+            independent_bits_engine<default_random_engine, CHAR_BIT, unsigned char> randEngine;
+            generate(randomDataForUpload.begin(), randomDataForUpload.end(), randEngine);
         }
     }
 }
@@ -216,8 +204,16 @@ template <typename... Args> void StatsPrintf(const char *fmt, Args... args)
     }
 }
 
-// Print all kinds of stats about these values (median, mean, min, max, etc)
-void printValueStats(const char *label, vector<double> values)
+struct ValueStats
+{
+    double median;
+    double mean;
+    double min;
+    double max;
+    double stddev;
+};
+
+ValueStats computeStats(vector<double> values)
 {
     std::sort(values.begin(), values.end());
     double n = values.size();
@@ -231,15 +227,11 @@ void printValueStats(const char *label, vector<double> values)
         size_t middle = values.size() / 2;
         if (values.size() % 2 == 1)
         {
-            // odd number, use middle value
             median = values[middle];
         }
         else
         {
-            // even number, use avg of two middle values
-            double a = values[middle - 1];
-            double b = values[middle];
-            median = (a + b) / 2;
+            median = (values[middle - 1] + values[middle]) / 2;
         }
     }
 
@@ -249,17 +241,7 @@ void printValueStats(const char *label, vector<double> values)
         0.0,
         [mean, n](double accumulator, const double &val) { return accumulator + ((val - mean) * (val - mean) / n); });
 
-    double stdDev = std::sqrt(variance);
-
-    StatsPrintf(
-        "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
-        label,
-        median,
-        mean,
-        min,
-        max,
-        variance,
-        stdDev);
+    return {median, mean, min, max, std::sqrt(variance)};
 }
 
 void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
@@ -268,14 +250,31 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     for (double duration : durations)
         throughputsGbps.push_back(bytesToGigabit(bytesPerRun) / duration);
 
-    printValueStats("Throughput (Gb/s)", throughputsGbps);
-
-    printValueStats("Duration (Secs)", durations);
+    ValueStats tStats = computeStats(throughputsGbps);
+    ValueStats dStats = computeStats(durations);
 
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
+    double peakRssMiB = (double)mu.maxrss / 1024.0;
 
-    StatsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+    // Standardized JSON stats line, parsed by the benchmark harness
+    StatsPrintf(
+        "STATS:{\"runs\":%zu,\"bytes_per_run\":%" PRIu64 ",\"peak_rss_mib\":%.1f"
+        ",\"duration\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}"
+        ",\"throughput_gbps\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}}\n",
+        durations.size(),
+        bytesPerRun,
+        peakRssMiB,
+        dStats.median,
+        dStats.mean,
+        dStats.min,
+        dStats.max,
+        dStats.stddev,
+        tStats.median,
+        tStats.mean,
+        tStats.min,
+        tStats.max,
+        tStats.stddev);
 }
 
 /**

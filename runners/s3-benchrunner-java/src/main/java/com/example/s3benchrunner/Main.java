@@ -18,26 +18,62 @@ public class Main {
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
     private static void printStats(long bytesPerRun, List<Double> durations) {
-        double n = durations.size();
-        double durationMean = 0;
-        for (Double duration : durations) {
-            durationMean += duration / n;
-        }
+        int n = durations.size();
+        List<Double> sortedDurations = new ArrayList<>(durations);
+        java.util.Collections.sort(sortedDurations);
 
-        double durationVariance = 0;
-        for (Double duration : durations) {
-            durationVariance += (duration - durationMean) * (duration - durationMean) / n;
+        List<Double> throughputs = new ArrayList<>();
+        for (Double d : durations) {
+            throughputs.add(Util.bytesToGigabit(bytesPerRun) / d);
         }
+        List<Double> sortedThroughputs = new ArrayList<>(throughputs);
+        java.util.Collections.sort(sortedThroughputs);
 
-        double mbsMean = Util.bytesToMegabit(bytesPerRun) / durationMean;
-        double mbsVariance = Util.bytesToMegabit(bytesPerRun) / durationVariance;
+        double[] dStats = calcStats(sortedDurations);
+        double[] tStats = calcStats(sortedThroughputs);
+
+        long peakRssKiB = 0;
+        try {
+            // Read peak RSS from /proc/self/status on Linux
+            String status = new String(java.nio.file.Files.readAllBytes(
+                    java.nio.file.Path.of("/proc/self/status")));
+            for (String line : status.split("\n")) {
+                if (line.startsWith("VmHWM:")) {
+                    peakRssKiB = Long.parseLong(line.replaceAll("[^0-9]", ""));
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // Not on Linux or can't read - use Runtime as fallback
+            Runtime rt = Runtime.getRuntime();
+            peakRssKiB = (rt.totalMemory() - rt.freeMemory()) / 1024;
+        }
+        double peakRssMiB = peakRssKiB / 1024.0;
 
         System.out.printf(
-                "Overall stats; Throughput Mean:%.1f Mb/s Throughput Variance:%.1f Mb/s Duration Mean:%.3f s Duration Variance:%.3f s %n",
-                mbsMean,
-                mbsVariance,
-                durationMean,
-                durationVariance);
+                "STATS:{\"runs\":%d,\"bytes_per_run\":%d,\"peak_rss_mib\":%.1f"
+                        + ",\"duration\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}"
+                        + ",\"throughput_gbps\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}}%n",
+                n, bytesPerRun, peakRssMiB,
+                dStats[0], dStats[1], dStats[2], dStats[3], dStats[4],
+                tStats[0], tStats[1], tStats[2], tStats[3], tStats[4]);
+    }
+
+    // Returns [median, mean, min, max, stddev]
+    private static double[] calcStats(List<Double> sorted) {
+        int n = sorted.size();
+        double min = sorted.get(0);
+        double max = sorted.get(n - 1);
+        double mean = sorted.stream().mapToDouble(Double::doubleValue).sum() / n;
+        double median;
+        if (n % 2 == 1) {
+            median = sorted.get(n / 2);
+        } else {
+            median = (sorted.get(n / 2 - 1) + sorted.get(n / 2)) / 2.0;
+        }
+        double variance = sorted.stream().mapToDouble(v -> (v - mean) * (v - mean) / n).sum();
+        double stddev = Math.sqrt(variance);
+        return new double[] { median, mean, min, max, stddev };
     }
 
     public static void main(String[] args) throws Exception {

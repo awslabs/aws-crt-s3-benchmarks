@@ -4,6 +4,7 @@ But scripts/build-runner.py is the main one you'd call from the terminal.
 """
 import os
 from pathlib import Path
+import shutil
 import sys
 from typing import Optional
 
@@ -124,10 +125,12 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
 
     # create virtual environment (if necessary) awscli from Github
     # doesn't interfere with system installation of awscli
+    # Use Python 3.11+ for the venv if available (boto3 dropped 3.9 support)
+    venv_python_bin = shutil.which('python3.11') or sys.executable
     venv_dir = work_dir.joinpath('venv')
     venv_python = str(venv_dir.joinpath('bin/python3'))
     if not venv_dir.exists():
-        run([sys.executable, '-m', 'venv', str(venv_dir)])
+        run([venv_python_bin, '-m', 'venv', str(venv_dir)])
 
         # upgrade pip to avoid warnings
         # and install wheel so we can build aws-crt-python
@@ -176,8 +179,98 @@ def _build_python(work_dir: Path, branch: Optional[str]) -> list[str]:
     return [venv_python, str(main_path)]
 
 
+def _setup_maven_codeartifact():
+    """Configure Maven to use CodeArtifact as a caching proxy for Maven Central.
+
+    Maven Central rate-limits/blocks AWS EC2 IP ranges with HTTP 403,
+    causing intermittent Java build failures in Batch jobs. Since each Batch job
+    runs in a fresh container with no .m2 cache, every run must download all
+    plugins and dependencies from scratch.
+
+    CodeArtifact acts as a transparent caching proxy. The first request
+    for any artifact is fetched from Maven Central and cached. All subsequent
+    requests (from any job, any day) are served from the cache. Since this is
+    AWS-to-AWS traffic within the same account, there's no rate limiting.
+
+    Uses boto3 (already installed via requirements.txt) rather than aws CLI
+    (not available in the container). If anything fails, Maven will fall back
+    to hitting Central directly.
+    """
+    domain = 's3-benchmarks'
+    repo = 'maven-cache'
+    region = 'us-west-2'
+
+    try:
+        import boto3  # type: ignore[import-untyped]
+
+        # Discover the AWS account ID from the Batch job's IAM role.
+        sts = boto3.client('sts', region_name=region)
+        owner = sts.get_caller_identity()['Account']
+
+        # Get a 12-hour auth token for CodeArtifact.
+        ca = boto3.client('codeartifact', region_name=region)
+        token = ca.get_authorization_token(
+            domain=domain, domainOwner=owner
+        )['authorizationToken']
+
+        # Get the HTTPS endpoint URL for the maven-cache repository.
+        endpoint = ca.get_repository_endpoint(
+            domain=domain, domainOwner=owner,
+            repository=repo, format='maven'
+        )['repositoryEndpoint']
+    except Exception as e:
+        print(f"WARNING: Could not configure CodeArtifact mirror ({e}), "
+              "falling back to Maven Central directly")
+        return
+
+    # Write Maven settings.xml that redirects all "central" repo requests
+    # to our CodeArtifact endpoint. The <mirrorOf>central</mirrorOf> directive
+    # intercepts any request that would go to Maven Central.
+    m2_dir = Path.home() / '.m2'
+    m2_dir.mkdir(exist_ok=True)
+    (m2_dir / 'settings.xml').write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<settings>\n'
+        '  <servers>\n'
+        '    <server>\n'
+        '      <id>codeartifact</id>\n'
+        '      <username>aws</username>\n'
+        f'      <password>{token}</password>\n'
+        '    </server>\n'
+        '  </servers>\n'
+        '  <mirrors>\n'
+        '    <mirror>\n'
+        '      <id>codeartifact</id>\n'
+        '      <name>CodeArtifact Maven Central Cache</name>\n'
+        f'      <url>{endpoint}</url>\n'
+        '      <mirrorOf>central</mirrorOf>\n'
+        '    </mirror>\n'
+        '  </mirrors>\n'
+        '</settings>\n')
+    print(f"Configured Maven to use CodeArtifact mirror: {endpoint}")
+
+
+def _run_mvn_with_retry(mvn_cmd, max_attempts=3, wait_secs=60):
+    """Run a Maven command with retry logic for transient failures (e.g. 403 from Maven Central).
+    If CodeArtifact is configured, retries are unlikely to be needed. But if we fall back
+    to Maven Central directly, this provides resilience against rate limiting."""
+    import time
+    for attempt in range(1, max_attempts + 1):
+        try:
+            run(mvn_cmd)
+            return
+        except Exception:
+            if attempt == max_attempts:
+                raise
+            print(f"\n*** Maven failed (attempt {attempt}/{max_attempts}), "
+                  f"retrying in {wait_secs}s...")
+            time.sleep(wait_secs)
+
+
 def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
     """build s3-benchrunner-java"""
+
+    _setup_maven_codeartifact()
 
     # fetch latest aws-crt-java and install 1.0.0-SNAPSHOT
     awscrt_src = work_dir/'aws-crt-java'
@@ -185,7 +278,7 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    dir=awscrt_src,
                    preferred_branch=branch)
     os.chdir(str(awscrt_src))
-    run(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
+    _run_mvn_with_retry(['mvn', 'clean', 'install', '-Dmaven.test.skip'])
 
     # fetch latest aws-sdk-java-v2 and install latest SNAPSHOT version
     sdk_src = work_dir/'aws-sdk-java-v2'
@@ -194,24 +287,24 @@ def _build_java(work_dir: Path, branch: Optional[str]) -> list[str]:
                    main_branch='master',
                    preferred_branch=branch)
     os.chdir(str(sdk_src))
-    run(['mvn', 'clean', 'install',
-         '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
-         '--activate-profiles', 'quick',
-         '--also-make',
-         # use locally installed version of aws-crt-java
-         '-Dawscrt.version=1.0.0-SNAPSHOT',
-         ])
+    _run_mvn_with_retry(['mvn', 'clean', 'install',
+                         '--projects', ':s3-transfer-manager,:s3,:bom-internal,:bom',
+                         '--activate-profiles', 'quick',
+                         '--also-make',
+                         # use locally installed version of aws-crt-java
+                         '-Dawscrt.version=1.0.0-SNAPSHOT',
+                         ])
 
     # Build runner
     runner_src = RUNNERS['java'].dir
     os.chdir(str(runner_src))
-    run(['mvn',
-         'clean',
-         # package along with dependencies in executable uber-java
-         'package',
-         # use locally installed version of aws-crt-java
-         '-Dawscrt.version=1.0.0-SNAPSHOT',
-         ])
+    _run_mvn_with_retry(['mvn',
+                         'clean',
+                         # package along with dependencies in executable uber-java
+                         'package',
+                         # use locally installed version of aws-crt-java
+                         '-Dawscrt.version=1.0.0-SNAPSHOT',
+                         ])
 
     # return command for running the jar
     jar_path = runner_src/'target/s3-benchrunner-java-1.0-SNAPSHOT.jar'
@@ -273,8 +366,6 @@ def _build_rclone(work_dir: Path, branch: Optional[str]) -> list[str]:
         print("WARNING: rclone runner doesn't currently support --branch")
 
     # Check if rclone is already in PATH
-    import shutil
-
     rclone_path = shutil.which('rclone')
 
     if not rclone_path:

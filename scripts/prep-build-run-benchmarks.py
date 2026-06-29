@@ -65,40 +65,65 @@ if __name__ == '__main__':
 
     # track which runners we've already built
     runner_lang_to_cmd = {}
+    # track languages that failed to build, so we skip their clients
+    failed_langs = set()
+    failed_clients = []
 
     for s3_client_id in args.s3_clients:
         runner = S3_CLIENTS[s3_client_id].runner
 
-        # build runner for this language (if necessary)
-        # and get cmd args to run it
-        if not runner.lang in runner_lang_to_cmd:
-            print_banner(f'BUILD RUNNER: {runner.lang}')
-            runner_cmd_list = utils.build.build_runner(
-                runner.lang, build_dir, args.branch)
-            runner_cmd_str = subprocess.list2cmdline(runner_cmd_list)
-            runner_lang_to_cmd[runner.lang] = runner_cmd_str
-
-        for bucket in args.buckets:
+        # skip clients whose language already failed to build
+        if runner.lang in failed_langs:
             print_banner(
-                f'RUN BENCHMARKS: {get_bucket_storage_class(bucket)} - {s3_client_id}')
-            run_cmd = [
-                sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
-                '--runner-cmd', runner_lang_to_cmd[runner.lang],
-                '--s3-client', s3_client_id,
-                '--bucket', bucket,
-                '--region', args.region,
-                '--throughput', str(args.throughput),
-                '--files-dir', str(files_dir),
-                '--workloads', *[str(x) for x in workloads],
-            ]
-            if args.report_metrics:
-                run_cmd += ['--report-metrics']
+                f'SKIPPING: {s3_client_id} (build for {runner.lang} failed earlier)')
+            failed_clients.append(s3_client_id)
+            continue
 
-                if args.metrics_instance_type:
-                    run_cmd += ['--metrics-instance-type',
-                                args.metrics_instance_type]
+        try:
+            # build runner for this language (if necessary)
+            # and get cmd args to run it
+            if runner.lang not in runner_lang_to_cmd:
+                print_banner(f'BUILD RUNNER: {runner.lang}')
+                runner_cmd_list = utils.build.build_runner(
+                    runner.lang, build_dir, args.branch)
+                runner_cmd_str = subprocess.list2cmdline(runner_cmd_list)
+                runner_lang_to_cmd[runner.lang] = runner_cmd_str
 
-                # if default branch was used, report "main"
-                run_cmd += ['--metrics-branch', args.branch or "main"]
+            for bucket in args.buckets:
+                print_banner(
+                    f'RUN BENCHMARKS: {get_bucket_storage_class(bucket)} - {s3_client_id}')
+                run_cmd = [
+                    sys.executable, str(SCRIPTS_DIR/'run-benchmarks.py'),
+                    '--runner-cmd', runner_lang_to_cmd[runner.lang],
+                    '--s3-client', s3_client_id,
+                    '--bucket', bucket,
+                    '--region', args.region,
+                    '--throughput', str(args.throughput),
+                    '--files-dir', str(files_dir),
+                    '--workloads', *[str(x) for x in workloads],
+                ]
+                if args.report_metrics:
+                    run_cmd += ['--report-metrics']
 
-            run(run_cmd)
+                    if args.metrics_instance_type:
+                        run_cmd += ['--metrics-instance-type',
+                                    args.metrics_instance_type]
+
+                    # if default branch was used, report "main"
+                    run_cmd += ['--metrics-branch', args.branch or "main"]
+
+                run(run_cmd)
+        except subprocess.CalledProcessError as e:
+            print(f'\n*** FAILED: {s3_client_id} ({runner.lang}): {e}')
+            failed_clients.append(s3_client_id)
+            # if the build itself failed, mark the language so we skip
+            # other clients that share the same runner
+            if runner.lang not in runner_lang_to_cmd:
+                failed_langs.add(runner.lang)
+            continue
+
+    if failed_clients:
+        print_banner('SUMMARY: FAILED CLIENTS')
+        for client_id in failed_clients:
+            print(f'  - {client_id}')
+        sys.exit(1)

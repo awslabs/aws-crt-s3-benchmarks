@@ -18,6 +18,8 @@ if not shutil.which('sudo'):
 run(['sudo', 'dnf', 'install', '-y',
      'git',
      'python3-pip',  # for installing python packages
+     'python3.11',  # boto3 dropped Python 3.9 support; AL2023 has 3.11 available
+     'python3.11-pip',
      'cmake',  # for building aws-c-***
      'gcc',  # for building aws-c-***
      'gcc-c++',  # for building s3-benchrunner-c
@@ -27,6 +29,7 @@ run(['sudo', 'dnf', 'install', '-y',
      'maven',  # for building s3-benchrunner-java
      'java-17-amazon-corretto-devel',  # for building s3-benchrunner-java
      'python3-devel',  # for building aws-crt-python
+     'python3.11-devel',  # for building aws-crt-python with 3.11
      'go',  # for building s5cmd
      ])
 

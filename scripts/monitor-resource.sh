@@ -135,13 +135,24 @@ while kill -0 $PID 2>/dev/null; do
     ts=$(date +%s.%N)
     now_ns=$(date +%s%N)
 
-    # CPU (system-wide from /proc/stat delta)
+    # CPU sample duration: 10% of interval, clamped between 50ms and 100ms
     CPU_SAMPLE_S=$(echo "$INTERVAL_S" | awk '{v=$1*0.1; if(v<0.05) v=0.05; if(v>0.1) v=0.1; printf "%.3f", v}')
-    cpu=$(awk '/^cpu /{u=$2+$4; t=$2+$3+$4+$5+$6+$7+$8; if(NR==1){pu=u;pt=t}else{printf "%.1f", (u-pu)/(t-pt)*100}}' \
-        <(cat /proc/stat) <(sleep "$CPU_SAMPLE_S" && cat /proc/stat) 2>/dev/null)
-    # Fallback: use top
+
+    # CPU (system-wide from /proc/stat delta)
+    # Read /proc/stat twice with a short gap to compute CPU usage
+    read cpu_line1 <<< $(head -1 /proc/stat)
+    sleep "$CPU_SAMPLE_S"
+    read cpu_line2 <<< $(head -1 /proc/stat)
+    cpu=$(echo "$cpu_line1" "$cpu_line2" | awk '{
+        # First reading: fields 2-8 (user nice system idle iowait irq softirq)
+        u1=$2+$4; t1=$2+$3+$4+$5+$6+$7+$8
+        # Second reading: fields 9-15
+        u2=$9+$11; t2=$9+$10+$11+$12+$13+$14+$15
+        if (t2-t1 > 0) printf "%.1f", (u2-u1)/(t2-t1)*100
+        else printf "0.0"
+    }')
     if [ -z "$cpu" ]; then
-        cpu=$(top -bn1 | awk '/^%Cpu/{printf "%.1f", 100-$8}')
+        cpu="0.0"
     fi
 
     # Memory

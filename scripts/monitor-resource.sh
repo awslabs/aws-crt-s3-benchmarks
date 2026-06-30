@@ -132,6 +132,16 @@ while kill -0 $PID 2>/dev/null; do
         CURRENT_RUN=$LATEST_RUN
     fi
 
+    # Stop sampling once STATS line appears (benchmark logic complete, JVM shutting down)
+    if grep -q '^STATS:' "$RUNNER_LOG" 2>/dev/null; then
+        break
+    fi
+
+    # Skip samples before the first run starts (JVM startup)
+    if [ "$CURRENT_RUN" -eq 0 ]; then
+        continue
+    fi
+
     ts=$(date +%s.%N)
     now_ns=$(date +%s%N)
 

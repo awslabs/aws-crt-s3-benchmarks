@@ -198,7 +198,7 @@ SUMMARY="${CSV%.csv}_summary.txt"
 awk -F',' '
 NR > 1 {
     run = $1
-    cpu = $2
+    cpu = $3
     rx = $8
 
     # Per-run accumulators

@@ -27,7 +27,7 @@
 #                   For short workloads (<10s), use 200-500ms
 #   --output        Output CSV file path (default: metrics_YYYYMMDD_HHMMSS.csv)
 
-set -euo pipefail
+set -u
 
 # --- Argument parsing ---
 RUNNER_CMD=""
@@ -107,7 +107,13 @@ fi
 
 # --- Start the benchmark, capturing stdout to detect Run:N boundaries ---
 RUNNER_LOG="${CSV%.csv}_runner.log"
-$RUNNER_CMD $S3_CLIENT "$WORKLOADS" $BUCKET $REGION $THROUGHPUT > >(tee "$RUNNER_LOG") 2>&1 &
+# Run benchmark with stdout/stderr going to both terminal and log file.
+# Use a FIFO to avoid process substitution PID issues.
+FIFO=$(mktemp -u /tmp/monitor-resource-XXXXXX.fifo)
+mkfifo "$FIFO"
+tee "$RUNNER_LOG" < "$FIFO" &
+TEE_PID=$!
+$RUNNER_CMD $S3_CLIENT "$WORKLOADS" $BUCKET $REGION $THROUGHPUT > "$FIFO" 2>&1 &
 PID=$!
 CURRENT_RUN=0
 
@@ -121,7 +127,7 @@ while kill -0 $PID 2>/dev/null; do
     sleep "$INTERVAL_S"
 
     # Detect current run number from runner output
-    LATEST_RUN=$(grep -o '^Run:[0-9]*' "$RUNNER_LOG" 2>/dev/null | tail -1 | cut -d: -f2)
+    LATEST_RUN=$(grep -o '^Run:[0-9]*' "$RUNNER_LOG" 2>/dev/null | tail -1 | cut -d: -f2 || true)
     if [ -n "$LATEST_RUN" ]; then
         CURRENT_RUN=$LATEST_RUN
     fi
@@ -170,8 +176,10 @@ while kill -0 $PID 2>/dev/null; do
     echo "$CURRENT_RUN,$ts,$cpu,$mem_used,$mem_total,$mem_cached,$mem_dirty,$rx_gbps,$tx_gbps,$disk_write_mbs,$disk_read_mbs" >> "$CSV"
 done
 
-wait $PID
+wait $PID 2>/dev/null
 EXIT_CODE=$?
+wait $TEE_PID 2>/dev/null
+rm -f "$FIFO"
 
 # --- Resource Summary (per-run + aggregate) ---
 SUMMARY="${CSV%.csv}_summary.txt"

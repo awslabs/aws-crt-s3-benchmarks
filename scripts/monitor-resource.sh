@@ -1,11 +1,79 @@
 #!/bin/bash
-# Get the network/disk usage/CPU/memory usage once per sec and record the states in metrics.csv
-# Use plot.py to visualize the metrics.
-# Usage: ./monitor-resource.sh <command to run>
-# Example: ./monitor-resource.sh /mnt/raid/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c ...
-# Output: metrics.csv in current directory
+# Monitor system resources (CPU/memory/network/disk) while running a benchmark.
+# Accepts the same arguments as run-benchmarks.py, wrapping the runner command
+# with resource monitoring that outputs a CSV for analysis with plot.py.
+#
+# Usage:
+#   ./monitor-resource.sh \
+#       --runner-cmd "java -jar path/to/runner.jar" \
+#       --s3-client crt-java \
+#       --bucket my-bucket \
+#       --region us-west-2 \
+#       --throughput 100.0 \
+#       --workloads workloads/download-max-throughput.run.json \
+#       [--interval-ms 1000] \
+#       [--output metrics.csv]
+#
+# Arguments (same as run-benchmarks.py):
+#   --runner-cmd    Command to launch runner (required)
+#   --s3-client     S3 client to benchmark (required)
+#   --bucket        S3 bucket name (required)
+#   --region        AWS region (required)
+#   --throughput    Target throughput in Gbps (required)
+#   --workloads     Path to workload .run.json file (required)
+#
+# Additional arguments:
+#   --interval-ms   Sampling interval in milliseconds (default: 1000)
+#                   For short workloads (<10s), use 200-500ms
+#   --output        Output CSV file path (default: metrics_YYYYMMDD_HHMMSS.csv)
 
-CSV="metrics_$(date +%Y%m%d_%H%M%S).csv"
+set -euo pipefail
+
+# --- Argument parsing ---
+RUNNER_CMD=""
+S3_CLIENT=""
+BUCKET=""
+REGION=""
+THROUGHPUT=""
+WORKLOADS=""
+INTERVAL_MS=1000
+OUTPUT=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --runner-cmd)   RUNNER_CMD="$2";  shift 2 ;;
+        --s3-client)    S3_CLIENT="$2";   shift 2 ;;
+        --bucket)       BUCKET="$2";      shift 2 ;;
+        --region)       REGION="$2";      shift 2 ;;
+        --throughput)   THROUGHPUT="$2";  shift 2 ;;
+        --workloads)    WORKLOADS="$2";   shift 2 ;;
+        --interval-ms)  INTERVAL_MS="$2"; shift 2 ;;
+        --output)       OUTPUT="$2";      shift 2 ;;
+        -h|--help)
+            echo "Usage: ./monitor-resource.sh --runner-cmd CMD --s3-client ID --bucket BUCKET --region REGION --throughput GBPS --workloads WORKLOAD [--interval-ms 1000] [--output file.csv]"
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            echo "Run with --help for usage" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Validate required arguments
+for arg_name in runner-cmd s3-client bucket region throughput workloads; do
+    var_name=$(echo "$arg_name" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+    eval "val=\$$var_name"
+    if [ -z "$val" ]; then
+        echo "Error: --$arg_name is required" >&2
+        exit 1
+    fi
+done
+
+# --- Configuration ---
+INTERVAL_S=$(echo "$INTERVAL_MS" | awk '{printf "%.3f", $1/1000}')
+CSV="${OUTPUT:-metrics_$(date +%Y%m%d_%H%M%S).csv}"
 IFACE=$(ip route show default | awk '{print $5; exit}')
 
 # Auto-detect disk device: prefer md0 (RAID), then first nvme*n1, then root device
@@ -17,6 +85,7 @@ else
     DISK_DEV=$(lsblk -dno NAME 2>/dev/null | head -1)
 fi
 
+# --- Initialize CSV ---
 echo "timestamp,cpu_percent,mem_used_gib,mem_total_gib,mem_cached_gib,mem_dirty_mib,net_rx_gbps,net_tx_gbps,disk_write_mbs,disk_read_mbs" > "$CSV"
 
 # Get initial network counters
@@ -35,21 +104,23 @@ else
     DISK_MONITORING=false
 fi
 
-# Start the benchmark in background
-"$@" &
+# --- Start the benchmark in background ---
+$RUNNER_CMD $S3_CLIENT "$WORKLOADS" $BUCKET $REGION $THROUGHPUT &
 PID=$!
 
-echo "Monitoring PID $PID, writing to $CSV (interface: $IFACE, disk: ${DISK_DEV:-none})"
+echo "Monitoring PID $PID, writing to $CSV (interface: $IFACE, disk: ${DISK_DEV:-none}, interval: ${INTERVAL_MS}ms)"
 
+# --- Sampling loop ---
 while kill -0 $PID 2>/dev/null; do
-    sleep 1
+    sleep "$INTERVAL_S"
 
     ts=$(date +%s.%N)
     now_ns=$(date +%s%N)
 
-    # CPU (system-wide idle from /proc/stat)
+    # CPU (system-wide from /proc/stat delta)
+    CPU_SAMPLE_S=$(echo "$INTERVAL_S" | awk '{v=$1*0.1; if(v<0.05) v=0.05; if(v>0.1) v=0.1; printf "%.3f", v}')
     cpu=$(awk '/^cpu /{u=$2+$4; t=$2+$3+$4+$5+$6+$7+$8; if(NR==1){pu=u;pt=t}else{printf "%.1f", (u-pu)/(t-pt)*100}}' \
-        <(cat /proc/stat) <(sleep 0.1 && cat /proc/stat) 2>/dev/null)
+        <(cat /proc/stat) <(sleep "$CPU_SAMPLE_S" && cat /proc/stat) 2>/dev/null)
     # Fallback: use top
     if [ -z "$cpu" ]; then
         cpu=$(top -bn1 | awk '/^%Cpu/{printf "%.1f", 100-$8}')

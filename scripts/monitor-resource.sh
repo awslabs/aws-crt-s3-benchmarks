@@ -73,7 +73,9 @@ done
 
 # --- Configuration ---
 INTERVAL_S=$(echo "$INTERVAL_MS" | awk '{printf "%.3f", $1/1000}')
-CSV="${OUTPUT:-metrics_$(date +%Y%m%d_%H%M%S).csv}"
+# Extract workload name from path (e.g. "download-max-throughput" from "/path/to/download-max-throughput.run.json")
+WORKLOAD_NAME=$(basename "$WORKLOADS" .run.json)
+CSV="${OUTPUT:-metrics_${WORKLOAD_NAME}_$(date +%Y%m%d_%H%M%S).csv}"
 IFACE=$(ip route show default | awk '{print $5; exit}')
 
 # Auto-detect disk device: prefer md0 (RAID), then first nvme*n1, then root device
@@ -85,8 +87,7 @@ else
     DISK_DEV=$(lsblk -dno NAME 2>/dev/null | head -1)
 fi
 
-# --- Initialize CSV ---
-echo "timestamp,cpu_percent,mem_used_gib,mem_total_gib,mem_cached_gib,mem_dirty_mib,net_rx_gbps,net_tx_gbps,disk_write_mbs,disk_read_mbs" > "$CSV"
+# --- Initialize counters ---
 
 # Get initial network counters
 prev_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes)
@@ -104,15 +105,26 @@ else
     DISK_MONITORING=false
 fi
 
-# --- Start the benchmark in background ---
-$RUNNER_CMD $S3_CLIENT "$WORKLOADS" $BUCKET $REGION $THROUGHPUT &
+# --- Start the benchmark, capturing stdout to detect Run:N boundaries ---
+RUNNER_LOG="${CSV%.csv}_runner.log"
+$RUNNER_CMD $S3_CLIENT "$WORKLOADS" $BUCKET $REGION $THROUGHPUT > >(tee "$RUNNER_LOG") 2>&1 &
 PID=$!
+CURRENT_RUN=0
 
 echo "Monitoring PID $PID, writing to $CSV (interface: $IFACE, disk: ${DISK_DEV:-none}, interval: ${INTERVAL_MS}ms)"
+
+# Add run column to CSV header
+echo "run,timestamp,cpu_percent,mem_used_gib,mem_total_gib,mem_cached_gib,mem_dirty_mib,net_rx_gbps,net_tx_gbps,disk_write_mbs,disk_read_mbs" > "$CSV"
 
 # --- Sampling loop ---
 while kill -0 $PID 2>/dev/null; do
     sleep "$INTERVAL_S"
+
+    # Detect current run number from runner output
+    LATEST_RUN=$(grep -o '^Run:[0-9]*' "$RUNNER_LOG" 2>/dev/null | tail -1 | cut -d: -f2)
+    if [ -n "$LATEST_RUN" ]; then
+        CURRENT_RUN=$LATEST_RUN
+    fi
 
     ts=$(date +%s.%N)
     now_ns=$(date +%s%N)
@@ -155,10 +167,58 @@ while kill -0 $PID 2>/dev/null; do
         disk_read_mbs="0.0"
     fi
 
-    echo "$ts,$cpu,$mem_used,$mem_total,$mem_cached,$mem_dirty,$rx_gbps,$tx_gbps,$disk_write_mbs,$disk_read_mbs" >> "$CSV"
+    echo "$CURRENT_RUN,$ts,$cpu,$mem_used,$mem_total,$mem_cached,$mem_dirty,$rx_gbps,$tx_gbps,$disk_write_mbs,$disk_read_mbs" >> "$CSV"
 done
 
 wait $PID
 EXIT_CODE=$?
-echo "Process exited with code $EXIT_CODE. Metrics saved to $CSV"
+
+# --- Resource Summary (per-run + aggregate) ---
+SUMMARY="${CSV%.csv}_summary.txt"
+awk -F',' '
+NR > 1 {
+    run = $1
+    cpu = $2
+    rx = $8
+
+    # Per-run accumulators
+    run_cpu_sum[run] += cpu
+    if (cpu > run_cpu_peak[run]) run_cpu_peak[run] = cpu
+    run_rx_sum[run] += rx
+    run_n[run]++
+
+    # Aggregate accumulators
+    total_cpu_sum += cpu
+    if (cpu > total_cpu_peak) total_cpu_peak = cpu
+    total_rx_sum += rx
+    total_n++
+    max_run = run
+}
+END {
+    printf "=== Per-Run Summary ===\n"
+    for (r = 1; r <= max_run; r++) {
+        if (run_n[r] > 0) {
+            mean_cpu = run_cpu_sum[r] / run_n[r]
+            mean_rx = run_rx_sum[r] / run_n[r]
+            eff = (mean_rx > 0 && mean_cpu > 0) ? mean_rx / mean_cpu : 0
+            printf "Run:%d  CPU Mean: %5.1f%%  CPU Peak: %5.1f%%  Throughput: %6.2f Gbps  Efficiency: %.3f Gbps/CPU%%  (%d samples)\n", \
+                r, mean_cpu, run_cpu_peak[r], mean_rx, eff, run_n[r]
+        }
+    }
+    if (total_n > 0) {
+        mean_cpu = total_cpu_sum / total_n
+        mean_rx = total_rx_sum / total_n
+        eff = (mean_rx > 0 && mean_cpu > 0) ? mean_rx / mean_cpu : 0
+        printf "\n=== Aggregate Summary ===\n"
+        printf "CPU Mean:    %.1f%%\n", mean_cpu
+        printf "CPU Peak:    %.1f%%\n", total_cpu_peak
+        printf "Throughput:  %.2f Gbps (network layer)\n", mean_rx
+        printf "Efficiency:  %.3f Gbps/CPU%%\n", eff
+        printf "Samples:     %d\n", total_n
+    }
+}' "$CSV" | tee "$SUMMARY"
+
+echo "" | tee -a "$SUMMARY"
+echo "Process exited with code $EXIT_CODE" | tee -a "$SUMMARY"
+echo "Metrics CSV: $CSV" | tee -a "$SUMMARY"
 exit $EXIT_CODE

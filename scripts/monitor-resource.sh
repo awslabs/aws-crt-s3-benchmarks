@@ -139,18 +139,19 @@ while kill -0 $PID 2>/dev/null; do
     CPU_SAMPLE_S=$(echo "$INTERVAL_S" | awk '{v=$1*0.1; if(v<0.05) v=0.05; if(v>0.1) v=0.1; printf "%.3f", v}')
 
     # CPU (system-wide from /proc/stat delta)
-    # Read /proc/stat twice with a short gap to compute CPU usage
-    read cpu_line1 <<< $(head -1 /proc/stat)
+    # /proc/stat first line: cpu user nice system idle iowait irq softirq steal
+    read -r _ cu1 cn1 cs1 ci1 cw1 cq1 cq2 _ < /proc/stat
     sleep "$CPU_SAMPLE_S"
-    read cpu_line2 <<< $(head -1 /proc/stat)
-    cpu=$(echo "$cpu_line1" "$cpu_line2" | awk '{
-        # First reading: fields 2-8 (user nice system idle iowait irq softirq)
-        u1=$2+$4; t1=$2+$3+$4+$5+$6+$7+$8
-        # Second reading: fields 9-15
-        u2=$9+$11; t2=$9+$10+$11+$12+$13+$14+$15
-        if (t2-t1 > 0) printf "%.1f", (u2-u1)/(t2-t1)*100
-        else printf "0.0"
-    }')
+    read -r _ cu2 cn2 cs2 ci2 cw2 cq3 cq4 _ < /proc/stat
+    cpu=$(awk "BEGIN {
+        active1 = $cu1 + $cn1 + $cs1 + $cw1 + $cq1 + $cq2
+        total1  = active1 + $ci1
+        active2 = $cu2 + $cn2 + $cs2 + $cw2 + $cq3 + $cq4
+        total2  = active2 + $ci2
+        dt = total2 - total1
+        if (dt > 0) printf \"%.1f\", (active2 - active1) / dt * 100
+        else printf \"0.0\"
+    }")
     if [ -z "$cpu" ]; then
         cpu="0.0"
     fi

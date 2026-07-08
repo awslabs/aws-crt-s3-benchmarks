@@ -210,39 +210,54 @@ NR > 1 {
     run = $1
     cpu = $3
     rx = $8
+    tx = $9
 
     # Per-run accumulators
     run_cpu_sum[run] += cpu
     if (cpu > run_cpu_peak[run]) run_cpu_peak[run] = cpu
     run_rx_sum[run] += rx
+    run_tx_sum[run] += tx
     run_n[run]++
 
     # Aggregate accumulators
     total_cpu_sum += cpu
     if (cpu > total_cpu_peak) total_cpu_peak = cpu
     total_rx_sum += rx
+    total_tx_sum += tx
     total_n++
     max_run = run
 }
 END {
+    # Determine dominant direction (download=RX, upload=TX) from aggregate totals
+    if (total_rx_sum >= total_tx_sum) {
+        dominant_label = "RX"
+    } else {
+        dominant_label = "TX"
+    }
+
     printf "=== Per-Run Summary ===\n"
     for (r = 1; r <= max_run; r++) {
         if (run_n[r] > 0) {
             mean_cpu = run_cpu_sum[r] / run_n[r]
             mean_rx = run_rx_sum[r] / run_n[r]
-            eff = (mean_rx > 0 && mean_cpu > 0) ? mean_rx / mean_cpu : 0
-            printf "Run:%d  CPU Mean: %5.1f%%  CPU Peak: %5.1f%%  Throughput: %6.2f Gbps  Efficiency: %.3f Gbps/CPU%%  (%d samples)\n", \
-                r, mean_cpu, run_cpu_peak[r], mean_rx, eff, run_n[r]
+            mean_tx = run_tx_sum[r] / run_n[r]
+            # Use the dominant direction for throughput/efficiency
+            mean_net = (dominant_label == "RX") ? mean_rx : mean_tx
+            eff = (mean_net > 0 && mean_cpu > 0) ? mean_net / mean_cpu : 0
+            printf "Run:%d  CPU Mean: %5.1f%%  CPU Peak: %5.1f%%  Throughput: %6.2f Gbps (%s)  Efficiency: %.3f Gbps/CPU%%  (%d samples)\n", \
+                r, mean_cpu, run_cpu_peak[r], mean_net, dominant_label, eff, run_n[r]
         }
     }
     if (total_n > 0) {
         mean_cpu = total_cpu_sum / total_n
         mean_rx = total_rx_sum / total_n
-        eff = (mean_rx > 0 && mean_cpu > 0) ? mean_rx / mean_cpu : 0
+        mean_tx = total_tx_sum / total_n
+        mean_net = (dominant_label == "RX") ? mean_rx : mean_tx
+        eff = (mean_net > 0 && mean_cpu > 0) ? mean_net / mean_cpu : 0
         printf "\n=== Aggregate Summary ===\n"
         printf "CPU Mean:    %.1f%%\n", mean_cpu
         printf "CPU Peak:    %.1f%%\n", total_cpu_peak
-        printf "Throughput:  %.2f Gbps (network layer)\n", mean_rx
+        printf "Throughput:  %.2f Gbps (%s, network layer)\n", mean_net, dominant_label
         printf "Efficiency:  %.3f Gbps/CPU%%\n", eff
         printf "Samples:     %d\n", total_n
     }

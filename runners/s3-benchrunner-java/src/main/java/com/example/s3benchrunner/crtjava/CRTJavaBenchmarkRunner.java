@@ -75,10 +75,10 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
                 .withEnableS3Express(isS3Express)
                 .withSigningConfig(signingConfig);
 
-        // If writing data to disk, enable backpressure.
-        // This prevents us from running out of memory due to downloading
-        // data faster than we can write it to disk.
-        if (config.filesOnDisk && Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB != 0) {
+        // If a backpressure window is configured, enable backpressure regardless of filesOnDisk.
+        // This lets us match the SDK's always-on backpressure behavior for fair comparison.
+        // Set via -Daws.crt.backpressure.window_mib=<size>. Default 0 = disabled.
+        if (Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB != 0) {
             s3ClientOpts.withReadBackpressureEnabled(true);
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         }

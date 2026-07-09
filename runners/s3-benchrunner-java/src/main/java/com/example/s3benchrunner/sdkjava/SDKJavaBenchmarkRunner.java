@@ -2,9 +2,11 @@ package com.example.s3benchrunner.sdkjava;
 
 import com.example.s3benchrunner.BenchmarkConfig;
 import com.example.s3benchrunner.BenchmarkRunner;
+import com.example.s3benchrunner.Main;
 import com.example.s3benchrunner.TaskConfig;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Publisher;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
@@ -33,10 +35,16 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
         super(config, bucket, region);
 
         if (useCRT) {
-            s3AsyncClient = S3AsyncClient.crtBuilder()
+            S3CrtAsyncClientBuilder crtBuilder = S3AsyncClient.crtBuilder()
                     .region(Region.of(region))
-                    .targetThroughputInGbps(targetThroughputGbps)
-                    .build();
+                    .targetThroughputInGbps(targetThroughputGbps);
+            // Optionally override the SDK's default initial read buffer (partSize * 10 = 80 MiB).
+            // Set via -Daws.sdk.s3.initial_read_buffer_mib=<size>. Larger = less backpressure blocking.
+            if (Main.SDK_INITIAL_READ_BUFFER_MiB != null) {
+                crtBuilder.initialReadBufferSizeInBytes(
+                        Main.SDK_INITIAL_READ_BUFFER_MiB * 1024L * 1024L);
+            }
+            s3AsyncClient = crtBuilder.build();
         } else {
             /**
              * TODO: SDKs don't support multipart download yet. But, they do have a

@@ -204,6 +204,9 @@ wait $TEE_PID 2>/dev/null
 rm -f "$FIFO"
 
 # --- Resource Summary (per-run + aggregate) ---
+# Run:1 is treated as a warmup iteration and excluded from the aggregate
+# summary (JIT compilation, TCP/TLS pool warm-up, S3 bucket partition
+# scaling). It is still shown in the per-run breakdown for visibility.
 SUMMARY="${CSV%.csv}_summary.txt"
 awk -F',' '
 NR > 1 {
@@ -212,19 +215,21 @@ NR > 1 {
     rx = $8
     tx = $9
 
-    # Per-run accumulators
+    # Per-run accumulators (includes Run:1)
     run_cpu_sum[run] += cpu
     if (cpu > run_cpu_peak[run]) run_cpu_peak[run] = cpu
     run_rx_sum[run] += rx
     run_tx_sum[run] += tx
     run_n[run]++
 
-    # Aggregate accumulators
-    total_cpu_sum += cpu
-    if (cpu > total_cpu_peak) total_cpu_peak = cpu
-    total_rx_sum += rx
-    total_tx_sum += tx
-    total_n++
+    # Aggregate accumulators — EXCLUDE Run:1 warmup
+    if (run > 1) {
+        total_cpu_sum += cpu
+        if (cpu > total_cpu_peak) total_cpu_peak = cpu
+        total_rx_sum += rx
+        total_tx_sum += tx
+        total_n++
+    }
     max_run = run
 }
 END {
@@ -244,8 +249,9 @@ END {
             # Use the dominant direction for throughput/efficiency
             mean_net = (dominant_label == "RX") ? mean_rx : mean_tx
             eff = (mean_net > 0 && mean_cpu > 0) ? mean_net / mean_cpu : 0
-            printf "Run:%d  CPU Mean: %5.1f%%  CPU Peak: %5.1f%%  Throughput: %6.2f Gbps (%s)  Efficiency: %.3f Gbps/CPU%%  (%d samples)\n", \
-                r, mean_cpu, run_cpu_peak[r], mean_net, dominant_label, eff, run_n[r]
+            warmup_tag = (r == 1) ? "  [warmup — excluded from aggregate]" : ""
+            printf "Run:%d  CPU Mean: %5.1f%%  CPU Peak: %5.1f%%  Throughput: %6.2f Gbps (%s)  Efficiency: %.3f Gbps/CPU%%  (%d samples)%s\n", \
+                r, mean_cpu, run_cpu_peak[r], mean_net, dominant_label, eff, run_n[r], warmup_tag
         }
     }
     if (total_n > 0) {
@@ -254,7 +260,7 @@ END {
         mean_tx = total_tx_sum / total_n
         mean_net = (dominant_label == "RX") ? mean_rx : mean_tx
         eff = (mean_net > 0 && mean_cpu > 0) ? mean_net / mean_cpu : 0
-        printf "\n=== Aggregate Summary ===\n"
+        printf "\n=== Aggregate Summary (Run:1 warmup excluded) ===\n"
         printf "CPU Mean:    %.1f%%\n", mean_cpu
         printf "CPU Peak:    %.1f%%\n", total_cpu_peak
         printf "Throughput:  %.2f Gbps (%s, network layer)\n", mean_net, dominant_label

@@ -1,0 +1,7 @@
+{
+    "comment": "20x concurrent 5 GiB uploads in RAM - mid-concurrency scaling for uploads",
+    "action": "upload",
+    "fileSize": "5GiB",
+    "numFiles": 20,
+    "filesOnDisk": false
+}

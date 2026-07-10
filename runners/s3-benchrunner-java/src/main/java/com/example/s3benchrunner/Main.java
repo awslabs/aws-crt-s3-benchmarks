@@ -31,12 +31,15 @@ public class Main {
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
     static {
-        // Enable CRT memory tracing by default (level 1: totals only, low overhead).
-        // This is required for CRT.nativeMemory() to return non-zero values.
-        // Users can override via -Daws.crt.memory.tracing=<0|1|2>.
-        if (System.getProperty("aws.crt.memory.tracing") == null) {
-            System.setProperty("aws.crt.memory.tracing", "1");
-        }
+        // CRT memory tracing (aws.crt.memory.tracing=<0|1|2>) is intentionally
+        // NOT auto-enabled. Enabling it wraps every aws_mem_acquire call with
+        // mutex-protected counter tracking, which has significant overhead
+        // (up to 80% throughput regression on allocation-heavy workloads like
+        // multi-part uploads or small-object downloads). To capture the
+        // crt_native_peak_mib metric, opt in explicitly:
+        //   java -Daws.crt.memory.tracing=1 -jar <runner-jar> ...
+        // The MemorySampler will still run (JVM direct memory + heap peaks are
+        // free), but crt_native_peak_mib will be 0 without this flag.
         String bpStr = System.getProperty("aws.crt.backpressure.window_mib");
         if (bpStr != null) {
             BACKPRESSURE_INITIAL_READ_WINDOW_MiB = Integer.parseInt(bpStr);

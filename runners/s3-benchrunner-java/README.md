@@ -60,7 +60,7 @@ The runner honors several JVM system properties for benchmark tuning:
 
 | Property | Default | Effect |
 |----------|--------:|--------|
-| `-Daws.crt.memory.tracing=1` | auto-enabled | Enables CRT native memory tracking. Required for the `crt_native_peak_mib` field in the memory summary. The runner auto-enables level 1 (totals only, minimal overhead) if not otherwise set. Set to `2` for stack-trace tracking (higher overhead), or `0` to disable. |
+| `-Daws.crt.memory.tracing=1` | not set | Enables CRT native memory tracking. Required for the `crt_native_peak_mib` field in the memory summary. **⚠️ Opt-in only** — this flag adds significant overhead (mutex + counter around every `aws_mem_acquire` call) and can regress throughput by up to 80% on allocation-heavy workloads (multi-part uploads, small-object downloads). Only enable when you specifically need CRT native memory attribution; capture that measurement in a dedicated run separate from throughput baselines. Set to `2` for stack-trace tracking (higher overhead), or `0` to disable. |
 | `-Daws.crt.backpressure.window_mib=<N>` | `0` (off) | Enables read backpressure in `crt-java` runner with the given window size in MiB. Set to `80` to match the SDK's default. Set to `0` (default) to disable backpressure entirely (unbounded in-flight bytes). |
 | `-Daws.sdk.s3.initial_read_buffer_mib=<N>` | SDK default (partSize × 10 = 80 MiB) | Overrides the SDK CRT client's `initialReadBufferSizeInBytes`. Larger values let more bytes buffer before backpressure kicks in. |
 

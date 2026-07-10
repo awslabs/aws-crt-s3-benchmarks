@@ -24,7 +24,8 @@ public class Main {
     // See CRTJavaBenchmarkRunner for the actual use of this value.
     public static int BACKPRESSURE_INITIAL_READ_WINDOW_MiB = 0;
 
-    // SDK-side initial read buffer size (MiB). null = SDK default (partSize * 10 = 80 MiB).
+    // SDK-side initial read buffer size (MiB). null = SDK default (partSize * 10 =
+    // 80 MiB).
     // May be overridden via system property `aws.sdk.s3.initial_read_buffer_mib`.
     public static Long SDK_INITIAL_READ_BUFFER_MiB = null;
 
@@ -37,7 +38,7 @@ public class Main {
         // (up to 80% throughput regression on allocation-heavy workloads like
         // multi-part uploads or small-object downloads). To capture the
         // crt_native_peak_mib metric, opt in explicitly:
-        //   java -Daws.crt.memory.tracing=1 -jar <runner-jar> ...
+        // java -Daws.crt.memory.tracing=1 -jar <runner-jar> ...
         // The MemorySampler will still run (JVM direct memory + heap peaks are
         // free), but crt_native_peak_mib will be 0 without this flag.
         String bpStr = System.getProperty("aws.crt.backpressure.window_mib");
@@ -64,8 +65,7 @@ public class Main {
 
         static AllocSnapshot capture() {
             AllocSnapshot s = new AllocSnapshot();
-            com.sun.management.ThreadMXBean tb =
-                (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+            com.sun.management.ThreadMXBean tb = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
             // Cumulative across all threads (including terminated ones) since JVM start
             s.totalHeapAllocatedBytes = tb.getTotalThreadAllocatedBytes();
             for (GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans()) {
@@ -94,8 +94,10 @@ public class Main {
     }
 
     /**
-     * Background thread that samples volatile memory metrics (CRT native, JVM direct)
-     * during benchmark runs so we can report peak-observed values, not just end-of-run
+     * Background thread that samples volatile memory metrics (CRT native, JVM
+     * direct)
+     * during benchmark runs so we can report peak-observed values, not just
+     * end-of-run
      * snapshots.
      */
     private static class MemorySampler extends Thread {
@@ -123,8 +125,7 @@ public class Main {
                     crtNativePeakBytes.set(crtNative);
                 }
                 long directUsed = 0;
-                for (BufferPoolMXBean bpb :
-                    ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class)) {
+                for (BufferPoolMXBean bpb : ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class)) {
                     if ("direct".equals(bpb.getName())) {
                         directUsed = bpb.getMemoryUsed();
                         break;
@@ -217,8 +218,8 @@ public class Main {
      * with the rest of the runner's output, before monitor-resource.sh takes over.
      */
     private static void printMemorySummary(AllocSnapshot delta, MemorySampler sampler,
-                                            double peakRss, long heapPeak, long nonHeap,
-                                            boolean crtTracingEffective) {
+            double peakRss, long heapPeak, long nonHeap,
+            boolean crtTracingEffective) {
         double allocGiB = delta.totalHeapAllocatedBytes / 1024.0 / 1024.0 / 1024.0;
         System.out.printf("=== JVM Memory & Allocation ===%n");
         System.out.printf("Peak RSS (total process):    %10.1f MiB%n", peakRss);
@@ -238,9 +239,9 @@ public class Main {
     }
 
     private static void printStats(long bytesPerRun, List<Double> durations,
-                                    AllocSnapshot delta, MemorySampler sampler,
-                                    double peakRss, long heapPeak, long nonHeap,
-                                    boolean crtTracingEffective) {
+            AllocSnapshot delta, MemorySampler sampler,
+            double peakRss, long heapPeak, long nonHeap,
+            boolean crtTracingEffective) {
         int n = durations.size();
         List<Double> sortedDurations = new ArrayList<>(durations);
         java.util.Collections.sort(sortedDurations);
@@ -255,7 +256,8 @@ public class Main {
         double[] dStats = calcStats(sortedDurations);
         double[] tStats = calcStats(sortedThroughputs);
 
-        // Backward-compatible STATS: line at top level, extended with memory + allocation sub-objects.
+        // Backward-compatible STATS: line at top level, extended with memory +
+        // allocation sub-objects.
         System.out.printf(
                 "STATS:{\"runs\":%d,\"bytes_per_run\":%d,\"peak_rss_mib\":%.1f"
                         + ",\"duration\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}"
@@ -317,7 +319,8 @@ public class Main {
                     "Unsupported S3_CLIENT. Options are: crt-java, sdk-java-client-crt, sdk-java-tm-crt, sdk-java-client-classic, sdk-java-tm-classic");
         };
 
-        // Baseline allocation/GC snapshot BEFORE any runs (excludes JVM startup + client init).
+        // Baseline allocation/GC snapshot BEFORE any runs (excludes JVM startup +
+        // client init).
         AllocSnapshot startSnap = AllocSnapshot.capture();
 
         // Start sampling volatile memory metrics (CRT native, JVM direct) during runs.

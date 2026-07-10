@@ -37,8 +37,10 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
         if (useCRT) {
             S3CrtAsyncClientBuilder crtBuilder = S3AsyncClient.crtBuilder().region(Region.of(region))
                     .targetThroughputInGbps(targetThroughputGbps);
-            // Optionally override the SDK's default initial read buffer (partSize * 10 = 80 MiB).
-            // Set via -Daws.sdk.s3.initial_read_buffer_mib=<size>. Larger = less backpressure blocking.
+            // Optionally override the SDK's default initial read buffer (partSize * 10 = 80
+            // MiB).
+            // Set via -Daws.sdk.s3.initial_read_buffer_mib=<size>. Larger = less
+            // backpressure blocking.
             if (Main.SDK_INITIAL_READ_BUFFER_MiB != null) {
                 crtBuilder.initialReadBufferSizeInBytes(Main.SDK_INITIAL_READ_BUFFER_MiB * 1024L * 1024L);
             }

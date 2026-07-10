@@ -29,6 +29,13 @@ public class Main {
     // May be overridden via system property `aws.sdk.s3.initial_read_buffer_mib`.
     public static Long SDK_INITIAL_READ_BUFFER_MiB = null;
 
+    // Max active S3 connections. null = use CRT/SDK default (derived from
+    // throughput target).
+    // May be overridden via system property `aws.s3.max_connections`.
+    // Applies to both crt-java (S3ClientOptions.withMaxConnections) and
+    // sdk-java-client-crt (S3CrtAsyncClientBuilder.maxConcurrency).
+    public static Integer MAX_CONNECTIONS = null;
+
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
     static {
@@ -48,6 +55,10 @@ public class Main {
         String sdkBufStr = System.getProperty("aws.sdk.s3.initial_read_buffer_mib");
         if (sdkBufStr != null) {
             SDK_INITIAL_READ_BUFFER_MiB = Long.parseLong(sdkBufStr);
+        }
+        String maxConnStr = System.getProperty("aws.s3.max_connections");
+        if (maxConnStr != null) {
+            MAX_CONNECTIONS = Integer.parseInt(maxConnStr);
         }
     }
 

@@ -85,6 +85,14 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
         }
 
+        // Override CRT's default max active connections (which it derives from the
+        // throughput target). Set via -Daws.s3.max_connections=<N>. Useful for
+        // exploring the tradeoff between parallelism and per-connection throughput /
+        // memory footprint.
+        if (Main.MAX_CONNECTIONS != null) {
+            s3ClientOpts.withMaxConnections(Main.MAX_CONNECTIONS);
+        }
+
         s3Client = new S3Client(s3ClientOpts);
     }
 

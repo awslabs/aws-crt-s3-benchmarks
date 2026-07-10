@@ -44,6 +44,11 @@ public class SDKJavaBenchmarkRunner extends BenchmarkRunner {
             if (Main.SDK_INITIAL_READ_BUFFER_MiB != null) {
                 crtBuilder.initialReadBufferSizeInBytes(Main.SDK_INITIAL_READ_BUFFER_MiB * 1024L * 1024L);
             }
+            // Optionally override the SDK's derived max concurrency (max connections
+            // in the underlying CRT client). Set via -Daws.s3.max_connections=<N>.
+            if (Main.MAX_CONNECTIONS != null) {
+                crtBuilder.maxConcurrency(Main.MAX_CONNECTIONS);
+            }
             s3AsyncClient = crtBuilder.build();
         } else {
             /**

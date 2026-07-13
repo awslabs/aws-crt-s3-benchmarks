@@ -163,7 +163,12 @@ scripts/monitor-resource.sh \
 
 This runs the benchmark in the background while sampling CPU%, memory usage,
 network throughput (Gbps), and disk I/O every second. When the benchmark completes,
-a CSV file is written to the current directory (e.g. `metrics_20260630_180000.csv`).
+a CSV file is written to the current directory (e.g. `metrics_download-max-throughput_20260630_180000.csv`).
+Per-run and aggregate summaries are written to stdout — capture them with your
+own `tee` if you want a persistent log.
+
+If `--runner-cmd` includes `-Daws.s3.max_connections=<N>`, the connection count is
+auto-included in the default CSV filename (e.g. `metrics_download-max-throughput_conn100_<timestamp>.csv`).
 
 Additional arguments:
 *   `--interval-ms`: Sampling interval in milliseconds (default: 1000).
@@ -173,7 +178,7 @@ Additional arguments:
         The minimum practical value is ~200ms due to bash subprocess overhead.
         For workloads running several minutes, the default 1-second interval
         provides ~600 samples which is more than sufficient.
-*   `--output`: Custom output CSV file path (default: `metrics_YYYYMMDD_HHMMSS.csv`).
+*   `--output`: Custom output CSV file path (default: auto-named as above).
 
 To visualize the results:
 ```sh

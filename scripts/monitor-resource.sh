@@ -3,6 +3,15 @@
 # Accepts the same arguments as run-benchmarks.py, wrapping the runner command
 # with resource monitoring that outputs a CSV for analysis with plot.py.
 #
+# Files produced:
+#   * <CSV> (default `metrics_<workload>[_conn<N>]_<timestamp>.csv`) — per-sample
+#     time-series data. This is the only permanent file the script writes; every
+#     other output (per-run summary, aggregate summary, exit line) is streamed
+#     to stdout so the caller can capture it with their own tee/redirect.
+#   * A temp runner log under /tmp/monitor-resource-runner-*.log is used
+#     internally during sampling to detect Run:N boundaries; it's removed
+#     via an EXIT trap when the script finishes.
+#
 # Usage:
 #   ./monitor-resource.sh \
 #       --runner-cmd "java -jar path/to/runner.jar" \
@@ -13,6 +22,10 @@
 #       --workloads workloads/download-max-throughput.run.json \
 #       [--interval-ms 1000] \
 #       [--output metrics.csv]
+#
+# If `--runner-cmd` contains `-Daws.s3.max_connections=<N>`, the connection
+# count is auto-included in the default CSV filename (e.g.
+# `metrics_download-max-throughput_conn100_20260713_093500.csv`).
 #
 # Arguments (same as run-benchmarks.py):
 #   --runner-cmd    Command to launch runner (required)
@@ -25,7 +38,7 @@
 # Additional arguments:
 #   --interval-ms   Sampling interval in milliseconds (default: 1000)
 #                   For short workloads (<10s), use 200-500ms
-#   --output        Output CSV file path (default: metrics_YYYYMMDD_HHMMSS.csv)
+#   --output        Output CSV file path (default: auto-named as above)
 
 set -u
 
@@ -75,7 +88,18 @@ done
 INTERVAL_S=$(echo "$INTERVAL_MS" | awk '{printf "%.3f", $1/1000}')
 # Extract workload name from path (e.g. "download-max-throughput" from "/path/to/download-max-throughput.run.json")
 WORKLOAD_NAME=$(basename "$WORKLOADS" .run.json)
-CSV="${OUTPUT:-metrics_${WORKLOAD_NAME}_$(date +%Y%m%d_%H%M%S).csv}"
+
+# Auto-detect connection-count override from RUNNER_CMD (-Daws.s3.max_connections=<N>).
+# Included in the default CSV filename so sweep runs are self-labelling.
+CONN_TAG=""
+if [[ "$RUNNER_CMD" == *"-Daws.s3.max_connections="* ]]; then
+    CONN_VAL=$(echo "$RUNNER_CMD" | grep -oE '\-Daws\.s3\.max_connections=[0-9]+' | grep -oE '[0-9]+$')
+    if [ -n "$CONN_VAL" ]; then
+        CONN_TAG="_conn${CONN_VAL}"
+    fi
+fi
+
+CSV="${OUTPUT:-metrics_${WORKLOAD_NAME}${CONN_TAG}_$(date +%Y%m%d_%H%M%S).csv}"
 IFACE=$(ip route show default | awk '{print $5; exit}')
 
 # Auto-detect disk device: prefer md0 (RAID), then first nvme*n1, then root device
@@ -106,8 +130,13 @@ else
 fi
 
 # --- Start the benchmark, capturing stdout to detect Run:N boundaries ---
-RUNNER_LOG="${CSV%.csv}_runner.log"
-# Run benchmark with stdout/stderr going to both terminal and log file.
+# RUNNER_LOG is an internal temp file: the sampling loop greps it in real time
+# for Run:N boundaries and the terminal STATS: marker. It's deleted on exit --
+# the caller is expected to capture stdout via their own `tee` if a permanent
+# log is desired (matches the pattern of every other benchmark script).
+RUNNER_LOG=$(mktemp /tmp/monitor-resource-runner-XXXXXX.log)
+trap 'rm -f "$RUNNER_LOG" "$FIFO"' EXIT
+# Run benchmark with stdout/stderr going to both terminal and the internal log.
 # Use a FIFO to avoid process substitution PID issues.
 FIFO=$(mktemp -u /tmp/monitor-resource-XXXXXX.fifo)
 mkfifo "$FIFO"
@@ -201,13 +230,12 @@ done
 wait $PID 2>/dev/null
 EXIT_CODE=$?
 wait $TEE_PID 2>/dev/null
-rm -f "$FIFO"
+# RUNNER_LOG + FIFO are removed by the EXIT trap set above.
 
 # --- Resource Summary (per-run + aggregate) ---
 # Run:1 is treated as a warmup iteration and excluded from the aggregate
 # summary (JIT compilation, TCP/TLS pool warm-up, S3 bucket partition
 # scaling). It is still shown in the per-run breakdown for visibility.
-SUMMARY="${CSV%.csv}_summary.txt"
 awk -F',' '
 NR > 1 {
     run = $1
@@ -267,9 +295,9 @@ END {
         printf "Efficiency:  %.3f Gbps/CPU%%\n", eff
         printf "Samples:     %d\n", total_n
     }
-}' "$CSV" | tee "$SUMMARY"
+}' "$CSV"
 
-echo "" | tee -a "$SUMMARY"
-echo "Process exited with code $EXIT_CODE" | tee -a "$SUMMARY"
-echo "Metrics CSV: $CSV" | tee -a "$SUMMARY"
+echo ""
+echo "Process exited with code $EXIT_CODE"
+echo "Metrics CSV: $CSV"
 exit $EXIT_CODE

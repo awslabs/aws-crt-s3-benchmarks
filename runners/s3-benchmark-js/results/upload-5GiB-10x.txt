@@ -1,0 +1,37 @@
+=== Workload: upload-5GiB-10x.run.json ===
+Source: file | Tasks: 10 x 5.0 GiB | Total/run: 50.0 GiB
+Workers: 64 | maxConcurrentUploads: 256 | Part size: 16 MiB | Checksum: CRC32
+Region: us-west-2 | Date: 2025-07-20T15:30:00Z
+
+Run:1 Secs:45.613902 Gb/s:9.415917
+Run:2 Secs:34.583164 Gb/s:12.419243
+Run:3 Secs:39.734813 Gb/s:10.809079
+Run:4 Secs:32.981062 Gb/s:13.022526
+Run:5 Secs:38.714704 Gb/s:11.093892
+Run:6 Secs:35.362323 Gb/s:12.145603
+Run:7 Secs:39.953108 Gb/s:10.750021
+Run:8 Secs:37.110458 Gb/s:11.573469
+Run:9 Secs:42.915090 Gb/s:10.008058
+Run:10 Secs:42.447632 Gb/s:10.118273
+
+=== Workload: /home/ec2-user/repo/aws-crt-s3-benchmarks/workloads/upload-5GiB-10x.run.json ===
+Workers: 64 | Concurrency per worker: 4 | Part size: 16 MiB | Checksum: true
+Date: 2026-07-20T15:39:15.963Z
+
+=== Workload: /home/ec2-user/repo/aws-crt-s3-benchmarks/workloads/upload-5GiB-10x.run.json ===
+Workers: 64 | Concurrency per worker: 4 | Part size: 16 MiB | Checksum: true
+Date: 2026-07-20T15:40:18.284Z
+Run:1 Secs:48.478818 Gb/s:8.859472
+Run:2 Secs:42.460354 Gb/s:10.115241
+Run:3 Secs:39.225406 Gb/s:10.949453
+Run:4 Secs:39.599263 Gb/s:10.846079
+Run:5 Secs:44.745317 Gb/s:9.598697
+Run:6 Secs:43.151436 Gb/s:9.953243
+Run:7 Secs:38.646165 Gb/s:11.113567
+Run:8 Secs:43.669850 Gb/s:9.835086
+Run:9 Secs:39.125393 Gb/s:10.977442
+Run:10 Secs:44.706016 Gb/s:9.607135
+
+=== Workload: /home/ec2-user/repo/aws-crt-s3-benchmarks/workloads/upload-5GiB-10x.run.json ===
+Workers: 64 | Concurrency per worker: 4 | Part size: 16 MiB | Checksum: CRC32
+Date: 2026-07-20T16:11:52.614Z

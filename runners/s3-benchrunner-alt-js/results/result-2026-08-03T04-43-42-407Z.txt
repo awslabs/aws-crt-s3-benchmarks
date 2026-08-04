@@ -1,0 +1,16 @@
+Workload: upload-5GiB-10x
+Workers: 64
+MaxConcurrency: 256 (4 per worker)
+TargetPartSize: 64.0MiB
+TotalBytes: 50.0GiB
+
+Run:1 Secs:23.691457 Gb/s:18.128760
+Run:2 Secs:22.503219 Gb/s:19.086013
+Run:3 Secs:22.762832 Gb/s:18.868335
+Run:4 Secs:22.655155 Gb/s:18.958013
+Run:5 Secs:23.316990 Gb/s:18.419904
+Run:6 Secs:22.763181 Gb/s:18.868045
+Run:7 Secs:23.220414 Gb/s:18.496514
+Run:8 Secs:22.859889 Gb/s:18.788225
+Run:9 Secs:22.652193 Gb/s:18.960493
+Run:10 Secs:24.562961 Gb/s:17.485544

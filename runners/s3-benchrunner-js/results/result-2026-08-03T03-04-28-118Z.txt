@@ -1,0 +1,15 @@
+Workload: upload-5GiB-1x
+MaxConcurrency: 256
+TargetPartSize: 32.0MiB
+TotalBytes: 5.0GiB
+
+Run:1 Secs:5.908304 Gb/s:7.269375
+Run:2 Secs:2.547749 Gb/s:16.857889
+Run:3 Secs:2.506149 Gb/s:17.137716
+Run:4 Secs:2.511501 Gb/s:17.101198
+Run:5 Secs:2.587780 Gb/s:16.597108
+Run:6 Secs:2.487808 Gb/s:17.264060
+Run:7 Secs:2.559214 Gb/s:16.782371
+Run:8 Secs:2.543790 Gb/s:16.884127
+Run:9 Secs:2.540051 Gb/s:16.908983
+Run:10 Secs:2.505808 Gb/s:17.140049

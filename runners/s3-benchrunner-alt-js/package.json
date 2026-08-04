@@ -1,0 +1,15 @@
+{
+  "name": "s3-benchrunner-alt-js",
+  "version": "1.0.0",
+  "description": "S3 benchmark runner for JavaScript SDK (lib-tm-alt)",
+  "type": "module",
+  "main": "main.js",
+  "bin": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1090.0",
+    "@aws-sdk/lib-tm-alt": "file:./lib-transfer-manager-alt.tgz"
+  }
+}

@@ -36,6 +36,16 @@ public class Main {
     // sdk-java-client-crt (S3CrtAsyncClientBuilder.maxConcurrency).
     public static Integer MAX_CONNECTIONS = null;
 
+    // Direct Byte Zero-Copy (DBZ) pool opt-in for the crt-java client. false
+    // (default) = default aws-c-s3 native buffer pool + byte[] response body
+    // callback (the baseline). true = attach a JVM-tracked S3DirectBufferPool
+    // via S3ClientOptions.withDirectByteBufferPool, which auto-routes response
+    // bodies through the NewDirectByteBuffer callback path (no per-part byte[]
+    // allocation).
+    // May be overridden via system property `aws.crt.s3.use_dbz`.
+    // Ignored by the SDK runner (SDK path does not use the DBZ pool).
+    public static boolean USE_DBZ = false;
+
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
     static {
@@ -59,6 +69,10 @@ public class Main {
         String maxConnStr = System.getProperty("aws.s3.max_connections");
         if (maxConnStr != null) {
             MAX_CONNECTIONS = Integer.parseInt(maxConnStr);
+        }
+        String useDbzStr = System.getProperty("aws.crt.s3.use_dbz");
+        if (useDbzStr != null) {
+            USE_DBZ = Boolean.parseBoolean(useDbzStr);
         }
     }
 

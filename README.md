@@ -145,6 +145,49 @@ Most runners should search for AWS credentials
 If you want to run multiple workloads (or ALL workloads) in one go,
 use this helper script: [run-benchmarks.py](scripts/run-benchmarks.py).
 
+### Monitor Resource Usage
+
+To capture system-level metrics (CPU, memory, network, disk I/O) alongside a benchmark run,
+use `scripts/monitor-resource.sh`. It accepts the same arguments as `run-benchmarks.py`
+and produces a timestamped CSV with per-second resource samples:
+
+```sh
+scripts/monitor-resource.sh \
+    --runner-cmd "RUNNER_CMD" \
+    --s3-client S3_CLIENT \
+    --bucket BUCKET \
+    --region REGION \
+    --throughput TARGET_THROUGHPUT \
+    --workloads WORKLOAD
+```
+
+This runs the benchmark in the background while sampling CPU%, memory usage,
+network throughput (Gbps), and disk I/O every second. When the benchmark completes,
+a CSV file is written to the current directory (e.g. `metrics_download-max-throughput_20260630_180000.csv`).
+Per-run and aggregate summaries are written to stdout — capture them with your
+own `tee` if you want a persistent log.
+
+If `--runner-cmd` includes `-Daws.s3.max_connections=<N>`, the connection count is
+auto-included in the default CSV filename (e.g. `metrics_download-max-throughput_conn100_<timestamp>.csv`).
+
+Additional arguments:
+*   `--interval-ms`: Sampling interval in milliseconds (default: 1000).
+        Reduce this for short workloads that complete in under 10 seconds
+        (e.g. `--interval-ms 200` for a 5-second single-file download)
+        to capture enough data points for meaningful analysis.
+        The minimum practical value is ~200ms due to bash subprocess overhead.
+        For workloads running several minutes, the default 1-second interval
+        provides ~600 samples which is more than sufficient.
+*   `--output`: Custom output CSV file path (default: auto-named as above).
+
+To visualize the results:
+```sh
+pip3 install pandas matplotlib
+python3 scripts/plot.py metrics_*.csv
+```
+
+This generates a PNG with 5 panels: network throughput, disk I/O, CPU usage, memory, and dirty pages.
+
 ## Authoring New Workloads
 
 See [workloads/](workloads/#readme)

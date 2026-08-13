@@ -7,6 +7,7 @@ import software.amazon.awssdk.crt.auth.signing.AwsSigningConfig;
 import software.amazon.awssdk.crt.io.*;
 import software.amazon.awssdk.crt.s3.S3Client;
 import software.amazon.awssdk.crt.s3.S3ClientOptions;
+import software.amazon.awssdk.crt.s3.S3DirectBufferPool;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -25,6 +26,9 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
     TlsContext tlsCtx;
     CredentialsProvider credentialsProvider;
     S3Client s3Client;
+    // Optional. Non-null iff Main.USE_DBZ. Held as a field so the JVM GC does
+    // not collect the pool while aws-c-s3 still holds slot references via JNI.
+    S3DirectBufferPool directBufferPool;
 
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     String endpoint;
@@ -75,12 +79,45 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
                 .withEnableS3Express(isS3Express)
                 .withSigningConfig(signingConfig);
 
-        // If writing data to disk, enable backpressure.
-        // This prevents us from running out of memory due to downloading
-        // data faster than we can write it to disk.
-        if (config.filesOnDisk && Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB != 0) {
+        // If a backpressure window is configured, enable backpressure regardless of
+        // filesOnDisk.
+        // This lets us match the SDK's always-on backpressure behavior for fair
+        // comparison.
+        // Set via -Daws.crt.backpressure.window_mib=<size>. Default 0 = disabled.
+        if (Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB != 0) {
             s3ClientOpts.withReadBackpressureEnabled(true);
             s3ClientOpts.withInitialReadWindowSize(Util.bytesFromMiB(Main.BACKPRESSURE_INITIAL_READ_WINDOW_MiB));
+        }
+
+        // Override CRT's default max active connections (which it derives from the
+        // throughput target). Set via -Daws.s3.max_connections=<N>. Useful for
+        // exploring the tradeoff between parallelism and per-connection throughput /
+        // memory footprint.
+        if (Main.MAX_CONNECTIONS != null) {
+            s3ClientOpts.withMaxConnections(Main.MAX_CONNECTIONS);
+        }
+
+        // Opt into the Direct Byte Zero-Copy (DBZ) pool.
+        //
+        // Enabled via -Daws.crt.s3.use_dbz=true. Default false = baseline path
+        // (aws-c-s3 native buffer pool + byte[] response body callback).
+        //
+        // When enabled, the runner:
+        //   1. Builds a JVM-tracked S3DirectBufferPool via
+        //      S3DirectBufferPool.create(s3ClientOpts). This factory auto-scales
+        //      the pool capacity to match aws-c-s3's default buffer pool sizing
+        //      (2-24 GiB by throughputTargetGbps), so DBZ vs baseline memory
+        //      footprint is a fair comparison at the same target throughput.
+        //   2. Attaches the pool via S3ClientOptions.withDirectByteBufferPool.
+        //      The client derives useDirectByteBufferPool from this and routes
+        //      every meta-request's response body through the NewDirectByteBuffer
+        //      callback path, eliminating the per-part 8 MiB byte[] allocation.
+        //
+        // The pool must be constructed AFTER withThroughputTargetGbps has been
+        // set on s3ClientOpts, since create() reads that value for auto-sizing.
+        if (Main.USE_DBZ) {
+            directBufferPool = S3DirectBufferPool.create(s3ClientOpts);
+            s3ClientOpts.withDirectByteBufferPool(directBufferPool);
         }
 
         s3Client = new S3Client(s3ClientOpts);

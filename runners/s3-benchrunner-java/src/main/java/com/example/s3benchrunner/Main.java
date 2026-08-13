@@ -46,6 +46,12 @@ public class Main {
     // Ignored by the SDK runner (SDK path does not use the DBZ pool).
     public static boolean USE_DBZ = false;
 
+    // When true, the download-to-RAM subscriber copies each delivered ByteBuffer
+    // into a fresh byte[] (simulating a customer that retains the data).
+    // Measures the cost of DBZ + copy-back vs baseline byte[] delivery.
+    // May be overridden via system property `aws.crt.s3.benchmark.copy_back`.
+    public static boolean COPY_BACK = false;
+
     /////////////// END ARBITRARY HARD-CODED VALUES ///////////////
 
     static {
@@ -73,6 +79,10 @@ public class Main {
         String useDbzStr = System.getProperty("aws.crt.s3.use_dbz");
         if (useDbzStr != null) {
             USE_DBZ = Boolean.parseBoolean(useDbzStr);
+        }
+        String copyBackStr = System.getProperty("aws.crt.s3.benchmark.copy_back");
+        if (copyBackStr != null) {
+            COPY_BACK = Boolean.parseBoolean(copyBackStr);
         }
     }
 

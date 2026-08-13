@@ -98,8 +98,7 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key_prefix(path)
             .destination(&dest)
-            .send()
-            .await?;
+            .initiate()?;
         download_objects_handle.join().await?;
         Ok(())
     }
@@ -113,8 +112,7 @@ impl TransferManagerRunner {
             .bucket(&self.config().bucket)
             .key_prefix(path)
             .source(path)
-            .send()
-            .await?;
+            .initiate()?;
         upload_objects_handle.join().await?;
         Ok(())
     }

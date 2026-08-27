@@ -5,8 +5,9 @@ import os
 from pathlib import Path
 import shlex
 
-from utils import S3_CLIENTS, run, workload_paths_from_args
+from utils import S3_CLIENTS, workload_paths_from_args
 from utils.metrics import report_metrics
+from utils.execution import run_with_stats
 
 parser = argparse.ArgumentParser(
     description='Benchmark workloads with a specific runner')
@@ -64,7 +65,7 @@ for workload in workloads:
             args.region, str(args.throughput)]
 
     start_time = datetime.now(timezone.utc)
-    result = run(cmd, check=False, capture_output=True)
+    result, stats = run_with_stats(cmd, check=False, capture_output=True)
     end_time = datetime.now(timezone.utc)
 
     # reporting metrics before checking returncode

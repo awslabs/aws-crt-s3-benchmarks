@@ -45,6 +45,10 @@ WORK_DIR="${HOME}/benchmark"
 FILES_DIR="${WORK_DIR}/files"
 OUTPUT_DIR="${WORK_DIR}/results"
 
+# Override maxRepeatSecs in workload files. Set to 86400 (24h) for overnight runs.
+# Set to 600 (default) for quick validation runs.
+MAX_REPEAT_SECS="${MAX_REPEAT_SECS:-86400}"
+
 # Runners to benchmark
 RUNNERS=("boto3-classic" "boto3-crt")
 
@@ -93,6 +97,7 @@ echo "Instance:    ${INSTANCE_ID} (${INSTANCE_TYPE})"
 echo "Bucket:      ${BUCKET}"
 echo "Region:      ${REGION}"
 echo "Throughput:  ${TARGET_THROUGHPUT} Gbps"
+echo "Repeat cap:  ${MAX_REPEAT_SECS}s (override with MAX_REPEAT_SECS env var)"
 echo "Output:      ${OUTPUT_DIR}/${INSTANCE_ID}/"
 echo "Runners:     ${RUNNERS[*]}"
 echo "Workloads:   ${#WORKLOADS[@]} workloads"
@@ -126,6 +131,11 @@ for runner in "${RUNNERS[@]}"; do
         # Connection sampling temp file
         conn_file="/tmp/bench_conn_$$_${runner}_${workload_name}.txt"
 
+        # Create a patched workload with our MAX_REPEAT_SECS override
+        patched_workload="/tmp/bench_workload_$$_${runner}_${workload_name}.json"
+        sed "s/\"maxRepeatSecs\": *[0-9]*/\"maxRepeatSecs\": ${MAX_REPEAT_SECS}/" \
+            "${workload_path}" > "${patched_workload}"
+
         # Change to files dir so uploads/downloads happen there
         cd "${FILES_DIR}"
 
@@ -134,17 +144,26 @@ for runner in "${RUNNERS[@]}"; do
         set +e
         /usr/bin/time -f "%e %U %S %M" -o "${time_file}" \
             python3 "${SCRIPT_DIR}/bench-wrapper.py" "${heap_file}" \
-            "${RUNNER_DIR}/main.py" "${runner}" "${workload_path}" \
+            "${RUNNER_DIR}/main.py" "${runner}" "${patched_workload}" \
             "${BUCKET}" "${REGION}" "${TARGET_THROUGHPUT}" \
             > "${stdout_file}" 2>&1 &
         BENCH_PID=$!
 
         # Start connection sampler in background
-        # Polls ss every 1s, records ESTABLISHED TCP connections for the bench process
+        # Polls ss every 1s, records ESTABLISHED TCP connections for the bench process.
+        # BENCH_PID is /usr/bin/time; python3 is its child. We match connections
+        # owned by any process in the subtree.
         (
             while kill -0 ${BENCH_PID} 2>/dev/null; do
+                # Get child PIDs (ps --ppid gives direct children of time = python3)
+                child_pids=$(ps --ppid ${BENCH_PID} -o pid= 2>/dev/null | tr -s ' \n' ' ')
+                # Build a grep -E pattern: "pid=123,|pid=456,|pid=789,"
+                grep_pat="pid=${BENCH_PID},"
+                for p in ${child_pids}; do
+                    grep_pat="${grep_pat}|pid=${p},"
+                done
                 count=$(ss -tnp state established 2>/dev/null \
-                    | grep "pid=${BENCH_PID}," 2>/dev/null | wc -l || echo "0")
+                    | grep -cE "${grep_pat}" 2>/dev/null || echo "0")
                 echo "${count}" >> "${conn_file}"
                 sleep 1
             done
@@ -163,14 +182,14 @@ for runner in "${RUNNERS[@]}"; do
         # Handle skip code (runner doesn't support this workload)
         if [[ ${exit_code} -eq 123 ]]; then
             echo "  SKIPPED"
-            rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}"
+            rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}" "${patched_workload}"
             continue
         fi
 
         if [[ ${exit_code} -ne 0 ]]; then
             echo "  FAILED (exit code: ${exit_code})"
             tail -20 "${stdout_file}" 2>/dev/null || true
-            rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}"
+            rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}" "${patched_workload}"
             continue
         fi
 
@@ -273,7 +292,7 @@ EOF
         echo "  -> ${output_file}"
 
         # Cleanup temp files
-        rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}"
+        rm -f "${heap_file}" "${time_file}" "${stdout_file}" "${conn_file}" "${patched_workload}"
     done
 done
 

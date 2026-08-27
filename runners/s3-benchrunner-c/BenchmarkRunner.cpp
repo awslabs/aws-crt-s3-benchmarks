@@ -1,6 +1,7 @@
 #include "BenchmarkRunner.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -203,8 +204,16 @@ template <typename... Args> void StatsPrintf(const char *fmt, Args... args)
     }
 }
 
-// Print all kinds of stats about these values (median, mean, min, max, etc)
-void printValueStats(const char *label, vector<double> values)
+struct ValueStats
+{
+    double median;
+    double mean;
+    double min;
+    double max;
+    double stddev;
+};
+
+ValueStats computeStats(vector<double> values)
 {
     std::sort(values.begin(), values.end());
     double n = values.size();
@@ -218,15 +227,11 @@ void printValueStats(const char *label, vector<double> values)
         size_t middle = values.size() / 2;
         if (values.size() % 2 == 1)
         {
-            // odd number, use middle value
             median = values[middle];
         }
         else
         {
-            // even number, use avg of two middle values
-            double a = values[middle - 1];
-            double b = values[middle];
-            median = (a + b) / 2;
+            median = (values[middle - 1] + values[middle]) / 2;
         }
     }
 
@@ -236,17 +241,7 @@ void printValueStats(const char *label, vector<double> values)
         0.0,
         [mean, n](double accumulator, const double &val) { return accumulator + ((val - mean) * (val - mean) / n); });
 
-    double stdDev = std::sqrt(variance);
-
-    StatsPrintf(
-        "Overall %s Median:%f Mean:%f Min:%f Max:%f Variance:%f StdDev:%f\n",
-        label,
-        median,
-        mean,
-        min,
-        max,
-        variance,
-        stdDev);
+    return {median, mean, min, max, std::sqrt(variance)};
 }
 
 void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
@@ -255,14 +250,31 @@ void printAllStats(uint64_t bytesPerRun, const vector<double> &durations)
     for (double duration : durations)
         throughputsGbps.push_back(bytesToGigabit(bytesPerRun) / duration);
 
-    printValueStats("Throughput (Gb/s)", throughputsGbps);
-
-    printValueStats("Duration (Secs)", durations);
+    ValueStats tStats = computeStats(throughputsGbps);
+    ValueStats dStats = computeStats(durations);
 
     struct aws_memory_usage_stats mu;
     aws_init_memory_usage_for_current_process(&mu);
+    double peakRssMiB = (double)mu.maxrss / 1024.0;
 
-    StatsPrintf("Peak RSS:%f MiB\n", (double)mu.maxrss / 1024.0);
+    // Standardized JSON stats line, parsed by the benchmark harness
+    StatsPrintf(
+        "STATS:{\"runs\":%zu,\"bytes_per_run\":%" PRIu64 ",\"peak_rss_mib\":%.1f"
+        ",\"duration\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}"
+        ",\"throughput_gbps\":{\"median\":%.6f,\"mean\":%.6f,\"min\":%.6f,\"max\":%.6f,\"stddev\":%.6f}}\n",
+        durations.size(),
+        bytesPerRun,
+        peakRssMiB,
+        dStats.median,
+        dStats.mean,
+        dStats.min,
+        dStats.max,
+        dStats.stddev,
+        tStats.median,
+        tStats.mean,
+        tStats.min,
+        tStats.max,
+        tStats.stddev);
 }
 
 /**

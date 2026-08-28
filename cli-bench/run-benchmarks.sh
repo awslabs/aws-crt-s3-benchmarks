@@ -49,6 +49,11 @@ OUTPUT_DIR="${WORK_DIR}/results"
 # Set to 600 (default) for quick validation runs.
 MAX_REPEAT_SECS="${MAX_REPEAT_SECS:-86400}"
 
+# Network credit drain warmup before each workload (seconds).
+# Saturates NIC to deplete burst credits so benchmarks run at baseline bandwidth.
+# Set to 0 to skip warmup. Default: 60 seconds.
+WARMUP_SECS="${WARMUP_SECS:-60}"
+
 # Runners to benchmark
 RUNNERS=("boto3-classic" "boto3-crt")
 
@@ -98,6 +103,10 @@ echo "Bucket:      ${BUCKET}"
 echo "Region:      ${REGION}"
 echo "Throughput:  ${TARGET_THROUGHPUT} Gbps"
 echo "Repeat cap:  ${MAX_REPEAT_SECS}s (override with MAX_REPEAT_SECS env var)"
+echo "Warmup:      ${WARMUP_SECS}s credit drain per workload (override with WARMUP_SECS env var)"
+if (( $(echo "${TARGET_THROUGHPUT} <= 5.0" | bc -l) )); then
+    echo "30GiB skip:  YES (throughput <= 5.0 Gbps, 5 GiB provides equivalent baseline data)"
+fi
 echo "Output:      ${OUTPUT_DIR}/${INSTANCE_ID}/"
 echo "Runners:     ${RUNNERS[*]}"
 echo "Workloads:   ${#WORKLOADS[@]} workloads"
@@ -115,6 +124,21 @@ for runner in "${RUNNERS[@]}"; do
             continue
         fi
 
+        # Auto-skip 30 GiB workloads on low-bandwidth instances.
+        # When target throughput <= 5 Gbps, the 5 GiB workload already runs for
+        # 80+ seconds at baseline, providing the same sustained-transfer data.
+        # The 30 GiB workload would just repeat that measurement for 6x longer.
+        # Instances skipped: t2.micro (0.5), t3.micro/small/medium (5.0)
+        # Instances kept: m5.large, m5.xlarge, c5.xlarge (10.0), c5n.large (25.0)
+        if [[ "${workload}" == *"30GiB"* ]]; then
+            skip_30g=$(echo "${TARGET_THROUGHPUT} <= 5.0" | bc -l)
+            if [[ "${skip_30g}" == "1" ]]; then
+                echo ""
+                echo "  SKIP: ${workload%.run.json} (target throughput ${TARGET_THROUGHPUT} Gbps <= 5.0, 5 GiB workload provides equivalent baseline data)"
+                continue
+            fi
+        fi
+
         # Output file name
         workload_name="${workload%.run.json}"
         output_file="${OUTPUT_DIR}/${INSTANCE_ID}/${runner}_${workload_name}.json"
@@ -127,6 +151,15 @@ for runner in "${RUNNERS[@]}"; do
         echo "  Runner:   ${runner}"
         echo "  Workload: ${workload_name}"
         echo "---------------------------------------------"
+
+        # Drain network burst credits before the benchmark starts.
+        # Downloads a large S3 object to /dev/null for WARMUP_SECS seconds
+        # so the actual benchmark runs at baseline bandwidth, not burst.
+        if [[ "${WARMUP_SECS}" -gt 0 ]]; then
+            echo "  Warming up (draining network credits for ${WARMUP_SECS}s)..."
+            timeout "${WARMUP_SECS}" aws s3 cp "s3://${BUCKET}/download/30GiB-1x/1" /dev/null \
+                --region "${REGION}" > /dev/null 2>&1 || true
+        fi
 
         # Connection sampling temp file
         conn_file="/tmp/bench_conn_$$_${runner}_${workload_name}.txt"

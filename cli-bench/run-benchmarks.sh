@@ -55,7 +55,7 @@ MAX_REPEAT_SECS="${MAX_REPEAT_SECS:-86400}"
 WARMUP_SECS="${WARMUP_SECS:-60}"
 
 # Runners to benchmark
-RUNNERS=("boto3-classic" "boto3-crt")
+RUNNERS=("boto3-classic" "boto3-crt" "cli-classic" "cli-crt")
 
 # Workloads: 10k small files + single large files (upload & download, on disk)
 WORKLOADS=(

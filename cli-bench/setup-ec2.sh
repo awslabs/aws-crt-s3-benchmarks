@@ -111,8 +111,8 @@ WORKLOADS=(
     "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/upload-256KiB-10_000x.run.json"
     "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/download-5GiB-1x.run.json"
     "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/upload-5GiB-1x.run.json"
-    "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/download-30GiB-1x.run.json"
-    "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x.run.json"
+    "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/download-1GiB-1x.run.json"
+    "${WORK_DIR}/aws-crt-s3-benchmarks/workloads/upload-1GiB-1x.run.json"
 )
 
 cd "${WORK_DIR}/aws-crt-s3-benchmarks/scripts"

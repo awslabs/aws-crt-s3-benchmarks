@@ -63,8 +63,8 @@ WORKLOADS=(
     "upload-256KiB-10_000x.run.json"
     "download-5GiB-1x.run.json"
     "upload-5GiB-1x.run.json"
-    "download-30GiB-1x.run.json"
-    "upload-30GiB-1x.run.json"
+    "download-1GiB-1x.run.json"
+    "upload-1GiB-1x.run.json"
 )
 
 ##############################################################################
@@ -104,9 +104,6 @@ echo "Region:      ${REGION}"
 echo "Throughput:  ${TARGET_THROUGHPUT} Gbps"
 echo "Repeat cap:  ${MAX_REPEAT_SECS}s (override with MAX_REPEAT_SECS env var)"
 echo "Warmup:      ${WARMUP_SECS}s credit drain per workload (override with WARMUP_SECS env var)"
-if (( $(echo "${TARGET_THROUGHPUT} <= 5.0" | bc -l) )); then
-    echo "30GiB skip:  YES (throughput <= 5.0 Gbps, 5 GiB provides equivalent baseline data)"
-fi
 echo "Output:      ${OUTPUT_DIR}/${INSTANCE_ID}/"
 echo "Runners:     ${RUNNERS[*]}"
 echo "Workloads:   ${#WORKLOADS[@]} workloads"
@@ -122,21 +119,6 @@ for runner in "${RUNNERS[@]}"; do
         if [[ ! -f "${workload_path}" ]]; then
             echo "WARN: workload not found: ${workload_path}, skipping"
             continue
-        fi
-
-        # Auto-skip 30 GiB workloads on low-bandwidth instances.
-        # When target throughput <= 5 Gbps, the 5 GiB workload already runs for
-        # 80+ seconds at baseline, providing the same sustained-transfer data.
-        # The 30 GiB workload would just repeat that measurement for 6x longer.
-        # Instances skipped: t2.micro (0.5), t3.micro/small/medium (5.0)
-        # Instances kept: m5.large, m5.xlarge, c5.xlarge (10.0), c5n.large (25.0)
-        if [[ "${workload}" == *"30GiB"* ]]; then
-            skip_30g=$(echo "${TARGET_THROUGHPUT} <= 5.0" | bc -l)
-            if [[ "${skip_30g}" == "1" ]]; then
-                echo ""
-                echo "  SKIP: ${workload%.run.json} (target throughput ${TARGET_THROUGHPUT} Gbps <= 5.0, 5 GiB workload provides equivalent baseline data)"
-                continue
-            fi
         fi
 
         # Output file name

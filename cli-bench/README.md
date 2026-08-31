@@ -96,6 +96,6 @@ Example:
 
 - `download-256KiB-10_000x` / `upload-256KiB-10_000x` — 10k small files (AI/ML pattern)
 - `download-5GiB-1x` / `upload-5GiB-1x` — single large file
-- `download-30GiB-1x` / `upload-30GiB-1x` — single very large file
+- `download-1GiB-1x` / `upload-1GiB-1x` — single medium file (triggers multipart, completes quickly on all instances)
 
 All use `filesOnDisk: true`.

@@ -24,7 +24,7 @@ double bytesToMegabit(uint64_t bytes);
 double bytesToGigabit(uint64_t bytes);
 
 // use standardized part-size across all benchmarks
-#define PART_SIZE (8 * 1024 * 1024)
+// #define PART_SIZE (256 * 1024 * 1024)
 
 // struct for a benchmark config, loaded from JSON
 struct BenchmarkConfig

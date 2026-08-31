@@ -184,8 +184,9 @@ CRunner::CRunner(const BenchmarkConfig &config) : BenchmarkRunner(config)
     s3ClientConfig.client_bootstrap = clientBootstrap;
     s3ClientConfig.tls_connection_options = &tlsConnOpts;
     s3ClientConfig.signing_config = &signingConfig;
-    s3ClientConfig.part_size = PART_SIZE;
+    // s3ClientConfig.part_size = PART_SIZE;
     s3ClientConfig.throughput_target_gbps = config.targetThroughputGbps;
+    // s3ClientConfig.memory_limit_in_bytes = bytesFromGiB(400);
     if (isS3Express)
     {
         signingConfig.algorithm = AWS_SIGNING_ALGORITHM_V4_S3EXPRESS;
@@ -381,9 +382,13 @@ Task::Task(CRunner &runner, size_t taskI, FILE *telemetryFile)
 {
 
     aws_s3_meta_request_options options;
+    struct aws_s3_file_io_options fio_options;
+    AWS_ZERO_STRUCT(fio_options);
     AWS_ZERO_STRUCT(options);
     options.user_data = this;
     options.finish_callback = Task::onFinished;
+    fio_options.direct_io = true;
+    options.fio_opts = &fio_options;
 
     // TODO: add "sizeHint" to config, if true then set options.object_size_hint.
     // A transfer-manager downloading a directory would know the object size ahead of time.

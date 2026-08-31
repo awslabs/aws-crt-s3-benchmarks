@@ -1,0 +1,84 @@
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/download-30GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/download-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/upload-5TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/upload-30GiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh python3 -m awscli s3 cp s3://aws-c-s3-test-bucket-269381/2 ./2
+
+/home/ubuntu/aws-crt-s3-benchmarks/files/plot.py /mnt/raid0/files/upload/1TiB-1x/metrics_20260728_215347.csv
+
+cd /local/home/dengket/tm-bench-100MiB
+
+# Download with O_DIRECT (io_uring + direct I/O)
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh \
+  /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-rust/target/release/s3-benchrunner-rust \
+  sdk-rust-tm /home/ubuntu/aws-crt-s3-benchmarks/workloads/download-1TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200.0
+
+# Upload (same command without S3_TM_DIRECT_IO)
+AWS_PROFILE=default \
+  /home/dengket/aws-crt-s3-benchmarks/runners/s3-benchrunner-rust/target/debug/s3-benchrunner-rust \
+  sdk-rust-tm upload-100MiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 100.0
+
+
+export S3_TM_DIRECT_IO=1
+export S3_TM_MEMORY_GIB=400
+export S3_TM_NO_CHECKSUM=1
+export S3FIO_MEMORY_LIMIT=400
+export S3_TM_DIRECT_IO_BLOCK_MIB=512
+export AWS_CRT_S3_MEMORY_LIMIT_IN_GIB=400
+
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh ./target/release/disk-write-bench --path /mnt/raid0/bench.dat \
+    --queue-depth 32 --duration 15 --max-bytes 200g
+
+
+   /home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh  python3 -m awscli s3 cp s3://aws-c-s3-test-bucket-269381/2 2
+
+
+
+   BIN=/home/dengket/aws-s3-transfer-manager-rs/target/release/examples/cp
+
+# download
+AWS_PROFILE=default AWS_REGION=us-west-2 \
+  $BIN s3://aws-c-s3-test-bucket-269381/test-100MiB/1 /mnt/raid0/out.bin
+
+# upload
+$BIN /mnt/raid0/out.bin s3://aws-c-s3-test-bucket-269381/test-100MiB/2
+
+# recursive (prefix <-> directory)
+$BIN --recursive s3://bucket/prefix/ /mnt/raid0/dir/
+
+/home/ubuntu/aws-s3-transfer-manager-rs/target/release/examples/cp s3://aws-c-s3-test-bucket-269381/2 2
+
+cp /home/ubuntu/aws-s3-transfer-manager-rs/target/release/examples/cp ./main-cp --part-size 134217728 --target-throughput-gbps 200.0
+--part-size (default 8388608), --concurrency N / --target-throughput-gbps N / --concurrency-auto
+
+/home/ubuntu/aws-crt-s3-benchmarks/files/monitor.sh /home/ubuntu/aws-s3-transfer-manager-rs/target/release/examples/cp s3://aws-c-s3-test-bucket-269381/2 2 --part-size 134217728 --target-throughput-gbps 200
+
+/home/ubuntu/aws-s3-transfer-manager-rs/target/release/examples/cp s3://aws-c-s3-test-bucket-269381/2 2 --part-size 536870912 --target-throughput-gbps 200
+
+source /home/ubuntu/aws-crt-s3-benchmarks/build/python/.venv/bin/activate
+
+
+ cat /proc/mdstat
+mount /dev/md0 /mnt/raid0
+
+
+/home/ubuntu/aws-crt-s3-benchmarks/bench.py 1TiB python3 -m awscli s3 cp s3://aws-c-s3-test-bucket-269381/2 2
+
+
+
+/home/ubuntu/aws-crt-s3-benchmarks/bench.py 5TiB python3 -m awscli s3 cp  s3://aws-c-s3-test-bucket-269381/1TiB-1x/ ./upload/1TiB-1x/ --recursive
+
+
+source /home/ubuntu/aws-crt-s3-benchmarks/build/python/venv/bin/activate
+
+
+/home/ubuntu/aws-crt-s3-benchmarks/monitor.sh python3 -m awscli s3 cp  s3://aws-c-s3-test-bucket-269381/1TiB-1x/ ./upload/1TiB-1x/ --recursive
+
+/home/ubuntu/aws-crt-s3-benchmarks/plot.py
+
+/home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c
+
+/home/ubuntu/aws-crt-s3-benchmarks/monitor.sh /home/ubuntu/aws-crt-s3-benchmarks/runners/s3-benchrunner-c/build/s3-benchrunner-c crt-c /home/ubuntu/aws-crt-s3-benchmarks/workloads/download-1TiB-1x.run.json aws-c-s3-test-bucket-269381 us-west-2 200

@@ -38,16 +38,17 @@ public class Main {
 
     // Direct Byte Zero-Copy (DBZ) pool opt-in for the crt-java client. false
     // (default) = default aws-c-s3 native buffer pool + byte[] response body
-    // callback (the baseline). true = attach a JVM-tracked S3DirectBufferPool
-    // via S3ClientOptions.withDirectByteBufferPool, which auto-routes response
-    // bodies through the NewDirectByteBuffer callback path (no per-part byte[]
-    // allocation).
+    // callback (the baseline). true = attach a direct buffer pool via
+    // S3ClientOptions.withDirectBufferPoolOptions(auto()), so response bodies
+    // arrive through onResponseBodyBorrowed as views of pool memory (no
+    // per-part byte[] allocation).
     // May be overridden via system property `aws.crt.s3.use_dbz`.
     // Ignored by the SDK runner (SDK path does not use the DBZ pool).
     public static boolean USE_DBZ = false;
 
-    // When true, the download-to-RAM subscriber copies each delivered ByteBuffer
-    // into a fresh byte[] (simulating a customer that retains the data).
+    // When true, downloads to RAM copy each delivered part into a fresh byte[]
+    // (simulating a customer that retains the data). Applies to the SDK
+    // runner's subscriber and to crt-java's onResponseBodyBorrowed (DBZ only).
     // Measures the cost of DBZ + copy-back vs baseline byte[] delivery.
     // May be overridden via system property `aws.crt.s3.benchmark.copy_back`.
     public static boolean COPY_BACK = false;

@@ -7,7 +7,7 @@ import software.amazon.awssdk.crt.auth.signing.AwsSigningConfig;
 import software.amazon.awssdk.crt.io.*;
 import software.amazon.awssdk.crt.s3.S3Client;
 import software.amazon.awssdk.crt.s3.S3ClientOptions;
-import software.amazon.awssdk.crt.s3.S3DirectBufferPool;
+import software.amazon.awssdk.crt.s3.S3DirectBufferPoolOptions;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -26,9 +26,6 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
     TlsContext tlsCtx;
     CredentialsProvider credentialsProvider;
     S3Client s3Client;
-    // Optional. Non-null iff Main.USE_DBZ. Held as a field so the JVM GC does
-    // not collect the pool while aws-c-s3 still holds slot references via JNI.
-    S3DirectBufferPool directBufferPool;
 
     // derived from bucket and region (e.g. mybucket.s3.us-west-2.amazonaws.com)
     String endpoint;
@@ -102,22 +99,17 @@ public class CRTJavaBenchmarkRunner extends BenchmarkRunner {
         // Enabled via -Daws.crt.s3.use_dbz=true. Default false = baseline path
         // (aws-c-s3 native buffer pool + byte[] response body callback).
         //
-        // When enabled, the runner:
-        //   1. Builds a JVM-tracked S3DirectBufferPool via
-        //      S3DirectBufferPool.create(s3ClientOpts). This factory auto-scales
-        //      the pool capacity to match aws-c-s3's default buffer pool sizing
-        //      (2-24 GiB by throughputTargetGbps), so DBZ vs baseline memory
-        //      footprint is a fair comparison at the same target throughput.
-        //   2. Attaches the pool via S3ClientOptions.withDirectByteBufferPool.
-        //      The client derives useDirectByteBufferPool from this and routes
-        //      every meta-request's response body through the NewDirectByteBuffer
-        //      callback path, eliminating the per-part 8 MiB byte[] allocation.
+        // auto() sizes the pool from the throughput target, matching aws-c-s3's
+        // default memory limit for that target, so DBZ vs baseline memory
+        // footprint is a fair comparison. The client owns the pool and frees it
+        // on close. The pool must fit within 80% of -XX:MaxDirectMemorySize;
+        // otherwise auto() shrinks it and logs a WARN, so run with an explicit
+        // -XX:MaxDirectMemorySize large enough for the target.
         //
-        // The pool must be constructed AFTER withThroughputTargetGbps has been
-        // set on s3ClientOpts, since create() reads that value for auto-sizing.
+        // Response bodies only arrive as borrowed direct buffers because
+        // CRTJavaTask overrides onResponseBodyBorrowed.
         if (Main.USE_DBZ) {
-            directBufferPool = S3DirectBufferPool.create(s3ClientOpts);
-            s3ClientOpts.withDirectByteBufferPool(directBufferPool);
+            s3ClientOpts.withDirectBufferPoolOptions(S3DirectBufferPoolOptions.auto());
         }
 
         s3Client = new S3Client(s3ClientOpts);

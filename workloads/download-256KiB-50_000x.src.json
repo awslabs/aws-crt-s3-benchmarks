@@ -1,0 +1,6 @@
+{
+    "comment": "Use case is an AI company with millions of JPGs - 50k count balances signal density with FD limits",
+    "action": "download",
+    "fileSize": "256KiB",
+    "numFiles": 50000
+}

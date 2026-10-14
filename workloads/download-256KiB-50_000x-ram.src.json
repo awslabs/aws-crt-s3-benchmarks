@@ -1,0 +1,7 @@
+{
+    "comment": "50k count with in-memory delivery - primary DBZ pool test for small-object downloads. Avoids EBS write bottleneck seen with filesOnDisk:true at high concurrency.",
+    "action": "download",
+    "fileSize": "256KiB",
+    "numFiles": 50000,
+    "filesOnDisk": false
+}

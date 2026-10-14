@@ -1,0 +1,60 @@
+{
+    "version": 2,
+    "comment": "10x concurrent 5 GiB downloads in RAM - mid-concurrency scaling data point between 1x and 100x",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/01",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/02",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/03",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/04",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/05",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/06",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/07",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/08",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/09",
+            "size": 5368709120
+        },
+        {
+            "action": "download",
+            "key": "download/5GiB-10x/10",
+            "size": 5368709120
+        }
+    ]
+}

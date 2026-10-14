@@ -1,5 +1,6 @@
 package com.example.s3benchrunner.crtjava;
 
+import com.example.s3benchrunner.Main;
 import com.example.s3benchrunner.TaskConfig;
 import com.example.s3benchrunner.Util;
 import software.amazon.awssdk.crt.CRT;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-class CRTJavaTask implements S3MetaRequestResponseHandler {
+class CRTJavaTask implements S3MetaRequestResponseHandler, S3BorrowedBufferDelivery {
 
     CRTJavaBenchmarkRunner runner;
     int taskI;
@@ -89,6 +90,41 @@ class CRTJavaTask implements S3MetaRequestResponseHandler {
             throw new RuntimeException(e);
         }
     }
+
+    // Baseline (native pool) delivery: the body arrives in a heap ByteBuffer
+    // backed by a fresh byte[]. Discard it, and return its length so that, when
+    // read backpressure is on, the window is credited as each part is
+    // delivered. Without this the default returns 0 and a download stops once
+    // the initial window is used up.
+    @Override
+    public int onResponseBody(ByteBuffer bodyBytesIn, long objectRangeStart, long objectRangeEnd) {
+        return bodyBytesIn.remaining();
+    }
+
+    // DBZ delivery: only called when the client has a direct buffer pool
+    // (-Daws.crt.s3.use_dbz=true). The buffer is a view of pool memory, so it
+    // must be closed to return that memory to the pool.
+    //
+    // With -Daws.crt.s3.benchmark.copy_back=true, copy each part into a new
+    // byte[] first (simulating a customer that keeps the data). toByteArray()
+    // copies and then closes the buffer. The copy is stored in a volatile
+    // field so the allocation can't be optimized away.
+    //
+    // Either way, return the length so the window is credited as each part is
+    // delivered, the same as the baseline.
+    @Override
+    public int onResponseBodyBorrowed(S3BorrowedBuffer buffer, long objectRangeStart, long objectRangeEnd) {
+        int length = (int) (objectRangeEnd - objectRangeStart);
+        if (Main.COPY_BACK) {
+            copyBackSink = buffer.toByteArray();
+        } else {
+            buffer.close();
+        }
+        return length;
+    }
+
+    // Keeps copy-back allocations observable; see onResponseBodyBorrowed.
+    static volatile byte[] copyBackSink;
 
     @Override
     public void onFinished(S3FinishedResponseContext context) {

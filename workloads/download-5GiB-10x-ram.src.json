@@ -1,0 +1,7 @@
+{
+    "comment": "10x concurrent 5 GiB downloads in RAM - mid-concurrency scaling data point between 1x and 100x",
+    "action": "download",
+    "fileSize": "5GiB",
+    "numFiles": 10,
+    "filesOnDisk": false
+}

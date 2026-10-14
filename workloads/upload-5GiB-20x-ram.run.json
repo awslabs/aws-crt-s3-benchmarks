@@ -1,0 +1,110 @@
+{
+    "version": 2,
+    "comment": "20x concurrent 5 GiB uploads in RAM - mid-concurrency scaling for uploads",
+    "filesOnDisk": false,
+    "checksum": null,
+    "maxRepeatCount": 10,
+    "maxRepeatSecs": 600,
+    "tasks": [
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/01",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/02",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/03",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/04",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/05",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/06",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/07",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/08",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/09",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/10",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/11",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/12",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/13",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/14",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/15",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/16",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/17",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/18",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/19",
+            "size": 5368709120
+        },
+        {
+            "action": "upload",
+            "key": "upload/5GiB-20x/20",
+            "size": 5368709120
+        }
+    ]
+}

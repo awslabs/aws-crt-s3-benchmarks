@@ -1,0 +1,7 @@
+{
+    "comment": "50k count with in-memory source - isolates upload path performance without disk read bottleneck.",
+    "action": "upload",
+    "fileSize": "256KiB",
+    "numFiles": 50000,
+    "filesOnDisk": false
+}

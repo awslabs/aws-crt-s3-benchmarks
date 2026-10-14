@@ -1,5 +1,6 @@
 package com.example.s3benchrunner.sdkjava;
 
+import com.example.s3benchrunner.Main;
 import com.example.s3benchrunner.TaskConfig;
 import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -65,7 +66,11 @@ public class SDKJavaTaskAsyncClient extends SDKJavaTask {
                                 completeHelper(runner, failure);
                             } else {
                                 result.subscribe((bufferResult) -> {
-                                    /* Throw the result away */
+                                    if (Main.COPY_BACK) {
+                                        byte[] copy = new byte[bufferResult.remaining()];
+                                        bufferResult.get(copy);
+                                    }
+                                    /* else: discard */
                                 }).whenComplete((subResult, subFailure) -> {
                                     completeHelper(runner, subFailure);
                                 });

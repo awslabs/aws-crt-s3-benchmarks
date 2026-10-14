@@ -1,0 +1,108 @@
+{
+  "workload": "download-30GiB-1x.run.json",
+  "action": "download",
+  "maxConcurrency": 256,
+  "objectConcurrency": "unbounded",
+  "multipartDownloadType": "PART",
+  "useODirect": false,
+  "partSizeBytes": 8388608,
+  "numTasks": 1,
+  "bytesPerRun": 32212254720,
+  "filesOnDisk": true,
+  "checksum": null,
+  "vcpus": 64,
+  "runs": [
+    {
+      "run": 1,
+      "secs": 9.747184859999999,
+      "gbps": 26.438201538326012,
+      "peakRssBytes": 6579355648,
+      "cpuAvgCores": 19.314264113286935,
+      "cpuAvgPercent": 30.178537677010837
+    },
+    {
+      "run": 2,
+      "secs": 8.403481284999998,
+      "gbps": 30.66562880552664,
+      "peakRssBytes": 6486286336,
+      "cpuAvgCores": 14.324593002015762,
+      "cpuAvgPercent": 22.38217656564963
+    },
+    {
+      "run": 3,
+      "secs": 8.642500420000001,
+      "gbps": 29.817532570047586,
+      "peakRssBytes": 6479671296,
+      "cpuAvgCores": 13.899557033567966,
+      "cpuAvgPercent": 21.718057864949948
+    },
+    {
+      "run": 4,
+      "secs": 8.400921099000003,
+      "gbps": 30.674974175233576,
+      "peakRssBytes": 6472945664,
+      "cpuAvgCores": 14.175705178204616,
+      "cpuAvgPercent": 22.149539340944713
+    },
+    {
+      "run": 5,
+      "secs": 8.40281398,
+      "gbps": 30.66806410011709,
+      "peakRssBytes": 6501740544,
+      "cpuAvgCores": 14.270537530022978,
+      "cpuAvgPercent": 22.297714890660902
+    },
+    {
+      "run": 6,
+      "secs": 8.012249876999995,
+      "gbps": 32.16300561216261,
+      "peakRssBytes": 6510432256,
+      "cpuAvgCores": 14.894642736854943,
+      "cpuAvgPercent": 23.272879276335846
+    },
+    {
+      "run": 7,
+      "secs": 8.455152006000004,
+      "gbps": 30.478226479799595,
+      "peakRssBytes": 6516985856,
+      "cpuAvgCores": 14.939112978569273,
+      "cpuAvgPercent": 23.34236402901449
+    },
+    {
+      "run": 8,
+      "secs": 8.40063870299999,
+      "gbps": 30.67600534563786,
+      "peakRssBytes": 6516985856,
+      "cpuAvgCores": 14.812285968883078,
+      "cpuAvgPercent": 23.144196826379808
+    },
+    {
+      "run": 9,
+      "secs": 8.356676982999998,
+      "gbps": 30.837381687031282,
+      "peakRssBytes": 6506889216,
+      "cpuAvgCores": 14.829672393315388,
+      "cpuAvgPercent": 23.171363114555295
+    },
+    {
+      "run": 10,
+      "secs": 8.138071268,
+      "gbps": 31.665738634325265,
+      "peakRssBytes": 6506684416,
+      "cpuAvgCores": 15.181292052135461,
+      "cpuAvgPercent": 23.72076883146166
+    }
+  ],
+  "summary": {
+    "numRuns": 10,
+    "minGbps": 26.438201538326012,
+    "maxGbps": 32.16300561216261,
+    "meanGbps": 30.408475894820754,
+    "medianGbps": 30.671519137675332,
+    "peakGbps": 32.16300561216261,
+    "peakRssBytes": 6579355648,
+    "peakRssMiB": 6274.5625,
+    "avgCpuPercent": 23.537759841696314,
+    "avgCpuCores": 15.06416629868564
+  }
+}

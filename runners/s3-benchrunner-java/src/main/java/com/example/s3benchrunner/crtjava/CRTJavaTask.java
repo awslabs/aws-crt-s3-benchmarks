@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-class CRTJavaTask implements S3MetaRequestResponseHandler {
+class CRTJavaTask implements S3MetaRequestResponseHandler, S3BorrowedBufferDelivery {
 
     CRTJavaBenchmarkRunner runner;
     int taskI;

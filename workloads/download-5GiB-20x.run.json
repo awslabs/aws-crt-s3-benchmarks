@@ -2,108 +2,108 @@
     "version": 2,
     "comment": "",
     "filesOnDisk": true,
-    "checksum": null,
+    "checksum": "CRC32",
     "maxRepeatCount": 10,
     "maxRepeatSecs": 600,
     "tasks": [
         {
             "action": "download",
-            "key": "download/5GiB-20x/01",
+            "key": "download/5GiB-20x-crc32/01",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/02",
+            "key": "download/5GiB-20x-crc32/02",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/03",
+            "key": "download/5GiB-20x-crc32/03",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/04",
+            "key": "download/5GiB-20x-crc32/04",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/05",
+            "key": "download/5GiB-20x-crc32/05",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/06",
+            "key": "download/5GiB-20x-crc32/06",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/07",
+            "key": "download/5GiB-20x-crc32/07",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/08",
+            "key": "download/5GiB-20x-crc32/08",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/09",
+            "key": "download/5GiB-20x-crc32/09",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/10",
+            "key": "download/5GiB-20x-crc32/10",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/11",
+            "key": "download/5GiB-20x-crc32/11",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/12",
+            "key": "download/5GiB-20x-crc32/12",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/13",
+            "key": "download/5GiB-20x-crc32/13",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/14",
+            "key": "download/5GiB-20x-crc32/14",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/15",
+            "key": "download/5GiB-20x-crc32/15",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/16",
+            "key": "download/5GiB-20x-crc32/16",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/17",
+            "key": "download/5GiB-20x-crc32/17",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/18",
+            "key": "download/5GiB-20x-crc32/18",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/19",
+            "key": "download/5GiB-20x-crc32/19",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-20x/20",
+            "key": "download/5GiB-20x-crc32/20",
             "size": 5368709120
         }
     ]

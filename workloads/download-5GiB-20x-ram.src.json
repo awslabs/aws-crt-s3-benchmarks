@@ -1,0 +1,7 @@
+{
+    "action": "download",
+    "fileSize": "5GiB",
+    "numFiles": 20,
+    "filesOnDisk": false,
+    "checksum": "CRC32"
+}

@@ -1,0 +1,10 @@
+{
+    "version": 2,
+    "filesOnDisk": true,
+    "checksum": "CRC32",
+    "maxRepeatCount": 3,
+    "maxRepeatSecs": 1800,
+    "tasks": [
+        { "action": "upload", "key": "upload/1TiB-1x-crc32/1", "size": 1099511627776 }
+    ]
+}

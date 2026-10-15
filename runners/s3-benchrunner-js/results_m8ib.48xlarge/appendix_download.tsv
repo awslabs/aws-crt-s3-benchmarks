@@ -1,0 +1,22 @@
+Workload	Client	Storage	O_DIRECT	Object Layout	Part Size (MiB)	Max Concurrency	Object Concurrency	Checksum	UV Thread Pool	Runs	Steady Throughput (Gb/s)	Peak Throughput (Gb/s)	Mean Throughput (Gb/s)	Peak RSS (GiB)	Avg CPU (cores)	Source Artifact
+download-1TiB-1x-ram	sdk-js	RAM	No	1 x 1024 GiB	16	256	unbounded	None	NR	3	157.44	162.15	158.10	18.2	49.5	2026-10-15T01-18-33-982Z
+download-1TiB-1x-ram	sdk-js	RAM	No	1 x 1024 GiB	16	512	unbounded	None	NR	3	187.28	188.64	182.68	18.0	62.6	2026-10-15T01-20-59-872Z
+download-30GiB-1x-ram	sdk-js	RAM	No	1 x 30 GiB	16	256	unbounded	CRC32	NR	10	78.88	94.42	75.04	15.5	27.7	2026-10-15T01-02-20-883Z
+download-30GiB-1x-ram	sdk-js	RAM	No	1 x 30 GiB	16	512	unbounded	CRC32	NR	10	100.04	126.40	95.95	16.1	39.7	2026-10-15T01-02-52-299Z
+download-30GiB-1x	sdk-js	Disk	Yes	1 x 30 GiB	16	512	unbounded	CRC32	NR	10	77.15	92.55	74.91	40.1	82.8	2026-10-14T22-41-40-319Z
+download-30GiB-1x	sdk-js	Disk	Yes	1 x 30 GiB	16	640	unbounded	CRC32	NR	10	82.64	94.87	77.09	42.4	93.1	2026-10-14T22-42-18-240Z
+download-5GiB-10x-ram	sdk-js	RAM	No	10 x 5 GiB	16	256	unbounded	CRC32	NR	10	118.99	136.89	113.72	19.2	52.4	2026-10-15T01-05-54-081Z
+download-5GiB-10x-ram	sdk-js	RAM	No	10 x 5 GiB	16	512	unbounded	CRC32	NR	10	109.58	140.37	103.87	19.4	54.0	2026-10-15T01-06-46-264Z
+download-5GiB-10x	sdk-js	Disk	Yes	10 x 5 GiB	16	512	unbounded	CRC32	NR	10	93.20	100.57	84.86	64.3	81.1	2026-10-14T22-44-21-704Z
+download-5GiB-1x-ram	sdk-js	RAM	No	1 x 5 GiB	16	64	unbounded	CRC32	NR	10	38.49	39.66	35.46	5.9	10.6	2026-10-15T00-59-22-084Z
+download-5GiB-1x-ram	sdk-js	RAM	No	1 x 5 GiB	16	256	unbounded	CRC32	NR	10	44.68	68.84	43.30	15.0	42.1	2026-10-15T01-00-15-302Z
+download-5GiB-1x-ram	sdk-js	RAM	No	1 x 5 GiB	16	512	unbounded	CRC32	NR	10	34.91	50.59	32.12	15.1	48.5	2026-10-15T01-00-33-946Z
+download-5GiB-1x	sdk-js	Disk	Yes	1 x 5 GiB	16	256	unbounded	CRC32	NR	10	51.75	59.74	47.25	26.0	71.7	2026-10-14T22-36-57-621Z
+download-5GiB-1x	sdk-js	Disk	Yes	1 x 5 GiB	16	512	unbounded	CRC32	NR	10	46.50	64.51	46.70	26.7	73.4	2026-10-14T22-37-09-892Z
+download-5GiB-1x	sdk-js	Disk	No	1 x 5 GiB	16	512	unbounded	CRC32	NR	10	14.04	14.60	12.94	12.9	112.1	2026-10-14T22-39-57-279Z
+download-5GiB-1x	sdk-js	Disk	Yes	1 x 5 GiB	16	640	unbounded	CRC32	NR	10	35.79	59.65	39.71	27.1	72.0	2026-10-14T22-37-24-356Z
+download-5GiB-1x	sdk-js	Disk	No	1 x 5 GiB	16	640	unbounded	CRC32	NR	10	14.08	14.62	13.30	13.3	114.9	2026-10-14T22-40-34-748Z
+download-5GiB-20x-ram	sdk-js	RAM	No	20 x 5 GiB	16	256	unbounded	CRC32	NR	10	112.51	148.96	111.73	21.9	55.5	2026-10-15T01-09-22-017Z
+download-5GiB-20x-ram	sdk-js	RAM	No	20 x 5 GiB	16	512	unbounded	CRC32	NR	10	114.67	139.84	112.40	20.1	52.9	2026-10-15T01-10-43-352Z
+download-5GiB-20x	sdk-js	Disk	Yes	20 x 5 GiB	16	64	unbounded	CRC32	NR	10	106.85	123.69	104.44	55.9	69.1	2026-10-14T22-50-08-418Z
+download-5x1TiB-ram	sdk-js	RAM	No	5 x 1024 GiB	16	256	5	None	NR	3	194.37	195.97	193.83	20.6	73.6	2026-10-15T01-34-42-285Z

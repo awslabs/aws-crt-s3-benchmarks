@@ -39,7 +39,7 @@
 
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { S3TransferManager } from "@aws-sdk/lib-transfer-manager/transfer-manager";
+import { S3TransferManager } from "@aws-sdk/lib-transfer-manager";
 import { createReadStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import os from "node:os";
@@ -168,7 +168,7 @@ class RunSampler {
   }
 }
 
-/** Label a workload by its task action ("upload" or "download") for the report. */
+
 function deriveAction(tasks) {
   return tasks[0]?.action ?? "unknown";
 }
@@ -202,7 +202,11 @@ function loadWorkload(path) {
   return {
     filesOnDisk: workload.filesOnDisk,
     checksum: workload.checksum ?? null, // null | CRC32 | CRC32C | SHA1 | SHA256
-    maxRepeatCount: workload.maxRepeatCount,
+    // MAX_REPEAT_COUNT env var overrides the workload's maxRepeatCount when set
+    // (useful to limit runs, e.g. MAX_REPEAT_COUNT=3). Falls back to the workload value.
+    maxRepeatCount: process.env.MAX_REPEAT_COUNT
+      ? Math.max(1, Number.parseInt(process.env.MAX_REPEAT_COUNT, 10) || workload.maxRepeatCount)
+      : workload.maxRepeatCount,
     maxRepeatSecs: workload.maxRepeatSecs,
     tasks: workload.tasks.map((t) => ({ action: t.action, key: t.key, size: t.size })),
   };

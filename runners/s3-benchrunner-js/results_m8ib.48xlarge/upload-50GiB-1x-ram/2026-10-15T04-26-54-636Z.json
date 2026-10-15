@@ -1,0 +1,58 @@
+{
+  "workload": "upload-50GiB-1x-ram.run.json",
+  "s3Client": "sdk-js-lib-storage",
+  "action": "upload",
+  "maxConcurrency": 512,
+  "objectConcurrency": "unbounded",
+  "multipartDownloadType": "PART",
+  "useODirect": false,
+  "partSizeBytes": 16777216,
+  "numTasks": 1,
+  "bytesPerRun": 53687091200,
+  "filesOnDisk": false,
+  "checksum": "CRC32",
+  "vcpus": 192,
+  "runs": [
+    {
+      "run": 1,
+      "secs": 75.876812218,
+      "gbps": 5.660447731594501,
+      "peakRssBytes": 8770990080,
+      "cpuAvgCores": 1.2799758735999445,
+      "cpuAvgPercent": 0.6666541008333045,
+      "elu": 0.9817866860015446
+    },
+    {
+      "run": 2,
+      "secs": 64.953401921,
+      "gbps": 6.612382367937837,
+      "peakRssBytes": 8857837568,
+      "cpuAvgCores": 1.310739181528006,
+      "cpuAvgPercent": 0.6826766570458365,
+      "elu": 0.9790985613697772
+    },
+    {
+      "run": 3,
+      "secs": 63.78506390800001,
+      "gbps": 6.733500027835387,
+      "peakRssBytes": 8878284800,
+      "cpuAvgCores": 1.297570741357916,
+      "cpuAvgPercent": 0.6758180944572479,
+      "elu": 0.9815384974978119
+    }
+  ],
+  "summary": {
+    "numRuns": 3,
+    "minGbps": 5.660447731594501,
+    "maxGbps": 6.733500027835387,
+    "meanGbps": 6.335443375789242,
+    "medianGbps": 6.612382367937837,
+    "peakGbps": 6.733500027835387,
+    "peakRssBytes": 8878284800,
+    "peakRssMiB": 8466.9921875,
+    "avgCpuPercent": 0.6750496174454629,
+    "avgCpuCores": 1.2960952654952889,
+    "maxEventLoopUtilization": 0.9817866860015446,
+    "meanEventLoopUtilization": 0.9808079149563779
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "workload": "upload-50GiB-1x.run.json",
+  "s3Client": "sdk-js-lib-storage",
+  "action": "upload",
+  "maxConcurrency": 512,
+  "objectConcurrency": "unbounded",
+  "multipartDownloadType": "PART",
+  "useODirect": false,
+  "partSizeBytes": 16777216,
+  "numTasks": 1,
+  "bytesPerRun": 53687091200,
+  "filesOnDisk": true,
+  "checksum": null,
+  "vcpus": 64,
+  "runs": [
+    {
+      "run": 1,
+      "secs": 105.74177401699998,
+      "gbps": 4.061750746974893,
+      "peakRssBytes": 9096609792,
+      "cpuAvgCores": 1.5600278789356092,
+      "cpuAvgPercent": 2.4375435608368896,
+      "elu": 0.9255592205247999
+    },
+    {
+      "run": 2,
+      "secs": 106.03486345299999,
+      "gbps": 4.050523720345758,
+      "peakRssBytes": 9096609792,
+      "cpuAvgCores": 1.5798444627418509,
+      "cpuAvgPercent": 2.468506973034142,
+      "elu": 0.9033081353992642
+    },
+    {
+      "run": 3,
+      "secs": 102.57215630900001,
+      "gbps": 4.1872643128037135,
+      "peakRssBytes": 9058787328,
+      "cpuAvgCores": 1.604905625843056,
+      "cpuAvgPercent": 2.5076650403797753,
+      "elu": 0.9260348642754344
+    },
+    {
+      "run": 4,
+      "secs": 101.28369416700001,
+      "gbps": 4.240531836169316,
+      "peakRssBytes": 9058787328,
+      "cpuAvgCores": 1.5929308521679735,
+      "cpuAvgPercent": 2.4889544565124586,
+      "elu": 0.9267839472141535
+    },
+    {
+      "run": 5,
+      "secs": 101.02468645699997,
+      "gbps": 4.251403737667728,
+      "peakRssBytes": 6937903104,
+      "cpuAvgCores": 1.593484572680442,
+      "cpuAvgPercent": 2.4898196448131906,
+      "elu": 0.9252148885882504
+    },
+    {
+      "run": 6,
+      "secs": 100.00354421600001,
+      "gbps": 4.294815078476818,
+      "peakRssBytes": 6938320896,
+      "cpuAvgCores": 1.6057779808738604,
+      "cpuAvgPercent": 2.509028095115407,
+      "elu": 0.9287631687892708
+    }
+  ],
+  "summary": {
+    "numRuns": 6,
+    "minGbps": 4.050523720345758,
+    "maxGbps": 4.294815078476818,
+    "meanGbps": 4.181048238739705,
+    "medianGbps": 4.213898074486515,
+    "peakGbps": 4.294815078476818,
+    "peakRssBytes": 9096609792,
+    "peakRssMiB": 8675.203125,
+    "avgCpuPercent": 2.4835862951153103,
+    "avgCpuCores": 1.5894952288737987,
+    "maxEventLoopUtilization": 0.9287631687892708,
+    "meanEventLoopUtilization": 0.9226107041318622
+  }
+}

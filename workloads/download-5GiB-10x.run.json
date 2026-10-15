@@ -2,58 +2,58 @@
     "version": 2,
     "comment": "",
     "filesOnDisk": true,
-    "checksum": "CRC32",
+    "checksum": null,
     "maxRepeatCount": 10,
     "maxRepeatSecs": 600,
     "tasks": [
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/01",
+            "key": "download/5GiB-10x/01",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/02",
+            "key": "download/5GiB-10x/02",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/03",
+            "key": "download/5GiB-10x/03",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/04",
+            "key": "download/5GiB-10x/04",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/05",
+            "key": "download/5GiB-10x/05",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/06",
+            "key": "download/5GiB-10x/06",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/07",
+            "key": "download/5GiB-10x/07",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/08",
+            "key": "download/5GiB-10x/08",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/09",
+            "key": "download/5GiB-10x/09",
             "size": 5368709120
         },
         {
             "action": "download",
-            "key": "download/5GiB-10x-crc32/10",
+            "key": "download/5GiB-10x/10",
             "size": 5368709120
         }
     ]

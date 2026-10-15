@@ -1,6 +1,5 @@
 {
     "action": "upload",
     "fileSize": "30GiB",
-    "filesOnDisk": false,
-    "checksum": "CRC32"
+    "filesOnDisk": false
 }

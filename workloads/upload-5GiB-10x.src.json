@@ -1,6 +1,5 @@
 {
     "action": "upload",
     "fileSize": "5GiB",
-    "numFiles": 10,
-    "checksum": "CRC32"
+    "numFiles": 10
 }
